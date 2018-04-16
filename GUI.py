@@ -4,7 +4,7 @@ from os import path
 from functools import partial
 import numpy as np
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 import Dm3Reader3 as dm3
 import Constants as const
 import ImageSupport as imsup
@@ -12,13 +12,13 @@ import CrossCorr as cc
 import Transform as tr
 import Holo as holo
 
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 
 # --------------------------------------------------------
 
-class LabelExt(QtGui.QLabel):
+class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
         super(LabelExt, self).__init__(parent)
         self.image = image
@@ -60,7 +60,7 @@ class LabelExt(QtGui.QLabel):
         self.repaint()
 
         if self.parent().show_labels_checkbox.isChecked():
-            lab = QtGui.QLabel('{0}'.format(len(self.pointSets[self.image.numInSeries - 1])), self)
+            lab = QtWidgets.QLabel('{0}'.format(len(self.pointSets[self.image.numInSeries - 1])), self)
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
@@ -123,14 +123,14 @@ class LabelExt(QtGui.QLabel):
     def show_labels(self):
         imgIdx = self.image.numInSeries - 1
         for pt, idx in zip(self.pointSets[imgIdx], range(1, len(self.pointSets[imgIdx]) + 1)):
-            lab = QtGui.QLabel('{0}'.format(idx), self)
+            lab = QtWidgets.QLabel('{0}'.format(idx), self)
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pt[0] + 4, pt[1] + 4)
             lab.show()
 
 # --------------------------------------------------------
 
-class PlotWidget(QtGui.QWidget):
+class PlotWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(PlotWidget, self).__init__(parent)
         self.figure = plt.figure()
@@ -140,7 +140,7 @@ class PlotWidget(QtGui.QWidget):
         self.markedPointsData = []
         self.canvas.mpl_connect('button_press_event', self.getXYDataOnClick)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
@@ -157,6 +157,8 @@ class PlotWidget(QtGui.QWidget):
         self.canvas.draw()
 
     def getXYDataOnClick(self, event):
+        if event.xdata is None or event.ydata is None:
+            return
         if len(self.markedPoints) == 2:
             for pt in self.markedPoints:
                 pt.remove()
@@ -168,11 +170,12 @@ class PlotWidget(QtGui.QWidget):
 
 # --------------------------------------------------------
 
-class TriangulateWidget(QtGui.QWidget):
+class TriangulateWidget(QtWidgets.QWidget):
     def __init__(self):
         super(TriangulateWidget, self).__init__()
-        imagePath = QtGui.QFileDialog.getOpenFileName()
-        image = LoadImageSeriesFromFirstFile(imagePath)
+        file_dialog = QtWidgets.QFileDialog()
+        image_path = file_dialog.getOpenFileName()[0]
+        image = LoadImageSeriesFromFirstFile(image_path)
         self.display = LabelExt(self, image)
         self.plot_widget = PlotWidget()
         self.backup_image = None
@@ -186,31 +189,31 @@ class TriangulateWidget(QtGui.QWidget):
     def initUI(self):
         self.plot_widget.canvas.setFixedHeight(250)
 
-        prev_button = QtGui.QPushButton('Prev', self)
-        next_button = QtGui.QPushButton('Next', self)
+        prev_button = QtWidgets.QPushButton('Prev', self)
+        next_button = QtWidgets.QPushButton('Next', self)
 
         prev_button.clicked.connect(self.go_to_prev_image)
         next_button.clicked.connect(self.go_to_next_image)
 
-        lswap_button = QtGui.QPushButton('L-Swap', self)
-        rswap_button = QtGui.QPushButton('R-Swap', self)
+        lswap_button = QtWidgets.QPushButton('L-Swap', self)
+        rswap_button = QtWidgets.QPushButton('R-Swap', self)
 
         lswap_button.clicked.connect(self.swap_left)
         rswap_button.clicked.connect(self.swap_right)
 
-        flip_button = QtGui.QPushButton('Flip', self)
+        flip_button = QtWidgets.QPushButton('Flip', self)
 
-        name_it_button = QtGui.QPushButton('Name it!', self)
-        self.name_input = QtGui.QLineEdit('ref', self)
+        name_it_button = QtWidgets.QPushButton('Name it!', self)
+        self.name_input = QtWidgets.QLineEdit('ref', self)
 
-        zoom_button = QtGui.QPushButton('Zoom N images', self)
-        self.n_to_zoom_input = QtGui.QLineEdit('1', self)
+        zoom_button = QtWidgets.QPushButton('Zoom N images', self)
+        self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
 
-        hbox_name = QtGui.QHBoxLayout()
+        hbox_name = QtWidgets.QHBoxLayout()
         hbox_name.addWidget(name_it_button)
         hbox_name.addWidget(self.name_input)
 
-        hbox_zoom = QtGui.QHBoxLayout()
+        hbox_zoom = QtWidgets.QHBoxLayout()
         hbox_zoom.addWidget(zoom_button)
         hbox_zoom.addWidget(self.n_to_zoom_input)
 
@@ -223,11 +226,11 @@ class TriangulateWidget(QtGui.QWidget):
         name_it_button.clicked.connect(self.set_image_name)
         zoom_button.clicked.connect(self.zoom_n_fragments)
 
-        export_button = QtGui.QPushButton('Export', self)
-        export_all_button = QtGui.QPushButton('Export all', self)
-        delete_button = QtGui.QPushButton('Delete', self)
-        clear_button = QtGui.QPushButton('Clear', self)
-        undo_button = QtGui.QPushButton('Undo', self)
+        export_button = QtWidgets.QPushButton('Export', self)
+        export_all_button = QtWidgets.QPushButton('Export all', self)
+        delete_button = QtWidgets.QPushButton('Delete', self)
+        clear_button = QtWidgets.QPushButton('Clear', self)
+        undo_button = QtWidgets.QPushButton('Undo', self)
 
         export_button.clicked.connect(self.export_image)
         export_all_button.clicked.connect(self.export_all)
@@ -235,15 +238,15 @@ class TriangulateWidget(QtGui.QWidget):
         clear_button.clicked.connect(self.clear_image)
         undo_button.clicked.connect(self.remove_last_point)
 
-        self.left_button = QtGui.QPushButton(QtGui.QIcon('gui/left.png'), '', self)
-        self.right_button = QtGui.QPushButton(QtGui.QIcon('gui/right.png'), '', self)
-        self.up_button = QtGui.QPushButton(QtGui.QIcon('gui/up.png'), '', self)
-        self.down_button = QtGui.QPushButton(QtGui.QIcon('gui/down.png'), '', self)
-        self.px_shift_input = QtGui.QLineEdit('0', self)
+        self.left_button = QtWidgets.QPushButton(QtGui.QIcon('gui/left.png'), '', self)
+        self.right_button = QtWidgets.QPushButton(QtGui.QIcon('gui/right.png'), '', self)
+        self.up_button = QtWidgets.QPushButton(QtGui.QIcon('gui/up.png'), '', self)
+        self.down_button = QtWidgets.QPushButton(QtGui.QIcon('gui/down.png'), '', self)
+        self.px_shift_input = QtWidgets.QLineEdit('0', self)
 
-        self.rot_clockwise_button = QtGui.QPushButton(QtGui.QIcon('gui/rot_right.png'), '', self)
-        self.rot_counter_clockwise_button = QtGui.QPushButton(QtGui.QIcon('gui/rot_left.png'), '', self)
-        self.rot_angle_input = QtGui.QLineEdit('0.0', self)
+        self.rot_clockwise_button = QtWidgets.QPushButton(QtGui.QIcon('gui/rot_right.png'), '', self)
+        self.rot_counter_clockwise_button = QtWidgets.QPushButton(QtGui.QIcon('gui/rot_left.png'), '', self)
+        self.rot_angle_input = QtWidgets.QLineEdit('0.0', self)
 
         self.px_shift_input.setFixedWidth(60)
         self.rot_angle_input.setFixedWidth(60)
@@ -263,18 +266,18 @@ class TriangulateWidget(QtGui.QWidget):
         self.rot_counter_clockwise_button.setFixedWidth(60)
         self.rot_clockwise_button.setFixedWidth(60)
 
-        self.apply_button = QtGui.QPushButton('Apply changes', self)
-        self.reset_button = QtGui.QPushButton('Reset', self)
+        self.apply_button = QtWidgets.QPushButton('Apply changes', self)
+        self.reset_button = QtWidgets.QPushButton('Reset', self)
         self.apply_button.clicked.connect(self.apply_changes)
         self.reset_button.clicked.connect(self.reset_changes)
 
         self.disable_manual_panel()
 
-        self.manual_mode_checkbox = QtGui.QCheckBox('Manual mode', self)
+        self.manual_mode_checkbox = QtWidgets.QCheckBox('Manual mode', self)
         self.manual_mode_checkbox.setChecked(False)
         self.manual_mode_checkbox.clicked.connect(self.create_backup_image)
 
-        grid_manual = QtGui.QGridLayout()
+        grid_manual = QtWidgets.QGridLayout()
         grid_manual.addWidget(self.left_button, 2, 1)
         grid_manual.addWidget(self.right_button, 2, 3)
         grid_manual.addWidget(self.up_button, 1, 2)
@@ -289,21 +292,21 @@ class TriangulateWidget(QtGui.QWidget):
         grid_manual.addWidget(self.rot_angle_input, 2, 6)
         grid_manual.addWidget(self.rot_clockwise_button, 2, 7)
 
-        self.shift_radio_button = QtGui.QRadioButton('Shift', self)
-        self.rot_radio_button = QtGui.QRadioButton('Rot', self)
+        self.shift_radio_button = QtWidgets.QRadioButton('Shift', self)
+        self.rot_radio_button = QtWidgets.QRadioButton('Rot', self)
         self.shift_radio_button.setChecked(True)
 
-        shift_rot_group = QtGui.QButtonGroup(self)
+        shift_rot_group = QtWidgets.QButtonGroup(self)
         shift_rot_group.addButton(self.shift_radio_button)
         shift_rot_group.addButton(self.rot_radio_button)
 
-        alignButton = QtGui.QPushButton('Align', self)
-        warpButton = QtGui.QPushButton('Warp', self)
-        magnify_button = QtGui.QPushButton('Magnify', self)
-        reshift_button = QtGui.QPushButton('Re-Shift', self)
-        rerot_button = QtGui.QPushButton('Re-Rot', self)
-        remag_button = QtGui.QPushButton('Re-Mag', self)
-        rewarp_button = QtGui.QPushButton('Re-Warp', self)
+        alignButton = QtWidgets.QPushButton('Align', self)
+        warpButton = QtWidgets.QPushButton('Warp', self)
+        magnify_button = QtWidgets.QPushButton('Magnify', self)
+        reshift_button = QtWidgets.QPushButton('Re-Shift', self)
+        rerot_button = QtWidgets.QPushButton('Re-Rot', self)
+        remag_button = QtWidgets.QPushButton('Re-Mag', self)
+        rewarp_button = QtWidgets.QPushButton('Re-Warp', self)
 
         alignButton.clicked.connect(self.align_images)
         warpButton.clicked.connect(partial(self.warp_image, False))
@@ -313,104 +316,104 @@ class TriangulateWidget(QtGui.QWidget):
         remag_button.clicked.connect(self.remagnify)
         rewarp_button.clicked.connect(self.rewarp)
 
-        holo_no_ref_1_button = QtGui.QPushButton('FFT', self)
-        holo_no_ref_2_button = QtGui.QPushButton('Holo', self)
-        holo_with_ref_2_button = QtGui.QPushButton('Holo+Ref', self)
-        holo_no_ref_3_button = QtGui.QPushButton('IFFT', self)
+        holo_no_ref_1_button = QtWidgets.QPushButton('FFT', self)
+        holo_no_ref_2_button = QtWidgets.QPushButton('Holo', self)
+        holo_with_ref_2_button = QtWidgets.QPushButton('Holo+Ref', self)
+        holo_no_ref_3_button = QtWidgets.QPushButton('IFFT', self)
 
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
         holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
         holo_no_ref_3_button.clicked.connect(self.rec_holo_no_ref_3)
 
-        hbox_holo = QtGui.QHBoxLayout()
+        hbox_holo = QtWidgets.QHBoxLayout()
         hbox_holo.addWidget(holo_no_ref_2_button)
         hbox_holo.addWidget(holo_with_ref_2_button)
 
-        self.show_lines_checkbox = QtGui.QCheckBox('Show lines', self)
+        self.show_lines_checkbox = QtWidgets.QCheckBox('Show lines', self)
         self.show_lines_checkbox.setChecked(True)
         self.show_lines_checkbox.toggled.connect(self.toggle_lines)
 
-        self.show_labels_checkbox = QtGui.QCheckBox('Show labels', self)
+        self.show_labels_checkbox = QtWidgets.QCheckBox('Show labels', self)
         self.show_labels_checkbox.setChecked(True)
         self.show_labels_checkbox.toggled.connect(self.toggle_labels)
 
-        self.log_scale_checkbox = QtGui.QCheckBox('Log scale', self)
+        self.log_scale_checkbox = QtWidgets.QCheckBox('Log scale', self)
         self.log_scale_checkbox.setChecked(False)
         self.log_scale_checkbox.toggled.connect(self.update_display)
 
-        unwrap_button = QtGui.QPushButton('Unwrap phase', self)
-        wrap_button = QtGui.QPushButton('Wrap phase', self)
+        unwrap_button = QtWidgets.QPushButton('Unwrap phase', self)
+        wrap_button = QtWidgets.QPushButton('Wrap phase', self)
 
         unwrap_button.clicked.connect(self.unwrap_img_phase)
         wrap_button.clicked.connect(self.wrap_img_phase)
 
-        self.amp_radio_button = QtGui.QRadioButton('Amplitude', self)
-        self.phs_radio_button = QtGui.QRadioButton('Phase', self)
+        self.amp_radio_button = QtWidgets.QRadioButton('Amplitude', self)
+        self.phs_radio_button = QtWidgets.QRadioButton('Phase', self)
         self.amp_radio_button.setChecked(True)
 
         self.amp_radio_button.toggled.connect(self.update_display)
         self.phs_radio_button.toggled.connect(self.update_display)
 
-        amp_phs_group = QtGui.QButtonGroup(self)
+        amp_phs_group = QtWidgets.QButtonGroup(self)
         amp_phs_group.addButton(self.amp_radio_button)
         amp_phs_group.addButton(self.phs_radio_button)
 
-        self.gray_radio_button = QtGui.QRadioButton('Grayscale', self)
-        self.color_radio_button = QtGui.QRadioButton('Color', self)
+        self.gray_radio_button = QtWidgets.QRadioButton('Grayscale', self)
+        self.color_radio_button = QtWidgets.QRadioButton('Color', self)
         self.gray_radio_button.setChecked(True)
 
         self.gray_radio_button.toggled.connect(self.update_display)
         self.color_radio_button.toggled.connect(self.update_display)
 
-        color_group = QtGui.QButtonGroup(self)
+        color_group = QtWidgets.QButtonGroup(self)
         color_group.addButton(self.gray_radio_button)
         color_group.addButton(self.color_radio_button)
 
-        fname_label = QtGui.QLabel('File name', self)
-        self.fname_input = QtGui.QLineEdit(self.display.image.name, self)
+        fname_label = QtWidgets.QLabel('File name', self)
+        self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
         self.fname_input.setFixedWidth(150)
 
-        aperture_label = QtGui.QLabel('Aperture [px]', self)
-        self.aperture_input = QtGui.QLineEdit(str(const.aperture), self)
+        aperture_label = QtWidgets.QLabel('Aperture [px]', self)
+        self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
 
-        hann_win_label = QtGui.QLabel('Hann window [px]', self)
-        self.hann_win_input = QtGui.QLineEdit(str(const.hann_win), self)
+        hann_win_label = QtWidgets.QLabel('Hann window [px]', self)
+        self.hann_win_input = QtWidgets.QLineEdit(str(const.hann_win), self)
 
-        sum_button = QtGui.QPushButton('Sum', self)
-        diff_button = QtGui.QPushButton('Diff', self)
+        sum_button = QtWidgets.QPushButton('Sum', self)
+        diff_button = QtWidgets.QPushButton('Diff', self)
 
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
 
-        amp_factor_label = QtGui.QLabel('Amp. factor', self)
-        self.amp_factor_input = QtGui.QLineEdit('2.0', self)
+        amp_factor_label = QtWidgets.QLabel('Amp. factor', self)
+        self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
 
-        amplify_button = QtGui.QPushButton('Amplify', self)
+        amplify_button = QtWidgets.QPushButton('Amplify', self)
         amplify_button.clicked.connect(self.amplify_phase)
 
-        int_width_label = QtGui.QLabel('Profile width [px]', self)
-        self.int_width_input = QtGui.QLineEdit('1', self)
+        int_width_label = QtWidgets.QLabel('Profile width [px]', self)
+        self.int_width_input = QtWidgets.QLineEdit('1', self)
 
-        plot_button = QtGui.QPushButton('Plot profile', self)
+        plot_button = QtWidgets.QPushButton('Plot profile', self)
         plot_button.clicked.connect(self.plot_profile)
 
-        sample_thick_label = QtGui.QLabel('Sample thickness [nm]', self)
-        self.sample_thick_input = QtGui.QLineEdit('30', self)
+        sample_thick_label = QtWidgets.QLabel('Sample thickness [nm]', self)
+        self.sample_thick_input = QtWidgets.QLineEdit('30', self)
 
-        calc_B_button = QtGui.QPushButton('Calculate B', self)
-        calc_grad_button = QtGui.QPushButton('Calculate gradient', self)
+        calc_B_button = QtWidgets.QPushButton('Calculate B', self)
+        calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
 
         calc_B_button.clicked.connect(self.calc_magnetic_field)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
 
-        threshold_label = QtGui.QLabel('Int. threshold [0-1]', self)
-        self.threshold_input = QtGui.QLineEdit('0.9', self)
+        threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
+        self.threshold_input = QtWidgets.QLineEdit('0.9', self)
 
-        filter_contours_button = QtGui.QPushButton('Filter contours', self)
+        filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         filter_contours_button.clicked.connect(self.filter_contours)
 
-        grid_nav = QtGui.QGridLayout()
+        grid_nav = QtWidgets.QGridLayout()
         grid_nav.addWidget(prev_button, 0, 0)
         grid_nav.addWidget(next_button, 0, 1)
         grid_nav.addWidget(lswap_button, 1, 0)
@@ -422,7 +425,7 @@ class TriangulateWidget(QtGui.QWidget):
         grid_nav.addLayout(hbox_name, 4, 0)
         grid_nav.addWidget(undo_button, 4, 1)
 
-        grid_disp = QtGui.QGridLayout()
+        grid_disp = QtWidgets.QGridLayout()
         grid_disp.setColumnStretch(0, 0)
         grid_disp.setColumnStretch(1, 0)
         grid_disp.setColumnStretch(2, 0)
@@ -440,17 +443,17 @@ class TriangulateWidget(QtGui.QWidget):
         grid_disp.addWidget(export_button, 2, 3)
         grid_disp.addWidget(export_all_button, 3, 3)
 
-        vbox_sh_rot_rb = QtGui.QVBoxLayout()
+        vbox_sh_rot_rb = QtWidgets.QVBoxLayout()
         vbox_sh_rot_rb.addWidget(self.shift_radio_button)
         vbox_sh_rot_rb.addWidget(self.rot_radio_button)
 
-        vbox_sh_rot_bt = QtGui.QVBoxLayout()
+        vbox_sh_rot_bt = QtWidgets.QVBoxLayout()
         vbox_sh_rot_bt.addWidget(reshift_button)
         vbox_sh_rot_bt.addWidget(rerot_button)
 
         alignButton.setFixedHeight(50)
 
-        grid_align = QtGui.QGridLayout()
+        grid_align = QtWidgets.QGridLayout()
         grid_align.setColumnStretch(1, 1)
         grid_align.setColumnStretch(2, 1)
         grid_align.addLayout(vbox_sh_rot_rb, 0, 0)
@@ -461,7 +464,7 @@ class TriangulateWidget(QtGui.QWidget):
         grid_align.addWidget(remag_button, 1, 2)
         grid_align.addWidget(rewarp_button, 2, 2)
 
-        grid_holo = QtGui.QGridLayout()
+        grid_holo = QtWidgets.QGridLayout()
         grid_holo.addWidget(aperture_label, 0, 0)
         grid_holo.addWidget(self.aperture_input, 1, 0)
         grid_holo.addWidget(hann_win_label, 0, 1)
@@ -475,7 +478,7 @@ class TriangulateWidget(QtGui.QWidget):
         grid_holo.addWidget(self.amp_factor_input, 1, 2)
         grid_holo.addWidget(amplify_button, 2, 2)
 
-        grid_plot = QtGui.QGridLayout()
+        grid_plot = QtWidgets.QGridLayout()
         grid_plot.addWidget(sample_thick_label, 0, 0)
         grid_plot.addWidget(self.sample_thick_input, 1, 0)
         grid_plot.addWidget(calc_grad_button, 2, 0)
@@ -487,7 +490,7 @@ class TriangulateWidget(QtGui.QWidget):
         grid_plot.addWidget(self.threshold_input, 1, 2)
         grid_plot.addWidget(filter_contours_button, 2, 2)
 
-        vbox_panel = QtGui.QVBoxLayout()
+        vbox_panel = QtWidgets.QVBoxLayout()
         vbox_panel.addLayout(grid_nav)
         vbox_panel.addStretch(1)
         vbox_panel.addLayout(grid_disp)
@@ -500,11 +503,11 @@ class TriangulateWidget(QtGui.QWidget):
         vbox_panel.addStretch(1)
         vbox_panel.addLayout(grid_plot)
 
-        hbox_panel = QtGui.QHBoxLayout()
+        hbox_panel = QtWidgets.QHBoxLayout()
         hbox_panel.addWidget(self.display)
         hbox_panel.addLayout(vbox_panel)
 
-        vbox_main = QtGui.QVBoxLayout()
+        vbox_main = QtWidgets.QVBoxLayout()
         vbox_main.addLayout(hbox_panel)
         vbox_main.addWidget(self.plot_widget)
         self.setLayout(vbox_main)
@@ -1519,7 +1522,7 @@ def RReplace(text, old, new, occurence):
 # --------------------------------------------------------
 
 def RunTriangulationWindow():
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     trWindow = TriangulateWidget()
     sys.exit(app.exec_())
 

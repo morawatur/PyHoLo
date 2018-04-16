@@ -2,7 +2,7 @@ import numpy as np
 
 import Constants as const
 import CrossCorr as cc
-import Dm3Reader3_New as dm3
+import Dm3Reader3 as dm3
 import ImageSupport as imsup
 
 #-------------------------------------------------------------------
