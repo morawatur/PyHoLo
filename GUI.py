@@ -1343,16 +1343,16 @@ def LoadImageSeriesFromFirstFile(imgPath):
         print('Reading file "' + imgPath + '"')
         imgData, pxDims = dm3.ReadDm3File(imgPath)
         imsup.Image.px_dim_default = pxDims[0]
-        # imgData = np.abs(imgData)
+        imgData = np.abs(imgData)
         img = imsup.ImageWithBuffer(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'], imsup.Image.mem['CPU'],
                                     num=imgNum, px_dim_sz=pxDims[0])
-        # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
-        img.LoadAmpData(imgData.astype(np.float32))
-        img.amPh.ph = np.copy(img.amPh.am)
+        img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
+        # img.LoadAmpData(imgData.astype(np.float32))
+        # img.amPh.ph = np.copy(img.amPh.am)
         # ---
-        # imsup.RemovePixelArtifacts(img, const.minPxThreshold, const.maxPxThreshold)
-        # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
-        # img.UpdateBuffer()
+        imsup.RemovePixelArtifacts(img, const.minPxThreshold, const.maxPxThreshold)
+        imsup.RemovePixelArtifacts(img, 0.7, 1.3)
+        img.UpdateBuffer()
         # ---
         imgList.append(img)
 
