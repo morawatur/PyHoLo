@@ -1315,10 +1315,15 @@ class TriangulateWidget(QtWidgets.QWidget):
             img_cropped.amPh.ph += ph_fix
             int_matrix = np.copy(img_cropped.amPh.ph)
         else:
+            cos_ph_min = np.min(img_cropped.cos_phase)
+            cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
+            img_cropped.cos_phase += cos_ph_fix
             int_matrix = np.copy(img_cropped.cos_phase)
+        print(int_matrix)
         int_profile = np.sum(int_matrix, proj_dir)  # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
         dists *= 1e9
+        print('wat2')
 
         self.plot_widget.plot(dists, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
 
