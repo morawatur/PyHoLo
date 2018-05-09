@@ -40,8 +40,6 @@ def RotateImageSki(img, angle, mode='constant'):
     img_rot = imsup.ImageWithBuffer(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_rot.LoadAmpData(amp_rot_rescaled)
     img_rot.LoadPhsData(phs_rot_rescaled)
-    if img.cos_phase is not None:
-        img_rot.update_cos_phase()
 
     img.ChangeMemoryType(mt)
     img.ChangeComplexRepr(dt)
@@ -87,8 +85,6 @@ def RescaleImageSki(img, factor):
     img_mag = imsup.ImageWithBuffer(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_mag.LoadAmpData(amp_mag_rescaled)
     img_mag.LoadPhsData(phs_mag_rescaled)
-    if img.cos_phase is not None:
-        img_mag.update_cos_phase()
 
     img.ChangeMemoryType(mt)
     img.ChangeComplexRepr(dt)
@@ -136,8 +132,6 @@ def WarpImage(img, src_set, dst_set):
     img_warp = imsup.ImageWithBuffer(amp_warp.shape[0], amp_warp.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_warp.LoadAmpData(amp_warp_rescaled)
     img_warp.LoadPhsData(phs_warp_rescaled)
-    if img.cos_phase is not None:
-        img_warp.update_cos_phase()
 
     img.ChangeMemoryType(mt)
     img.ChangeComplexRepr(dt)
@@ -148,7 +142,6 @@ def WarpImage(img, src_set, dst_set):
 
 #-------------------------------------------------------------------
 
-# deprecated function
 def RotateAndMagnifyWrapper(img, todo='mr', factor=1.0, angle=0.0):
     mt = img.memType
     dt = img.cmpRepr

@@ -65,19 +65,15 @@ class LabelExt(QtWidgets.QLabel):
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
 
-    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False):
+    def setImage(self, dispAmp=True, logScale=False, color=False):
         self.image.MoveToCPU()
 
         if dispAmp:
             self.image.buffer = np.copy(self.image.amPh.am)
             if logScale:
                 self.image.buffer = np.log(self.image.buffer)
-        elif dispPhs:
-            self.image.buffer = np.copy(self.image.amPh.ph)
         else:
-            if self.image.cos_phase is None:
-                self.image.update_cos_phase()
-            self.image.buffer = np.copy(self.image.cos_phase)
+            self.image.buffer = np.copy(self.image.amPh.ph)
 
         q_image = QtGui.QImage(imsup.ScaleImage(self.image.buffer, 0.0, 255.0).astype(np.uint8),
                                self.image.width, self.image.height, QtGui.QImage.Format_Indexed8)
@@ -100,7 +96,7 @@ class LabelExt(QtWidgets.QLabel):
         self.setPixmap(pixmap)
         self.repaint()
 
-    def changeImage(self, toNext=True, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True, color=False):
+    def changeImage(self, toNext=True, dispAmp=True, logScale=False, dispLabs=True, color=False):
         newImage = self.image.next if toNext else self.image.prev
         if newImage is None:
             return
@@ -110,7 +106,7 @@ class LabelExt(QtWidgets.QLabel):
 
         if len(self.pointSets) < self.image.numInSeries:
             self.pointSets.append([])
-        self.setImage(dispAmp, dispPhs, logScale, color)
+        self.setImage(dispAmp, logScale, color)
 
         labsToDel = self.children()
         for child in labsToDel:
@@ -179,9 +175,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         super(TriangulateWidget, self).__init__()
         file_dialog = QtWidgets.QFileDialog()
         image_path = file_dialog.getOpenFileName()[0]
-        if image_path == '':
-            print('No images to read. Exiting...')
-            exit()
         image = LoadImageSeriesFromFirstFile(image_path)
         self.display = LabelExt(self, image)
         self.plot_widget = PlotWidget()
@@ -349,25 +342,22 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(False)
         self.log_scale_checkbox.toggled.connect(self.update_display)
 
-        unwrap_button = QtWidgets.QPushButton('Unwrap', self)
-        wrap_button = QtWidgets.QPushButton('Wrap', self)
+        unwrap_button = QtWidgets.QPushButton('Unwrap phase', self)
+        wrap_button = QtWidgets.QPushButton('Wrap phase', self)
 
         unwrap_button.clicked.connect(self.unwrap_img_phase)
         wrap_button.clicked.connect(self.wrap_img_phase)
 
         self.amp_radio_button = QtWidgets.QRadioButton('Amplitude', self)
         self.phs_radio_button = QtWidgets.QRadioButton('Phase', self)
-        self.cos_phs_radio_button = QtWidgets.QRadioButton('Phase cosine', self)
         self.amp_radio_button.setChecked(True)
 
         self.amp_radio_button.toggled.connect(self.update_display)
         self.phs_radio_button.toggled.connect(self.update_display)
-        self.cos_phs_radio_button.toggled.connect(self.update_display)
 
         amp_phs_group = QtWidgets.QButtonGroup(self)
         amp_phs_group.addButton(self.amp_radio_button)
         amp_phs_group.addButton(self.phs_radio_button)
-        amp_phs_group.addButton(self.cos_phs_radio_button)
 
         self.gray_radio_button = QtWidgets.QRadioButton('Grayscale', self)
         self.color_radio_button = QtWidgets.QRadioButton('Color', self)
@@ -379,14 +369,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         color_group = QtWidgets.QButtonGroup(self)
         color_group.addButton(self.gray_radio_button)
         color_group.addButton(self.color_radio_button)
-
-        hbox_unwrap_gray = QtWidgets.QHBoxLayout()
-        hbox_unwrap_gray.addWidget(unwrap_button)
-        hbox_unwrap_gray.addWidget(self.gray_radio_button)
-
-        hbox_wrap_color = QtWidgets.QHBoxLayout()
-        hbox_wrap_color.addWidget(wrap_button)
-        hbox_wrap_color.addWidget(self.color_radio_button)
 
         fname_label = QtWidgets.QLabel('File name', self)
         self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
@@ -431,9 +413,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         filter_contours_button.clicked.connect(self.filter_contours)
 
-        norm_phase_button = QtWidgets.QPushButton('Normalize phase', self)
-        norm_phase_button.clicked.connect(self.norm_phase)
-
         grid_nav = QtWidgets.QGridLayout()
         grid_nav.addWidget(prev_button, 0, 0)
         grid_nav.addWidget(next_button, 0, 1)
@@ -455,14 +434,14 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_disp.addWidget(self.log_scale_checkbox, 3, 0)
         grid_disp.addWidget(self.amp_radio_button, 1, 1)
         grid_disp.addWidget(self.phs_radio_button, 2, 1)
-        grid_disp.addWidget(self.cos_phs_radio_button, 3, 1)
-        grid_disp.addLayout(hbox_unwrap_gray, 1, 2)
-        grid_disp.addLayout(hbox_wrap_color, 2, 2)
-        grid_disp.addWidget(norm_phase_button, 3, 2)
-        grid_disp.addWidget(fname_label, 0, 4)
-        grid_disp.addWidget(self.fname_input, 1, 4)
-        grid_disp.addWidget(export_button, 2, 4)
-        grid_disp.addWidget(export_all_button, 3, 4)
+        grid_disp.addWidget(self.gray_radio_button, 1, 2)
+        grid_disp.addWidget(self.color_radio_button, 2, 2)
+        grid_disp.addWidget(unwrap_button, 3, 1)
+        grid_disp.addWidget(wrap_button, 3, 2)
+        grid_disp.addWidget(fname_label, 0, 3)
+        grid_disp.addWidget(self.fname_input, 1, 3)
+        grid_disp.addWidget(export_button, 2, 3)
+        grid_disp.addWidget(export_all_button, 3, 3)
 
         vbox_sh_rot_rb = QtWidgets.QVBoxLayout()
         vbox_sh_rot_rb.addWidget(self.shift_radio_button)
@@ -510,7 +489,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_plot.addWidget(threshold_label, 0, 2)
         grid_plot.addWidget(self.threshold_input, 1, 2)
         grid_plot.addWidget(filter_contours_button, 2, 2)
-        # grid_plot.addWidget(norm_phase_button, 3, 1)
 
         vbox_panel = QtWidgets.QVBoxLayout()
         vbox_panel.addLayout(grid_nav)
@@ -570,7 +548,6 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def go_to_prev_image(self):
         is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_show_labels_checked = self.show_labels_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
@@ -579,12 +556,10 @@ class TriangulateWidget(QtWidgets.QWidget):
             self.fname_input.setText(self.display.image.prev.name)
             self.manual_mode_checkbox.setChecked(False)
             self.disable_manual_panel()
-        self.display.changeImage(toNext=False, dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                                 logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
+        self.display.changeImage(toNext=False, dispAmp=is_amp_checked, logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
 
     def go_to_next_image(self):
         is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_show_labels_checked = self.show_labels_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
@@ -593,8 +568,7 @@ class TriangulateWidget(QtWidgets.QWidget):
             self.fname_input.setText(self.display.image.next.name)
             self.manual_mode_checkbox.setChecked(False)
             self.disable_manual_panel()
-        self.display.changeImage(toNext=True, dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                                 logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
+        self.display.changeImage(toNext=True, dispAmp=is_amp_checked, logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
 
     def flip_image_h(self):
         imsup.flip_image_h(self.display.image)
@@ -604,7 +578,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr_num = self.display.image.numInSeries
         fname = self.fname_input.text()
         is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
 
         log = True if self.log_scale_checkbox.isChecked() else False
         color = True if self.color_radio_button.isChecked() else False
@@ -612,16 +585,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         if fname == '':
             fname = 'amp{0}'.format(curr_num) if is_amp_checked else 'phs{0}'.format(curr_num)
 
-        curr_img = self.display.image
         if is_amp_checked:
-            imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), log, color)
-        elif is_phs_checked:
-            imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
+            imsup.SaveAmpImage(self.display.image, '{0}.png'.format(fname), log, color)
         else:
-            phs_tmp = np.copy(curr_img.amPh.ph)
-            curr_img.amPh.ph = np.cos(phs_tmp)
-            imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
-            curr_img.amPh.ph = np.copy(phs_tmp)
+            imsup.SavePhaseImage(self.display.image, '{0}.png'.format(fname), log, color)
         print('Saved image as "{0}.png"'.format(fname))
 
     def export_all(self):
@@ -679,10 +646,9 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def update_display(self):
         is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
-        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked, logScale=is_log_scale_checked, color=is_color_checked)
+        self.display.setImage(dispAmp=is_amp_checked, logScale=is_log_scale_checked, color=is_color_checked)
 
     def unwrap_img_phase(self):
         curr_img = self.display.image
@@ -700,24 +666,6 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         curr_img.amPh.ph = np.copy(new_phs)
         self.update_display()
-
-    def norm_phase(self):
-        curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-        if len(self.display.pointSets[curr_idx]) == 0:
-            print('Mark the reference point on the image')
-            return
-        pt_disp = self.display.pointSets[curr_idx][0]
-        pt_real = CalcRealTLCoords(curr_img.width, pt_disp)
-
-        first_img = imsup.GetFirstImage(curr_img)
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
-        for img in img_list:
-            new_phs = norm_phase_to_pt(img.amPh.ph, pt_real)
-            img.amPh.ph = np.copy(new_phs)
-            img.update_cos_phase()
-        self.update_display()
-        print('All phases normalized')
 
     def zoom_n_fragments(self):
         curr_idx = self.display.image.numInSeries - 1
@@ -1222,10 +1170,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         amp_factor = float(self.amp_factor_input.text())
 
         phs_amplified = imsup.copy_am_ph_image(curr_img)
-        phs_amplified.amPh.ph *= amp_factor
-        phs_amplified.update_cos_phase()
+        phs_amplified.amPh.ph = np.cos(amp_factor * curr_img.amPh.ph)
         self.insert_img_after_curr(phs_amplified)
-        self.cos_phs_radio_button.setChecked(True)
 
     def swap_left(self):
         curr_img = self.display.image
@@ -1309,13 +1255,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         # calculate projection of intensity
         if self.amp_radio_button.isChecked():
             int_matrix = np.copy(img_cropped.amPh.am)
-        elif self.phs_radio_button.isChecked():
+        else:
             ph_min = np.min(img_cropped.amPh.ph)
             ph_fix = -ph_min if ph_min < 0 else 0
             img_cropped.amPh.ph += ph_fix
             int_matrix = np.copy(img_cropped.amPh.ph)
-        else:
-            int_matrix = np.copy(img_cropped.cos_phase)
         int_profile = np.sum(int_matrix, proj_dir)  # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
         dists *= 1e9
@@ -1402,13 +1346,13 @@ def LoadImageSeriesFromFirstFile(imgPath):
         imgData = np.abs(imgData)
         img = imsup.ImageWithBuffer(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'], imsup.Image.mem['CPU'],
                                     num=imgNum, px_dim_sz=pxDims[0])
-        # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
-        img.LoadAmpData(imgData.astype(np.float32))
+        img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
+        # img.LoadAmpData(imgData.astype(np.float32))
         # img.amPh.ph = np.copy(img.amPh.am)
         # ---
-        # imsup.RemovePixelArtifacts(img, const.minPxThreshold, const.maxPxThreshold)
-        # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
-        # img.UpdateBuffer()
+        imsup.RemovePixelArtifacts(img, const.minPxThreshold, const.maxPxThreshold)
+        imsup.RemovePixelArtifacts(img, 0.7, 1.3)
+        img.UpdateBuffer()
         # ---
         imgList.append(img)
 
@@ -1446,13 +1390,6 @@ def modify_image(img, mod=list([0, 0]), is_shift=True):
         mod_img = tr.RotateImageSki(img, mod[0])
 
     return mod_img
-
-# --------------------------------------------------------
-
-def norm_phase_to_pt(phase, pt):
-    y, x = pt
-    phase_norm = phase - phase[y, x]
-    return phase_norm
 
 # --------------------------------------------------------
 

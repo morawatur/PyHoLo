@@ -69,23 +69,6 @@ def MultAmPhMatrices_dev(am1, ph1, am2, ph2, amRes, phRes):
 
 #-------------------------------------------------------------------
 
-def cos_dev_wrapper(arr):
-    blockDim, gridDim = ccfg.DetermineCudaConfig(arr.shape[0])
-    cos_arr = cuda.to_device(np.zeros(arr.shape, dtype=np.float32))
-    cos_dev[gridDim, blockDim](arr, cos_arr)
-    return cos_arr
-
-#-------------------------------------------------------------------
-
-@cuda.jit('void(float32[:, :], float32[:, :])')
-def cos_dev(arr, cos_arr):
-    x, y = cuda.grid(2)
-    if x >= arr.shape[0] or y >= arr.shape[1]:
-        return
-    cos_arr[x, y] = math.cos(arr[x, y])
-
-#-------------------------------------------------------------------
-
 class Image:
     cmp = {'CRI': 0, 'CAP': 1}
     capVar = {'AM': 0, 'PH': 1}
@@ -197,7 +180,6 @@ class ImageWithBuffer(Image):
         self.parent = super(ImageWithBuffer, self)
         self.shift = [0, 0]
         self.rot = 0
-        self.cos_phase = None
         if self.memType == self.mem['CPU']:
             self.buffer = np.zeros(self.amPh.am.shape, dtype=np.float32)
         else:
@@ -207,7 +189,6 @@ class ImageWithBuffer(Image):
         super(ImageWithBuffer, self).__del__()
         # del self.buffer
         self.buffer = None
-        self.cos_phase = None
         # cuda.current_context().deallocations.clear()
 
     def LoadAmpData(self, ampData):
@@ -235,8 +216,6 @@ class ImageWithBuffer(Image):
             return
         super(ImageWithBuffer, self).MoveToGPU()
         self.buffer = cuda.to_device(self.buffer)
-        if self.cos_phase is not None:
-            self.cos_phase = cuda.to_device(self.cos_phase)
 
     def MoveToCPU(self):
         if self.memType == self.mem['CPU']:
@@ -246,22 +225,12 @@ class ImageWithBuffer(Image):
         self.buffer = None
         # cuda.current_context().deallocations.clear()
         self.buffer = np.copy(buf)
-        if self.cos_phase is not None:
-            cos_phs = self.cos_phase.copy_to_host()
-            self.cos_phase = None
-            self.cos_phase = np.copy(cos_phs)
 
     def ReIm2AmPh(self):
         if self.cmpRepr == self.cmp['CAP']:
             return
         super(ImageWithBuffer, self).ReIm2AmPh()
         self.UpdateBuffer()
-
-    def update_cos_phase(self):
-        if self.memType == self.mem['CPU']:
-            self.cos_phase = np.cos(self.amPh.ph)
-        else:
-            self.cos_phase = cos_dev_wrapper(self.amPh.ph)
 
 #-------------------------------------------------------------------
 
@@ -346,8 +315,6 @@ def ScaleImage(img, newMin, newMax):
     # currMin = np.delete(img, np.argwhere(img==0)).min()
     currMin = img.min()
     currMax = img.max()
-    if currMin == currMax:
-        return img
     imgScaled = (img - currMin) * (newMax - newMin) / (currMax - currMin) + newMin
     return imgScaled
 
@@ -429,38 +396,34 @@ def grayscale_to_rgb(gs_arr):
 #-------------------------------------------------------------------
 
 def DisplayAmpImage(img, log=False):
-    mt = img.memType
-    img.MoveToCPU()
+    img.MoveToCPU()  # !!!
     imgToDisp = PrepareImageToDisplay(img, Image.capVar['AM'], log)
+    img.MoveToGPU()
     imgToDisp.show()
-    img.ChangeMemoryType(mt)
 
 # -------------------------------------------------------------------
 
 def SaveAmpImage(img, fPath, log=False, color=False):
-    mt = img.memType
-    img.MoveToCPU()
+    img.MoveToCPU()     # !!!
     imgToSave = PrepareImageToDisplay(img, Image.capVar['AM'], log, color)
+    img.MoveToGPU()
     imgToSave.save(fPath)
-    img.ChangeMemoryType(mt)
 
 #-------------------------------------------------------------------
 
 def DisplayPhaseImage(img, log=False):
-    mt = img.memType
-    img.MoveToCPU()
+    img.MoveToCPU()  # !!!
     imgToDisp = PrepareImageToDisplay(img, Image.capVar['PH'], log)
+    img.MoveToGPU()
     imgToDisp.show()
-    img.ChangeMemoryType(mt)
 
 # -------------------------------------------------------------------
 
 def SavePhaseImage(img, fPath, log=False, color=False):
-    mt = img.memType
-    img.MoveToCPU()
+    img.MoveToCPU()     # !!!
     imgToSave = PrepareImageToDisplay(img, Image.capVar['PH'], log, color)
+    img.MoveToGPU()
     imgToSave.save(fPath)
-    img.ChangeMemoryType(mt)
 
 # -------------------------------------------------------------------
 
@@ -493,9 +456,6 @@ def crop_am_ph_roi_cpu(img, coords):
     roi.amPh.am[:] = img.amPh.am[coords[1]:coords[3], coords[0]:coords[2]]
     roi.amPh.ph[:] = img.amPh.ph[coords[1]:coords[3], coords[0]:coords[2]]
     roi.UpdateBuffer()
-
-    if img.cos_phase is not None:
-        roi.update_cos_phase()
     return roi
 
 # -------------------------------------------------------------------
