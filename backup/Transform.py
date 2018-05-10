@@ -37,7 +37,7 @@ def RotateImageSki(img, angle, mode='constant'):
     else:
         phs_rot_rescaled = np.copy(phs_rot)
 
-    img_rot = imsup.ImageWithBuffer(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries)
+    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_rot.LoadAmpData(amp_rot_rescaled)
     img_rot.LoadPhsData(phs_rot_rescaled)
 
@@ -82,7 +82,7 @@ def RescaleImageSki(img, factor):
     else:
         phs_mag_rescaled = np.copy(phs_mag)
 
-    img_mag = imsup.ImageWithBuffer(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries)
+    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_mag.LoadAmpData(amp_mag_rescaled)
     img_mag.LoadPhsData(phs_mag_rescaled)
 
@@ -129,7 +129,7 @@ def WarpImage(img, src_set, dst_set):
     else:
         phs_warp_rescaled = np.copy(phs_warp)
 
-    img_warp = imsup.ImageWithBuffer(amp_warp.shape[0], amp_warp.shape[1], defocus=img.defocus, num=img.numInSeries)
+    img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], defocus=img.defocus, num=img.numInSeries)
     img_warp.LoadAmpData(amp_warp_rescaled)
     img_warp.LoadPhsData(phs_warp_rescaled)
 
@@ -158,7 +158,7 @@ def RotateAndMagnifyWrapper(img, todo='mr', factor=1.0, angle=0.0):
         ampMod = tr.rescale(ampMod, scale=factor).astype(np.float32)
 
     ampModRescaled = imsup.ScaleImage(ampMod, limits[0], limits[1])
-    imgMod = imsup.ImageWithBuffer(ampMod.shape[0], ampMod.shape[1], defocus=img.defocus, num=img.numInSeries)
+    imgMod = imsup.ImageExp(ampMod.shape[0], ampMod.shape[1], defocus=img.defocus, num=img.numInSeries)
     imgMod.LoadAmpData(ampModRescaled)
 
     img.ChangeMemoryType(mt)

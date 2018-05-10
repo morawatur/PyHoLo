@@ -1405,8 +1405,8 @@ def LoadImageSeriesFromFirstFile(imgPath):
         imgData, pxDims = dm3.ReadDm3File(imgPath)
         imsup.Image.px_dim_default = pxDims[0]
         imgData = np.abs(imgData)
-        img = imsup.ImageWithBuffer(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'], imsup.Image.mem['CPU'],
-                                    num=imgNum, px_dim_sz=pxDims[0])
+        img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'], imsup.Image.mem['CPU'],
+                             num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
         # img.amPh.ph = np.copy(img.amPh.am)
@@ -1623,7 +1623,7 @@ def trace_contour(arr, xy):
     for idxs in contour:
         cont_arr[idxs[0], idxs[1]] = 1
 
-    # cont_img = imsup.ImageWithBuffer(cont_arr.shape[0], cont_arr.shape[1])
+    # cont_img = imsup.ImageExp(cont_arr.shape[0], cont_arr.shape[1])
     # cont_img.LoadAmpData(cont_arr)
     # imsup.DisplayAmpImage(cont_img)
 

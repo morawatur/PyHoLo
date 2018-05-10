@@ -54,7 +54,7 @@ def mult_by_hann_window(img, N=100):
     hann = np.hanning(N)
     hann_2d = np.sqrt(np.outer(hann, hann))
 
-    hann_win = imsup.ImageWithBuffer(N, N)
+    hann_win = imsup.ImageExp(N, N)
     hann_win.LoadAmpData(hann_2d)
     # imsup.SaveAmpImage(hann_win, 'hann.png')
 
@@ -138,7 +138,7 @@ def calc_phase_sum(img1, img2):
     img1.MoveToCPU()
     img2.MoveToCPU()
 
-    phs_sum = imsup.ImageWithBuffer(img1.height, img1.width)
+    phs_sum = imsup.ImageExp(img1.height, img1.width)
     phs_sum.amPh.am = img1.amPh.am * img2.amPh.am
     phs_sum.amPh.ph = img1.amPh.ph + img2.amPh.ph
     return phs_sum
@@ -149,7 +149,7 @@ def calc_phase_diff(img1, img2):
     img1.MoveToCPU()
     img2.MoveToCPU()
 
-    phs_diff = imsup.ImageWithBuffer(img1.height, img1.width)
+    phs_diff = imsup.ImageExp(img1.height, img1.width)
     phs_diff.amPh.am = img1.amPh.am * img2.amPh.am
     phs_diff.amPh.ph = img1.amPh.ph - img2.amPh.ph
     return phs_diff
@@ -160,7 +160,7 @@ def read_dm3_file(fpath):
     img_data, px_dims = dm3.ReadDm3File(fpath)
     imsup.Image.px_dim_default = px_dims[0]
 
-    holo_img = imsup.ImageWithBuffer(img_data.shape[0], img_data.shape[1])
+    holo_img = imsup.ImageExp(img_data.shape[0], img_data.shape[1])
     holo_img.LoadAmpData(np.sqrt(img_data).astype(np.float32))
 
     return holo_img

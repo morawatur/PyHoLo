@@ -191,10 +191,10 @@ class Image:
 
 # -------------------------------------------------------------------
 
-class ImageWithBuffer(Image):
+class ImageExp(Image):
     def __init__(self, height, width, cmpRepr=Image.cmp['CAP'], memType=Image.mem['CPU'], defocus=0.0, num=1, px_dim_sz=-1.0):
-        super(ImageWithBuffer, self).__init__(height, width, cmpRepr, memType, defocus, num, px_dim_sz)
-        self.parent = super(ImageWithBuffer, self)
+        super(ImageExp, self).__init__(height, width, cmpRepr, memType, defocus, num, px_dim_sz)
+        self.parent = super(ImageExp, self)
         self.shift = [0, 0]
         self.rot = 0
         self.cos_phase = None
@@ -204,7 +204,7 @@ class ImageWithBuffer(Image):
             self.buffer = cuda.to_device(np.zeros(self.amPh.am.shape, dtype=np.float32))
 
     def __del__(self):
-        super(ImageWithBuffer, self).__del__()
+        super(ImageExp, self).__del__()
         # del self.buffer
         self.buffer = None
         self.cos_phase = None
@@ -233,7 +233,7 @@ class ImageWithBuffer(Image):
     def MoveToGPU(self):
         if self.memType == self.mem['GPU']:
             return
-        super(ImageWithBuffer, self).MoveToGPU()
+        super(ImageExp, self).MoveToGPU()
         self.buffer = cuda.to_device(self.buffer)
         if self.cos_phase is not None:
             self.cos_phase = cuda.to_device(self.cos_phase)
@@ -241,7 +241,7 @@ class ImageWithBuffer(Image):
     def MoveToCPU(self):
         if self.memType == self.mem['CPU']:
             return
-        super(ImageWithBuffer, self).MoveToCPU()
+        super(ImageExp, self).MoveToCPU()
         buf = self.buffer.copy_to_host()
         self.buffer = None
         # cuda.current_context().deallocations.clear()
@@ -254,7 +254,7 @@ class ImageWithBuffer(Image):
     def ReIm2AmPh(self):
         if self.cmpRepr == self.cmp['CAP']:
             return
-        super(ImageWithBuffer, self).ReIm2AmPh()
+        super(ImageExp, self).ReIm2AmPh()
         self.UpdateBuffer()
 
     def update_cos_phase(self):
@@ -279,7 +279,7 @@ class ImageList(list):
 #-------------------------------------------------------------------
 
 def am_ph_2_re_im_cpu(img):
-    img_ri = ImageWithBuffer(img.height, img.width, cmpRepr=Image.cmp['CRI'])
+    img_ri = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CRI'])
     if img.cmpRepr == Image.cmp['CRI']:
         img_ri.reIm = np.copy(img.reIm)
     else:
@@ -289,7 +289,7 @@ def am_ph_2_re_im_cpu(img):
 # ---------------------------------------------------------------
 
 def re_im_2_am_ph_cpu(img):
-    img_ap = ImageWithBuffer(img.height, img.width, cmpRepr=Image.cmp['CAP'])
+    img_ap = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CAP'])
     if img.cmpRepr == Image.cmp['CAP']:
         img_ap.amPh.am = np.copy(img.amPh.am)
         img_ap.amPh.ph = np.copy(img.amPh.ph)
@@ -335,7 +335,7 @@ def FileToImage(fPath):
     import Dm3Reader3 as dm3
     imgData = dm3.ReadDm3File(fPath)
     imgMatrix = PrepareImageMatrix(imgData, const.dimSize)
-    img = ImageWithBuffer(const.dimSize, const.dimSize, Image.cmp['CAP'], Image.mem['CPU'])
+    img = ImageExp(const.dimSize, const.dimSize, Image.cmp['CAP'], Image.mem['CPU'])
     img.amPh.am = np.sqrt(imgMatrix).astype(np.float32)
     img.UpdateBuffer()
     return img
@@ -470,7 +470,7 @@ def crop_am_ph_roi(img, coords):
 
     roi_h = coords[3] - coords[1]
     roi_w = coords[2] - coords[0]
-    roi = ImageWithBuffer(roi_h, roi_w, img.cmpRepr, img.memType)
+    roi = ImageExp(roi_h, roi_w, img.cmpRepr, img.memType)
     top_left_d = cuda.to_device(np.array(coords[:2], dtype=np.int32))
 
     block_dim, grid_dim = ccfg.DetermineCudaConfigNew((roi_h, roi_w))
@@ -488,7 +488,7 @@ def crop_am_ph_roi_cpu(img, coords):
 
     roi_h = coords[3] - coords[1]
     roi_w = coords[2] - coords[0]
-    roi = ImageWithBuffer(roi_h, roi_w, img.cmpRepr, img.memType)
+    roi = ImageExp(roi_h, roi_w, img.cmpRepr, img.memType)
 
     roi.amPh.am[:] = img.amPh.am[coords[1]:coords[3], coords[0]:coords[2]]
     roi.amPh.ph[:] = img.amPh.ph[coords[1]:coords[3], coords[0]:coords[2]]
@@ -778,7 +778,7 @@ def ClearImageData(img):
 
 def copy_re_im_image(img):
     img.MoveToCPU()
-    img_copy = ImageWithBuffer(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
     img_copy.reIm = np.copy(img.amPh.reIm)
 
     if img.prev is not None:
@@ -792,7 +792,7 @@ def copy_re_im_image(img):
 
 def copy_am_ph_image(img):
     img.MoveToCPU()
-    img_copy = ImageWithBuffer(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
     img_copy.amPh.am = np.copy(img.amPh.am)
     img_copy.amPh.ph = np.copy(img.amPh.ph)
 
@@ -811,7 +811,7 @@ def CopyImage(img):
     img.AmPh2ReIm()
     img.MoveToCPU()
 
-    imgCopy = ImageWithBuffer(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
+    imgCopy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
     imgCopy.reIm = np.copy(img.reIm)
 
     if img.prev is not None:
@@ -892,7 +892,7 @@ def PadImage(img, bufSz, padValue, dirs):
     img.ReIm2AmPh()
     img.MoveToCPU()
 
-    imgPadded = ImageWithBuffer(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
+    imgPadded = ImageExp(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
     PadArray(img.amPh.am, imgPadded.amPh.am, pads, padValue)
     PadArray(img.amPh.ph, imgPadded.amPh.ph, pads, padValue)
 
@@ -913,7 +913,7 @@ def pad_img_from_ref(img, ref_width, pad_value, dirs):
     p_height = img.height + pads[0] + pads[1]
     p_width = img.width + pads[2] + pads[3]
 
-    padded_img = ImageWithBuffer(p_height, p_width, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
+    padded_img = ImageExp(p_height, p_width, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
     PadArray(img.amPh.am, padded_img.amPh.am, pads, pad_value)
     PadArray(img.amPh.ph, padded_img.amPh.ph, pads, pad_value)
 
@@ -933,7 +933,7 @@ def PadImageBufferToNx512(img, padValue):
     img.ReIm2AmPh()
     img.MoveToCPU()
 
-    imgPadded = ImageWithBuffer(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
+    imgPadded = ImageExp(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
     imgPadded.buffer[ltPadding:pHeight-rbPadding, ltPadding:pWidth-rbPadding] = img.buffer
     imgPadded.buffer[0:ltPadding, :] = padValue
     imgPadded.buffer[pHeight-rbPadding:pHeight, :] = padValue

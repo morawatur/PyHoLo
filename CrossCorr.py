@@ -15,7 +15,7 @@ def FFT(img):
     dt = img.cmpRepr
     img.MoveToGPU()
     img.AmPh2ReIm()
-    fft = imsup.Image(img.height, img.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
+    fft = imsup.ImageExp(img.height, img.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
     cufft.fft(img.reIm, fft.reIm)
     img.ChangeComplexRepr(dt)
     img.ChangeMemoryType(mt)
@@ -28,7 +28,7 @@ def IFFT(fft):
     dt = fft.cmpRepr
     fft.MoveToGPU()
     fft.AmPh2ReIm()
-    ifft = imsup.Image(fft.height, fft.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
+    ifft = imsup.ImageExp(fft.height, fft.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
     cufft.ifft(fft.reIm, ifft.reIm)
     fft.ChangeComplexRepr(dt)
     fft.ChangeMemoryType(mt)
@@ -41,7 +41,7 @@ def FFT2Diff(fft):
     dt = fft.cmpRepr
     fft.MoveToGPU()
     fft.AmPh2ReIm()
-    diff = imsup.Image(fft.height, fft.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
+    diff = imsup.ImageExp(fft.height, fft.width, imsup.Image.cmp['CRI'], imsup.Image.mem['GPU'])
     blockDim, gridDim = ccfg.DetermineCudaConfig(fft.width)
     FFT2Diff_dev[gridDim, blockDim](fft.reIm, diff.reIm, fft.width)
     diff.defocus = fft.defocus
@@ -282,7 +282,7 @@ def shift_am_ph_image(img, shift):
     mt = img.memType
     img.MoveToGPU()
 
-    img_shifted = imsup.ImageWithBuffer(img.height, img.width, img.cmpRepr, img.memType)
+    img_shifted = imsup.ImageExp(img.height, img.width, img.cmpRepr, img.memType)
     shift_d = cuda.to_device(np.array(shift))
 
     blockDim, gridDim = ccfg.DetermineCudaConfigNew(img.amPh.am.shape)
