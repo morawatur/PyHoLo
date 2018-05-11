@@ -71,7 +71,9 @@ class LabelExt(QtWidgets.QLabel):
         if dispAmp:
             self.image.buffer = np.copy(self.image.amPh.am)
             if logScale:
-                self.image.buffer = np.log(self.image.buffer)
+                buf = self.image.buffer
+                buf[np.where(buf <= 0)] = 1e-5
+                self.image.buffer = np.log(buf)
         elif dispPhs:
             self.image.buffer = np.copy(self.image.amPh.ph)
         else:
