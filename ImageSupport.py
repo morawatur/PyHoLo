@@ -827,18 +827,18 @@ def CopyImage(img):
 
 #-------------------------------------------------------------------
 
-def create_imgbuf_from_img(img):
-    img_buf = copy_am_ph_image(img)
-    img_buf.UpdateBuffer()
-    return img_buf
+def create_imgexp_from_img(img):
+    img_exp = copy_am_ph_image(img)
+    img_exp.UpdateBuffer()
+    return img_exp
 
 #-------------------------------------------------------------------
 
-def CreateImageWithBufferFromImage(img):
-    imgWithBuff = CopyImage(img)
-    imgWithBuff.ReIm2AmPh()
-    imgWithBuff.UpdateBuffer()
-    return imgWithBuff
+def CreateImageExpFromImage(img):
+    img_exp = CopyImage(img)
+    img_exp.ReIm2AmPh()
+    img_exp.UpdateBuffer()
+    return img_exp
 
 #-------------------------------------------------------------------
 
@@ -970,7 +970,7 @@ def RotateImage(img, deltaPhi):
     blockDim, gridDim = ccfg.DetermineCudaConfigNew(imgRotated.amPh.am.shape)
     InterpolateMissingPixels_dev[gridDim, blockDim](imgRotated.amPh.am, filled)
 
-    imgRotated = CreateImageWithBufferFromImage(imgRotated)
+    imgRotated = CreateImageExpFromImage(imgRotated)
     img.ChangeMemoryType(mt)
     return imgRotated
 

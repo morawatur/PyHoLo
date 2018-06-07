@@ -171,6 +171,7 @@ class PlotWidget(QtWidgets.QWidget):
             self.markedPoints = []
             self.markedPointsData = []
         pt, = plt.plot(event.xdata, event.ydata, 'ro')
+        print(event.xdata, event.ydata)
         self.markedPoints.append(pt)
         self.markedPointsData.append([event.xdata, event.ydata])
 
@@ -1217,15 +1218,18 @@ class TriangulateWidget(QtWidgets.QWidget):
         rec_holo2 = self.display.image
 
         phs_diff = holo.calc_phase_diff(rec_holo1, rec_holo2)
+        np.savetxt('ph_diff', phs_diff.amPh.ph)     # !!!
         self.insert_img_after_curr(phs_diff)
 
     def amplify_phase(self):
         curr_img = self.display.image
+        curr_name = self.name_input.text()
         amp_factor = float(self.amp_factor_input.text())
 
         phs_amplified = imsup.copy_am_ph_image(curr_img)
         phs_amplified.amPh.ph *= amp_factor
         phs_amplified.update_cos_phase()
+        phs_amplified.name = '{0}_x{1:.0f}'.format(curr_name, amp_factor)
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
 
@@ -1349,18 +1353,19 @@ class TriangulateWidget(QtWidgets.QWidget):
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
         d_phase = np.abs(pt1[1] - pt2[1])
+        print('{0:.2f} rad'.format(d_phase))
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        B_in_plane = (const.planck_const / sample_thickness) * (d_phase / d_dist)
+        B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
         print('B = {0:.2f} T'.format(B_in_plane))
 
     def filter_contours(self):
         curr_img = self.display.image
-        phs = np.copy(curr_img.amPh.ph)
-        phs_scaled = imsup.ScaleImage(phs, 0, 1)
+        conts = np.copy(curr_img.cos_phase)
+        conts_scaled = imsup.ScaleImage(conts, 0, 1)
         threshold = float(self.threshold_input.text())
-        phs_scaled[phs_scaled < threshold] = 0
+        conts_scaled[conts_scaled < threshold] = 0
         img_filtered = imsup.copy_am_ph_image(curr_img)
-        img_filtered.amPh.ph = np.copy(phs_scaled)
+        img_filtered.cos_phase = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
         # find_contours(self.display.image)
 

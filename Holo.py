@@ -90,7 +90,7 @@ def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_w
 def rec_holo_no_ref_3(sband_img):
     sband_img = cc.Diff2FFT(sband_img)
     rec_holo = cc.IFFT(sband_img)
-    rec_holo = imsup.CreateImageWithBufferFromImage(rec_holo)
+    rec_holo = imsup.CreateImageExpFromImage(rec_holo)
     return rec_holo
 
 #-------------------------------------------------------------------
@@ -129,7 +129,7 @@ def rec_holo_no_ref(holo_img, rec_sz=128, ap_sz=32, mask_sz=50, N_hann=100):
 
     # imsup.SaveAmpImage(rec_holo_resc, 'amp.png')
     # imsup.SavePhaseImage(rec_holo_resc, 'phs.png')
-    rec_holo = imsup.CreateImageWithBufferFromImage(rec_holo)
+    rec_holo = imsup.CreateImageExpFromImage(rec_holo)
     return rec_holo
 
 #-------------------------------------------------------------------
