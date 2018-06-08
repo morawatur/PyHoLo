@@ -26,6 +26,9 @@ class LabelExt(QtWidgets.QLabel):
         self.pointSets = [[]]
         self.show_lines = True
         self.show_labs = True
+        self.gain = 0.0
+        self.bias = 0.0
+        self.gamma = 0.0
         # while image.next is not None:
         #    self.pointSets.append([])
 
@@ -89,7 +92,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
 
-    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False):
+    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, brightness=0, contrast=100, gamma=100):
         self.image.MoveToCPU()
 
         if dispAmp:
@@ -105,8 +108,18 @@ class LabelExt(QtWidgets.QLabel):
                 self.image.update_cos_phase()
             self.image.buffer = np.copy(self.image.cos_phase)
 
-        q_image = QtGui.QImage(imsup.ScaleImage(self.image.buffer, 0.0, 255.0).astype(np.uint8),
-                               self.image.width, self.image.height, QtGui.QImage.Format_Indexed8)
+        contrast *= 0.01
+        gamma *= 0.01
+        print(brightness, contrast, gamma)
+        buf_tmp = self.image.buffer ** gamma
+        buf_scaled = imsup.ScaleImage(buf_tmp, 0.0, 255.0)
+        # buf_scaled **= gamma
+        buf_scaled *= contrast
+        buf_scaled += brightness
+        buf_scaled[buf_scaled > 255.0] = 255.0
+        buf_scaled[buf_scaled < 0.0] = 0.0
+
+        q_image = QtGui.QImage(buf_scaled.astype(np.uint8), self.image.width, self.image.height, QtGui.QImage.Format_Indexed8)
 
         if color:
             step = 6
@@ -539,6 +552,45 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_plot.addWidget(filter_contours_button, 2, 2)
         # grid_plot.addWidget(norm_phase_button, 3, 1)
 
+        # ----
+
+        bright_label = QtWidgets.QLabel('Brightness', self)
+        cont_label = QtWidgets.QLabel('Contrast', self)
+        gamma_label = QtWidgets.QLabel('Gamma', self)
+
+        self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.bright_slider.setFixedHeight(14)
+        self.bright_slider.setRange(-255, 255)
+        self.bright_slider.setValue(0)
+
+        self.cont_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.cont_slider.setFixedHeight(14)
+        self.cont_slider.setRange(10, 310)
+        self.cont_slider.setValue(100)
+
+        self.gamma_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.gamma_slider.setFixedHeight(14)
+        self.gamma_slider.setRange(50, 150)
+        self.gamma_slider.setValue(100)
+
+        self.bright_slider.valueChanged.connect(self.update_display)
+        self.cont_slider.valueChanged.connect(self.update_display)
+        self.gamma_slider.valueChanged.connect(self.update_display)
+
+        vbox_bright = QtWidgets.QVBoxLayout()
+        vbox_bright.addWidget(bright_label)
+        vbox_bright.addWidget(self.bright_slider)
+
+        vbox_contrast = QtWidgets.QVBoxLayout()
+        vbox_contrast.addWidget(cont_label)
+        vbox_contrast.addWidget(self.cont_slider)
+
+        vbox_gamma = QtWidgets.QVBoxLayout()
+        vbox_gamma.addWidget(gamma_label)
+        vbox_gamma.addWidget(self.gamma_slider)
+
+        # ----
+
         vbox_panel = QtWidgets.QVBoxLayout()
         vbox_panel.addLayout(grid_nav)
         vbox_panel.addStretch(1)
@@ -551,49 +603,16 @@ class TriangulateWidget(QtWidgets.QWidget):
         vbox_panel.addLayout(grid_holo)
         vbox_panel.addStretch(1)
         vbox_panel.addLayout(grid_plot)
+        vbox_panel.addStretch(1)
+        vbox_panel.addLayout(vbox_bright)
+        vbox_panel.addStretch(1)
+        vbox_panel.addLayout(vbox_contrast)
+        vbox_panel.addStretch(1)
+        vbox_panel.addLayout(vbox_gamma)
 
         hbox_panel = QtWidgets.QHBoxLayout()
         hbox_panel.addWidget(self.display)
         hbox_panel.addLayout(vbox_panel)
-
-        bright_label = QtWidgets.QLabel('Brightness', self)
-        cont_label = QtWidgets.QLabel('Contrast', self)
-        gamma_label = QtWidgets.QLabel('Gamma', self)
-
-        # ----
-
-        # self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        # self.bright_slider.setFixedHeight(14)
-        # self.bright_slider.setRange(0.0, 100.0)
-        # self.bright_slider.setValue(50.0)
-        #
-        # self.cont_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        # self.cont_slider.setFixedHeight(14)
-        # self.cont_slider.setRange(1.0, 100.0)
-        # self.cont_slider.setValue(50.0)
-        #
-        # self.gamma_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        # self.gamma_slider.setFixedHeight(14)
-        # self.gamma_slider.setRange(50.0, 150.0)
-        # self.gamma_slider.setValue(100.0)
-        #
-        # self.bright_slider.valueChanged.connect(self.img_view.correct_image)
-        # self.cont_slider.valueChanged.connect(self.img_view.correct_image)
-        # self.gamma_slider.valueChanged.connect(self.img_view.correct_image)
-        #
-        # vbox_bright = QtWidgets.QVBoxLayout()
-        # vbox_bright.addWidget(bright_label)
-        # vbox_bright.addWidget(self.bright_slider)
-        #
-        # vbox_contrast = QtWidgets.QVBoxLayout()
-        # vbox_contrast.addWidget(cont_label)
-        # vbox_contrast.addWidget(self.cont_slider)
-        #
-        # vbox_gamma = QtWidgets.QVBoxLayout()
-        # vbox_gamma.addWidget(gamma_label)
-        # vbox_gamma.addWidget(self.gamma_slider)
-
-        # ----
 
         vbox_main = QtWidgets.QVBoxLayout()
         vbox_main.addLayout(hbox_panel)
@@ -748,7 +767,12 @@ class TriangulateWidget(QtWidgets.QWidget):
         is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
-        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked, logScale=is_log_scale_checked, color=is_color_checked)
+        bright_val = self.bright_slider.value()
+        cont_val = self.cont_slider.value()
+        gamma_val = self.gamma_slider.value()
+        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
+                              logScale=is_log_scale_checked, color=is_color_checked,
+                              brightness=bright_val, contrast=cont_val, gamma=gamma_val)
 
     def unwrap_img_phase(self):
         curr_img = self.display.image
