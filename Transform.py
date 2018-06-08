@@ -5,6 +5,12 @@ from skimage.restoration import unwrap_phase
 
 #-------------------------------------------------------------------
 
+def rescale_pixel_dim(px_dim, old_dim, new_dim):
+    resc_factor = new_dim / old_dim
+    return px_dim * resc_factor
+
+#-------------------------------------------------------------------
+
 def RotateImageSki(img, angle, mode='constant'):
     mt = img.memType
     dt = img.cmpRepr
@@ -37,11 +43,15 @@ def RotateImageSki(img, angle, mode='constant'):
     else:
         phs_rot_rescaled = np.copy(phs_rot)
 
-    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries)
+    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries, px_dim_sz=img.px_dim)
     img_rot.LoadAmpData(amp_rot_rescaled)
     img_rot.LoadPhsData(phs_rot_rescaled)
     if img.cos_phase is not None:
         img_rot.update_cos_phase()
+
+    # resc_factor = img_rot.width / img.width
+    # img_rot.px_dim *= resc_factor
+    img_rot.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_rot.width)
 
     img.ChangeMemoryType(mt)
     img.ChangeComplexRepr(dt)
@@ -84,11 +94,15 @@ def RescaleImageSki(img, factor):
     else:
         phs_mag_rescaled = np.copy(phs_mag)
 
-    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries)
+    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries, px_dim_sz=img.px_dim)
     img_mag.LoadAmpData(amp_mag_rescaled)
     img_mag.LoadPhsData(phs_mag_rescaled)
     if img.cos_phase is not None:
         img_mag.update_cos_phase()
+
+    # resc_factor = img_mag.width / img.width
+    # img_mag.px_dim *= resc_factor
+    img_mag.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_mag.width)
 
     img.ChangeMemoryType(mt)
     img.ChangeComplexRepr(dt)

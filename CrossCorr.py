@@ -282,7 +282,7 @@ def shift_am_ph_image(img, shift):
     mt = img.memType
     img.MoveToGPU()
 
-    img_shifted = imsup.ImageExp(img.height, img.width, img.cmpRepr, img.memType)
+    img_shifted = imsup.ImageExp(img.height, img.width, img.cmpRepr, img.memType, px_dim_sz=img.px_dim)
     shift_d = cuda.to_device(np.array(shift))
 
     blockDim, gridDim = ccfg.DetermineCudaConfigNew(img.amPh.am.shape)

@@ -41,16 +41,40 @@ class LabelExt(QtWidgets.QLabel):
         imgIdx = self.image.numInSeries - 1
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.yellow)
+
         for pt in self.pointSets[imgIdx]:
             # rect = QtCore.QRect(pt[0]-3, pt[1]-3, 7, 7)
             # qp.drawArc(rect, 0, 16*360)
             qp.drawEllipse(pt[0]-3, pt[1]-3, 7, 7)
+
         if self.show_lines:
             linePen.setWidth(2)
             qp.setPen(linePen)
             for pt1, pt2 in zip(self.pointSets[imgIdx], self.pointSets[imgIdx][1:] + self.pointSets[imgIdx][:1]):
                 line = QtCore.QLine(pt1[0], pt1[1], pt2[0], pt2[1])
                 qp.drawLine(line)
+
+        linePen.setStyle(QtCore.Qt.DashLine)
+        linePen.setColor(QtCore.Qt.yellow)
+        qp.setPen(linePen)
+        qp.setBrush(QtCore.Qt.NoBrush)
+        if len(self.pointSets[imgIdx]) == 2:
+            pt1, pt2 = self.pointSets[imgIdx]
+            w = np.abs(pt2[0] - pt1[0])
+            h = np.abs(pt2[1] - pt1[1])
+            rect = QtCore.QRect(pt1[0], pt1[1], w, h)
+            qp.drawRect(rect)
+            sq_coords = imsup.MakeSquareCoords(pt1 + pt2)
+            sq_pt1 = sq_coords[:2]
+            sq_pt2 = sq_coords[2:]
+            sq_pt1.reverse()
+            sq_pt2.reverse()
+            w = np.abs(sq_pt2[0]-sq_pt1[0])
+            h = np.abs(sq_pt2[1]-sq_pt1[1])
+            square = QtCore.QRect(sq_pt1[0], sq_pt1[1], w, h)
+            linePen.setColor(QtCore.Qt.red)
+            qp.setPen(linePen)
+            qp.drawRect(square)
         qp.end()
 
     def mouseReleaseEvent(self, QMouseEvent):
@@ -532,6 +556,45 @@ class TriangulateWidget(QtWidgets.QWidget):
         hbox_panel.addWidget(self.display)
         hbox_panel.addLayout(vbox_panel)
 
+        bright_label = QtWidgets.QLabel('Brightness', self)
+        cont_label = QtWidgets.QLabel('Contrast', self)
+        gamma_label = QtWidgets.QLabel('Gamma', self)
+
+        # ----
+
+        # self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        # self.bright_slider.setFixedHeight(14)
+        # self.bright_slider.setRange(0.0, 100.0)
+        # self.bright_slider.setValue(50.0)
+        #
+        # self.cont_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        # self.cont_slider.setFixedHeight(14)
+        # self.cont_slider.setRange(1.0, 100.0)
+        # self.cont_slider.setValue(50.0)
+        #
+        # self.gamma_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        # self.gamma_slider.setFixedHeight(14)
+        # self.gamma_slider.setRange(50.0, 150.0)
+        # self.gamma_slider.setValue(100.0)
+        #
+        # self.bright_slider.valueChanged.connect(self.img_view.correct_image)
+        # self.cont_slider.valueChanged.connect(self.img_view.correct_image)
+        # self.gamma_slider.valueChanged.connect(self.img_view.correct_image)
+        #
+        # vbox_bright = QtWidgets.QVBoxLayout()
+        # vbox_bright.addWidget(bright_label)
+        # vbox_bright.addWidget(self.bright_slider)
+        #
+        # vbox_contrast = QtWidgets.QVBoxLayout()
+        # vbox_contrast.addWidget(cont_label)
+        # vbox_contrast.addWidget(self.cont_slider)
+        #
+        # vbox_gamma = QtWidgets.QVBoxLayout()
+        # vbox_gamma.addWidget(gamma_label)
+        # vbox_gamma.addWidget(self.gamma_slider)
+
+        # ----
+
         vbox_main = QtWidgets.QVBoxLayout()
         vbox_main.addLayout(hbox_panel)
         vbox_main.addWidget(self.plot_widget)
@@ -735,14 +798,15 @@ class TriangulateWidget(QtWidgets.QWidget):
         n_to_zoom = np.int(self.n_to_zoom_input.text())
         img_list = imsup.CreateImageListFromFirstImage(curr_img)
         img_list2 = img_list[:n_to_zoom]
-        print(len(img_list2))
-        idx1 = curr_img.numInSeries + n_to_zoom
-        idx2 = idx1 + n_to_zoom
-        for img, n in zip(img_list2, range(idx1, idx2)):
+
+        for img, n in zip(img_list2, range(n_to_zoom, 2*n_to_zoom)):
             frag = zoom_fragment(img, real_crop_coords)
             img_list.insert(n, frag)
 
         img_list.UpdateLinks()
+        for i in range(n_to_zoom):
+            self.go_to_next_image()
+        print('Zooming done!')
 
     def clear_image(self):
         labToDel = self.display.children()
@@ -888,8 +952,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         img1Rc = cc.shift_am_ph_image(img1Pad, rcShift)
         img2Rc = cc.shift_am_ph_image(img2Pad, rcShift)
 
-        img1Rc = imsup.create_imgbuf_from_img(img1Rc)
-        img2Rc = imsup.create_imgbuf_from_img(img2Rc)
+        img1Rc = imsup.create_imgexp_from_img(img1Rc)
+        img2Rc = imsup.create_imgexp_from_img(img2Rc)
 
         rotAngles = []
         for idx, p1, p2 in zip(range(n_points1), poly1, poly2):
@@ -954,7 +1018,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.shift = shift_avg
 
         shifted_img2 = cc.shift_am_ph_image(curr_img, shift_avg)
-        shifted_img2 = imsup.create_imgbuf_from_img(shifted_img2)
+        shifted_img2 = imsup.create_imgexp_from_img(shifted_img2)
         self.insert_img_after_curr(shifted_img2)
 
     def reshift(self):
@@ -963,14 +1027,14 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         if self.shift_radio_button.isChecked():
             shifted_img = cc.shift_am_ph_image(curr_img, shift)
-            shifted_img = imsup.create_imgbuf_from_img(shifted_img)
+            shifted_img = imsup.create_imgexp_from_img(shifted_img)
             self.insert_img_after_curr(shifted_img)
         else:
             bufSz = max([abs(x) for x in shift])
             dirs = 'tblr'
             padded_img = imsup.PadImage(curr_img, bufSz, 0.0, dirs)
             shifted_img = cc.shift_am_ph_image(padded_img, shift)
-            shifted_img = imsup.create_imgbuf_from_img(shifted_img)
+            shifted_img = imsup.create_imgexp_from_img(shifted_img)
 
             resc_factor = curr_img.width / padded_img.width
             resc_img = tr.RescaleImageSki(shifted_img, resc_factor)
@@ -1249,7 +1313,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         imgs.UpdateLinks()
 
         ps = self.display.pointSets
-        ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
+        if len(ps[curr_idx-1]) > 0:
+            ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
         self.go_to_next_image()
 
     def swap_right(self):
@@ -1268,7 +1333,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         imgs.UpdateLinks()
 
         ps = self.display.pointSets
-        ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
+        if len(ps[curr_idx]) > 0:
+            ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
         self.go_to_prev_image()
 
     def plot_profile(self):
@@ -1353,9 +1419,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
         d_phase = np.abs(pt1[1] - pt2[1])
-        print('{0:.2f} rad'.format(d_phase))
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
+        print('{0:.1f} nm'.format(d_dist))
+        print('{0:.2f} rad'.format(d_phase))
         print('B = {0:.2f} T'.format(B_in_plane))
 
     def filter_contours(self):
@@ -1438,7 +1505,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
 
 def zoom_fragment(img, coords):
     crop_img = imsup.crop_am_ph_roi(img, coords)
-    crop_img = imsup.create_imgbuf_from_img(crop_img)
+    crop_img = imsup.create_imgexp_from_img(crop_img)
     crop_img.MoveToCPU()
 
     orig_width = img.width

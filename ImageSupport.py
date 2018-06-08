@@ -792,7 +792,8 @@ def copy_re_im_image(img):
 
 def copy_am_ph_image(img):
     img.MoveToCPU()
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType, defocus=img.defocus, num=img.numInSeries)
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, memType=img.memType,
+                        defocus=img.defocus, num=img.numInSeries, px_dim_sz=img.px_dim)
     img_copy.amPh.am = np.copy(img.amPh.am)
     img_copy.amPh.ph = np.copy(img.amPh.ph)
 
@@ -892,9 +893,12 @@ def PadImage(img, bufSz, padValue, dirs):
     img.ReIm2AmPh()
     img.MoveToCPU()
 
-    imgPadded = ImageExp(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries)
+    imgPadded = ImageExp(pHeight, pWidth, img.cmpRepr, img.memType, img.defocus, img.numInSeries, px_dim_sz=img.px_dim)
     PadArray(img.amPh.am, imgPadded.amPh.am, pads, padValue)
     PadArray(img.amPh.ph, imgPadded.amPh.ph, pads, padValue)
+
+    resc_factor = pWidth / img.width
+    imgPadded.px_dim *= resc_factor
 
     img.ChangeMemoryType(mt)
     return imgPadded
