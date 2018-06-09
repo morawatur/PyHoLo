@@ -18,6 +18,21 @@ import matplotlib.pyplot as plt
 
 # --------------------------------------------------------
 
+class RgbColorTable:
+    def __init__(self):
+        step = 6
+        inc_range = np.arange(0, 256, step)
+        dec_range = np.arange(255, -1, -step)
+        bcm1 = [QtGui.qRgb(0, i, 255) for i in inc_range]
+        gcm1 = [QtGui.qRgb(0, 255, i) for i in dec_range]
+        gcm2 = [QtGui.qRgb(i, 255, 0) for i in inc_range]
+        rcm1 = [QtGui.qRgb(255, i, 0) for i in dec_range]
+        rcm2 = [QtGui.qRgb(255, 0, i) for i in inc_range]
+        bcm2 = [QtGui.qRgb(i, 0, 255) for i in dec_range]
+        self.cm = bcm1 + gcm1 + gcm2 + rcm1 + rcm2 + bcm2
+
+# --------------------------------------------------------
+
 class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
         super(LabelExt, self).__init__(parent)
@@ -29,8 +44,7 @@ class LabelExt(QtWidgets.QLabel):
         self.gain = 0.0
         self.bias = 0.0
         self.gamma = 0.0
-        # while image.next is not None:
-        #    self.pointSets.append([])
+        self.rgb_cm = RgbColorTable()
 
     # prowizorka - stałe liczbowe do poprawy
     def paintEvent(self, event):
@@ -92,7 +106,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
 
-    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, brightness=0, contrast=100, gamma=100):
+    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
         self.image.MoveToCPU()
 
         if dispAmp:
@@ -108,31 +122,16 @@ class LabelExt(QtWidgets.QLabel):
                 self.image.update_cos_phase()
             self.image.buffer = np.copy(self.image.cos_phase)
 
-        contrast *= 0.01
-        gamma *= 0.01
-        print(brightness, contrast, gamma)
-        buf_tmp = self.image.buffer ** gamma
-        buf_scaled = imsup.ScaleImage(buf_tmp, 0.0, 255.0)
-        # buf_scaled **= gamma
-        buf_scaled *= contrast
-        buf_scaled += brightness
-        buf_scaled[buf_scaled > 255.0] = 255.0
-        buf_scaled[buf_scaled < 0.0] = 0.0
+        if not update_bcg:
+            buf_scaled = imsup.ScaleImage(self.image.buffer, 0.0, 255.0)
+        else:
+            buf_scaled = update_image_bright_cont_gamma(self.image.buffer, brg=bright, cnt=cont, gam=gamma)
 
+        # final image with all properties set
         q_image = QtGui.QImage(buf_scaled.astype(np.uint8), self.image.width, self.image.height, QtGui.QImage.Format_Indexed8)
 
         if color:
-            step = 6
-            inc_range = np.arange(0, 256, step)
-            dec_range = np.arange(255, -1, -step)
-            bcm1 = [ QtGui.qRgb(0, i, 255) for i in inc_range ]
-            gcm1 = [ QtGui.qRgb(0, 255, i) for i in dec_range ]
-            gcm2 = [ QtGui.qRgb(i, 255, 0) for i in inc_range ]
-            rcm1 = [ QtGui.qRgb(255, i, 0) for i in dec_range ]
-            rcm2 = [ QtGui.qRgb(255, 0, i) for i in inc_range ]
-            bcm2 = [ QtGui.qRgb(i, 0, 255) for i in dec_range ]
-            cm = bcm1 + gcm1 + gcm2 + rcm1 + rcm2 + bcm2
-            q_image.setColorTable(cm)
+            q_image.setColorTable(self.rgb_cm.cm)
 
         pixmap = QtGui.QPixmap(q_image)
         pixmap = pixmap.scaledToWidth(const.ccWidgetDim)
@@ -170,6 +169,18 @@ class LabelExt(QtWidgets.QLabel):
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pt[0] + 4, pt[1] + 4)
             lab.show()
+
+# --------------------------------------------------------
+
+def update_image_bright_cont_gamma(img_src, brg=0, cnt=1, gam=1.0):
+    Imin, Imax = det_Imin_Imax_from_contrast(cnt)
+    img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
+    # img_scaled = np.power(img_scaled, gam)
+    img_scaled **= gam
+    img_scaled += brg
+    img_scaled[img_scaled > 255.0] = 255.0
+    img_scaled[img_scaled < 0.0] = 0.0
+    return img_scaled
 
 # --------------------------------------------------------
 
@@ -565,29 +576,40 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         self.cont_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.cont_slider.setFixedHeight(14)
-        self.cont_slider.setRange(10, 310)
-        self.cont_slider.setValue(100)
+        self.cont_slider.setRange(1, 1785)
+        self.cont_slider.setValue(255)
 
         self.gamma_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.gamma_slider.setFixedHeight(14)
         self.gamma_slider.setRange(50, 150)
         self.gamma_slider.setValue(100)
 
-        self.bright_slider.valueChanged.connect(self.update_display)
-        self.cont_slider.valueChanged.connect(self.update_display)
-        self.gamma_slider.valueChanged.connect(self.update_display)
+        self.bright_slider.valueChanged.connect(self.disp_bright_value)
+        self.cont_slider.valueChanged.connect(self.disp_cont_value)
+        self.gamma_slider.valueChanged.connect(self.disp_gamma_value)
 
-        vbox_bright = QtWidgets.QVBoxLayout()
-        vbox_bright.addWidget(bright_label)
-        vbox_bright.addWidget(self.bright_slider)
+        self.bright_input = QtWidgets.QLineEdit('0', self)
+        self.cont_input = QtWidgets.QLineEdit('255', self)
+        self.gamma_input = QtWidgets.QLineEdit('1.0', self)
 
-        vbox_contrast = QtWidgets.QVBoxLayout()
-        vbox_contrast.addWidget(cont_label)
-        vbox_contrast.addWidget(self.cont_slider)
+        self.bright_input.returnPressed.connect(self.update_display_and_bcg)
+        self.cont_input.returnPressed.connect(self.update_display_and_bcg)
+        self.gamma_input.returnPressed.connect(self.update_display_and_bcg)
 
-        vbox_gamma = QtWidgets.QVBoxLayout()
-        vbox_gamma.addWidget(gamma_label)
-        vbox_gamma.addWidget(self.gamma_slider)
+        update_bcg_button = QtWidgets.QPushButton('Update display', self)
+        update_bcg_button.clicked.connect(self.update_display_and_bcg)
+
+        grid_sliders = QtWidgets.QGridLayout()
+        grid_sliders.addWidget(bright_label, 0, 1)
+        grid_sliders.addWidget(self.bright_slider, 1, 0)
+        grid_sliders.addWidget(self.bright_input, 1, 1)
+        grid_sliders.addWidget(cont_label, 2, 1)
+        grid_sliders.addWidget(self.cont_slider, 3, 0)
+        grid_sliders.addWidget(self.cont_input, 3, 1)
+        grid_sliders.addWidget(gamma_label, 4, 1)
+        grid_sliders.addWidget(self.gamma_slider, 5, 0)
+        grid_sliders.addWidget(self.gamma_input, 5, 1)
+        grid_sliders.addWidget(update_bcg_button, 3, 2)
 
         # ----
 
@@ -604,11 +626,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         vbox_panel.addStretch(1)
         vbox_panel.addLayout(grid_plot)
         vbox_panel.addStretch(1)
-        vbox_panel.addLayout(vbox_bright)
-        vbox_panel.addStretch(1)
-        vbox_panel.addLayout(vbox_contrast)
-        vbox_panel.addStretch(1)
-        vbox_panel.addLayout(vbox_gamma)
+        vbox_panel.addLayout(grid_sliders)
 
         hbox_panel = QtWidgets.QHBoxLayout()
         hbox_panel.addWidget(self.display)
@@ -767,12 +785,65 @@ class TriangulateWidget(QtWidgets.QWidget):
         is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
-        bright_val = self.bright_slider.value()
-        cont_val = self.cont_slider.value()
-        gamma_val = self.gamma_slider.value()
+        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
+                              logScale=is_log_scale_checked, color=is_color_checked)
+
+    def update_display_and_bcg(self):
+        is_amp_checked = self.amp_radio_button.isChecked()
+        is_phs_checked = self.phs_radio_button.isChecked()
+        is_log_scale_checked = self.log_scale_checkbox.isChecked()
+        is_color_checked = self.color_radio_button.isChecked()
+
+        bright_val = int(self.bright_input.text())
+        cont_val = int(self.cont_input.text())
+        gamma_val = float(self.gamma_input.text())
+
+        self.change_bright_slider_value()
+        self.change_cont_slider_value()
+        self.change_gamma_slider_value()
+
         self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
                               logScale=is_log_scale_checked, color=is_color_checked,
-                              brightness=bright_val, contrast=cont_val, gamma=gamma_val)
+                              update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
+
+    def disp_bright_value(self):
+        self.bright_input.setText('{0:.0f}'.format(self.bright_slider.value()))
+
+    def disp_cont_value(self):
+        self.cont_input.setText('{0:.0f}'.format(self.cont_slider.value()))
+
+    def disp_gamma_value(self):
+        self.gamma_input.setText('{0:.2f}'.format(self.gamma_slider.value() * 0.01))
+
+    def change_bright_slider_value(self):
+        b = int(self.bright_input.text())
+        b_min = self.bright_slider.minimum()
+        b_max = self.bright_slider.maximum()
+        if b < b_min:
+            b = b_min
+        elif b > b_max:
+            b = b_max
+        self.bright_slider.setValue(b)
+
+    def change_cont_slider_value(self):
+        c = int(self.cont_input.text())
+        c_min = self.cont_slider.minimum()
+        c_max = self.cont_slider.maximum()
+        if c < c_min:
+            c = c_min
+        elif c > c_max:
+            c = c_max
+        self.cont_slider.setValue(c)
+
+    def change_gamma_slider_value(self):
+        g = float(self.gamma_input.text()) * 100
+        g_min = self.gamma_slider.minimum()
+        g_max = self.gamma_slider.maximum()
+        if g < g_min:
+            g = g_min
+        elif g > g_max:
+            g = g_max
+        self.gamma_slider.setValue(g)
 
     def unwrap_img_phase(self):
         curr_img = self.display.image
@@ -830,7 +901,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         img_list.UpdateLinks()
         for i in range(n_to_zoom):
             self.go_to_next_image()
-        print('Zooming done!')
+        print('Zooming complete!')
 
     def clear_image(self):
         labToDel = self.display.children()
@@ -1673,6 +1744,15 @@ def CalcRotAngle(p1, p2):
     if np.abs(rotAngle) > 180:
         rotAngle = -np.sign(rotAngle) * (360 - np.abs(rotAngle))
     return rotAngle
+
+# --------------------------------------------------------
+
+def det_Imin_Imax_from_contrast(dI, def_max=256.0):
+    dImin = dI // 2 + 1
+    dImax = dI - dImin
+    Imin = def_max // 2 - dImin
+    Imax = def_max // 2 + dImax
+    return Imin, Imax
 
 # --------------------------------------------------------
 
