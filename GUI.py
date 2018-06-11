@@ -64,8 +64,8 @@ class LabelExt(QtWidgets.QLabel):
             # qp.drawArc(rect, 0, 16*360)
             qp.drawEllipse(pt[0]-3, pt[1]-3, 7, 7)
 
+        linePen.setWidth(2)
         if self.show_lines:
-            linePen.setWidth(2)
             qp.setPen(linePen)
             for pt1, pt2 in zip(self.pointSets[imgIdx], self.pointSets[imgIdx][1:] + self.pointSets[imgIdx][:1]):
                 line = QtCore.QLine(pt1[0], pt1[1], pt2[0], pt2[1])
@@ -73,19 +73,19 @@ class LabelExt(QtWidgets.QLabel):
 
         linePen.setStyle(QtCore.Qt.DashLine)
         linePen.setColor(QtCore.Qt.yellow)
+        linePen.setCapStyle(QtCore.Qt.FlatCap)
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.NoBrush)
         if len(self.pointSets[imgIdx]) == 2:
             pt1, pt2 = self.pointSets[imgIdx]
+            pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
             w = np.abs(pt2[0] - pt1[0])
             h = np.abs(pt2[1] - pt1[1])
             rect = QtCore.QRect(pt1[0], pt1[1], w, h)
             qp.drawRect(rect)
             sq_coords = imsup.MakeSquareCoords(pt1 + pt2)
-            sq_pt1 = sq_coords[:2]
-            sq_pt2 = sq_coords[2:]
-            sq_pt1.reverse()
-            sq_pt2.reverse()
+            sq_pt1 = sq_coords[:2][::-1]
+            sq_pt2 = sq_coords[2:][::-1]
             w = np.abs(sq_pt2[0]-sq_pt1[0])
             h = np.abs(sq_pt2[1]-sq_pt1[1])
             square = QtCore.QRect(sq_pt1[0], sq_pt1[1], w, h)
@@ -174,12 +174,27 @@ class LabelExt(QtWidgets.QLabel):
 
 def update_image_bright_cont_gamma(img_src, brg=0, cnt=1, gam=1.0):
     Imin, Imax = det_Imin_Imax_from_contrast(cnt)
+
+    # option 1 (c->b->g)
+    # correct contrast
     img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
-    # img_scaled = np.power(img_scaled, gam)
-    img_scaled **= gam
+    # correct brightness
     img_scaled += brg
-    img_scaled[img_scaled > 255.0] = 255.0
     img_scaled[img_scaled < 0.0] = 0.0
+    # correct gamma
+    img_scaled **= gam
+    img_scaled[img_scaled > 255.0] = 255.0
+
+    # # option 2 (c->g->b)
+    # # correct contrast
+    # img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
+    # img_scaled[img_scaled < 0.0] = 0.0
+    # # correct gamma
+    # img_scaled **= gam
+    # # correct brightness
+    # img_scaled += brg
+    # img_scaled[img_scaled < 0.0] = 0.0
+    # img_scaled[img_scaled > 255.0] = 255.0
     return img_scaled
 
 # --------------------------------------------------------
@@ -235,6 +250,8 @@ class TriangulateWidget(QtWidgets.QWidget):
             exit()
         image = LoadImageSeriesFromFirstFile(image_path)
         self.display = LabelExt(self, image)
+        self.display.setFixedWidth(const.ccWidgetDim)
+        self.display.setFixedHeight(const.ccWidgetDim)
         self.plot_widget = PlotWidget()
         self.backup_image = None
         self.changes_made = []
@@ -588,6 +605,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.cont_slider.valueChanged.connect(self.disp_cont_value)
         self.gamma_slider.valueChanged.connect(self.disp_gamma_value)
 
+        self.bright_slider.sliderReleased.connect(self.update_display_and_bcg)
+        self.cont_slider.sliderReleased.connect(self.update_display_and_bcg)
+        self.gamma_slider.sliderReleased.connect(self.update_display_and_bcg)
+
         self.bright_input = QtWidgets.QLineEdit('0', self)
         self.cont_input = QtWidgets.QLineEdit('255', self)
         self.gamma_input = QtWidgets.QLineEdit('1.0', self)
@@ -596,20 +617,27 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.cont_input.returnPressed.connect(self.update_display_and_bcg)
         self.gamma_input.returnPressed.connect(self.update_display_and_bcg)
 
-        update_bcg_button = QtWidgets.QPushButton('Update display', self)
-        update_bcg_button.clicked.connect(self.update_display_and_bcg)
+        reset_bright_button = QtWidgets.QPushButton('Reset B', self)
+        reset_cont_button = QtWidgets.QPushButton('Reset C', self)
+        reset_gamma_button = QtWidgets.QPushButton('Reset G', self)
+
+        reset_bright_button.clicked.connect(self.reset_bright)
+        reset_cont_button.clicked.connect(self.reset_cont)
+        reset_gamma_button.clicked.connect(self.reset_gamma)
 
         grid_sliders = QtWidgets.QGridLayout()
         grid_sliders.addWidget(bright_label, 0, 1)
         grid_sliders.addWidget(self.bright_slider, 1, 0)
         grid_sliders.addWidget(self.bright_input, 1, 1)
+        grid_sliders.addWidget(reset_bright_button, 1, 2)
         grid_sliders.addWidget(cont_label, 2, 1)
         grid_sliders.addWidget(self.cont_slider, 3, 0)
         grid_sliders.addWidget(self.cont_input, 3, 1)
+        grid_sliders.addWidget(reset_cont_button, 3, 2)
         grid_sliders.addWidget(gamma_label, 4, 1)
         grid_sliders.addWidget(self.gamma_slider, 5, 0)
         grid_sliders.addWidget(self.gamma_input, 5, 1)
-        grid_sliders.addWidget(update_bcg_button, 3, 2)
+        grid_sliders.addWidget(reset_gamma_button, 5, 2)
 
         # ----
 
@@ -845,6 +873,18 @@ class TriangulateWidget(QtWidgets.QWidget):
             g = g_max
         self.gamma_slider.setValue(g)
 
+    def reset_bright(self):
+        self.bright_input.setText('0')
+        self.update_display_and_bcg()
+
+    def reset_cont(self):
+        self.cont_input.setText('255')
+        self.update_display_and_bcg()
+
+    def reset_gamma(self):
+        self.gamma_input.setText('1.0')
+        self.update_display_and_bcg()
+
     def unwrap_img_phase(self):
         curr_img = self.display.image
         new_phs = tr.unwrap_phase(curr_img.amPh.ph)
@@ -883,19 +923,22 @@ class TriangulateWidget(QtWidgets.QWidget):
     def zoom_n_fragments(self):
         curr_idx = self.display.image.numInSeries - 1
         if len(self.display.pointSets[curr_idx]) < 2:
+            print('You have to mark two points on the image in order to zoom!')
             return
 
         curr_img = self.display.image
-        [pt1, pt2] = self.display.pointSets[curr_idx][:2]
+        pt1, pt2 = self.display.pointSets[curr_idx][:2]
+        pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
-        real_crop_coords = imsup.MakeSquareCoords(CalcRealTLCoords(curr_img.width, disp_crop_coords))
+        real_tl_coords = CalcRealTLCoords(curr_img.width, disp_crop_coords)
+        real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
 
         n_to_zoom = np.int(self.n_to_zoom_input.text())
         img_list = imsup.CreateImageListFromFirstImage(curr_img)
         img_list2 = img_list[:n_to_zoom]
 
         for img, n in zip(img_list2, range(n_to_zoom, 2*n_to_zoom)):
-            frag = zoom_fragment(img, real_crop_coords)
+            frag = zoom_fragment(img, real_sq_coords)
             img_list.insert(n, frag)
 
         img_list.UpdateLinks()
@@ -1486,11 +1529,10 @@ class TriangulateWidget(QtWidgets.QWidget):
             cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
             img_cropped.cos_phase += cos_ph_fix
             int_matrix = np.copy(img_cropped.cos_phase)
-        print(int_matrix)
+
         int_profile = np.sum(int_matrix, proj_dir)  # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
         dists *= 1e9
-        print('wat2')
 
         self.plot_widget.plot(dists, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
 
@@ -1744,6 +1786,13 @@ def CalcRotAngle(p1, p2):
     if np.abs(rotAngle) > 180:
         rotAngle = -np.sign(rotAngle) * (360 - np.abs(rotAngle))
     return rotAngle
+
+# --------------------------------------------------------
+
+def convert_points_to_tl_br(p1, p2):
+    tl = list(np.amin([p1, p2], axis=0))
+    br = list(np.amax([p1, p2], axis=0))
+    return tl, br
 
 # --------------------------------------------------------
 
