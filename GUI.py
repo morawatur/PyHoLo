@@ -307,6 +307,14 @@ class TriangulateWidget(QtWidgets.QWidget):
         clear_button = QtWidgets.QPushButton('Clear', self)
         undo_button = QtWidgets.QPushButton('Undo', self)
 
+        self.export_png_radio_button = QtWidgets.QRadioButton('PNG image', self)
+        self.export_bin_radio_button = QtWidgets.QRadioButton('Binary', self)
+        self.export_png_radio_button.setChecked(True)
+
+        export_group = QtWidgets.QButtonGroup(self)
+        export_group.addButton(self.export_png_radio_button)
+        export_group.addButton(self.export_bin_radio_button)
+
         export_button.clicked.connect(self.export_image)
         export_all_button.clicked.connect(self.export_all)
         delete_button.clicked.connect(self.delete_image)
@@ -531,6 +539,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_disp.addWidget(self.fname_input, 1, 4)
         grid_disp.addWidget(export_button, 2, 4)
         grid_disp.addWidget(export_all_button, 3, 4)
+        grid_disp.addWidget(self.export_png_radio_button, 1, 5)
+        grid_disp.addWidget(self.export_bin_radio_button, 2, 5)
 
         vbox_sh_rot_rb = QtWidgets.QVBoxLayout()
         vbox_sh_rot_rb.addWidget(self.shift_radio_button)
@@ -733,46 +743,64 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def export_image(self):
         curr_num = self.display.image.numInSeries
-        fname = self.fname_input.text()
+        curr_img = self.display.image
         is_amp_checked = self.amp_radio_button.isChecked()
         is_phs_checked = self.phs_radio_button.isChecked()
-
-        log = True if self.log_scale_checkbox.isChecked() else False
-        color = True if self.color_radio_button.isChecked() else False
-
+        fname = self.fname_input.text()
         if fname == '':
-            fname = 'amp{0}'.format(curr_num) if is_amp_checked else 'phs{0}'.format(curr_num)
+            if is_amp_checked:
+                fname = 'amp{0}'.format(curr_num)
+            elif is_phs_checked:
+                fname = 'phs{0}'.format(curr_num)
+            else:
+                fname = 'cos_phs{0}'.format(curr_num)
 
-        curr_img = self.display.image
-        if is_amp_checked:
-            imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), log, color)
-        elif is_phs_checked:
-            imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
+        if self.export_bin_radio_button.isChecked():
+            fname_ext = ''
+            if is_amp_checked:
+                # np.save(fname, curr_img.amPh.am)
+                curr_img.amPh.am.tofile(fname)
+            elif is_phs_checked:
+                # np.save(fname, curr_img.amPh.ph)
+                curr_img.amPh.ph.tofile(fname)
+            else:
+                cos_phs = np.cos(curr_img.amPh.ph)
+                cos_phs.tofile(fname)
+                # np.save(fname, cos_phs)
+            print('Saved image to binary file: "{0}"'.format(fname))
         else:
-            phs_tmp = np.copy(curr_img.amPh.ph)
-            curr_img.amPh.ph = np.cos(phs_tmp)
-            imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
-            curr_img.amPh.ph = np.copy(phs_tmp)
-        print('Saved image as "{0}.png"'.format(fname))
-
-    def export_all(self):
-        curr_img = imsup.GetFirstImage(self.display.image)
-
-        while curr_img is not None:
-            curr_num = curr_img.numInSeries
-            fname = curr_img.name
-            is_amp_checked = self.amp_radio_button.isChecked()
-
-            if fname == '':
-                fname = 'amp{0}'.format(curr_num) if is_amp_checked else 'phs{0}'.format(curr_num)
+            fname_ext = '.png'
+            log = True if self.log_scale_checkbox.isChecked() else False
+            color = True if self.color_radio_button.isChecked() else False
 
             if is_amp_checked:
-                imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname))
+                imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), log, color)
+            elif is_phs_checked:
+                imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
             else:
-                imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname))
-
+                phs_tmp = np.copy(curr_img.amPh.ph)
+                curr_img.amPh.ph = np.cos(phs_tmp)
+                imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
+                curr_img.amPh.ph = np.copy(phs_tmp)
             print('Saved image as "{0}.png"'.format(fname))
-            curr_img = curr_img.next
+
+        # save log file
+        log_fname = '{0}_log.txt'.format(fname)
+        with open(log_fname, 'w') as log_file:
+            log_file.write('File name:\t{0}{1}\n'
+                           'Image name:\t{2}\n'
+                           'Image size:\t{3}x{4}\n'
+                           'Calibration:\t{5} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
+                                                           curr_img.height, curr_img.px_dim * 1e9))
+        print('Saved log file: "{0}"'.format(log_fname))
+
+    def export_all(self):
+        first_img = imsup.GetFirstImage(self.display.image)
+        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        for img in imgs:
+            self.go_to_image(img.numInSeries - 1)
+            self.export_image()
+        print('All images saved')
 
     def delete_image(self):
         curr_img = self.display.image
