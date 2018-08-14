@@ -41,9 +41,6 @@ class LabelExt(QtWidgets.QLabel):
         self.pointSets = [[]]
         self.show_lines = True
         self.show_labs = True
-        self.gain = 0.0
-        self.bias = 0.0
-        self.gamma = 0.0
         self.rgb_cm = RgbColorTable()
 
     # prowizorka - stałe liczbowe do poprawy
@@ -123,8 +120,12 @@ class LabelExt(QtWidgets.QLabel):
             self.image.buffer = np.copy(self.image.cos_phase)
 
         if not update_bcg:
-            buf_scaled = imsup.ScaleImage(self.image.buffer, 0.0, 255.0)
+            # buf_scaled = imsup.ScaleImage(self.image.buffer, 0.0, 255.0)
+            buf_scaled = update_image_bright_cont_gamma(self.image.buffer, brg=self.image.bias, cnt=self.image.gain, gam=self.image.gamma)
         else:
+            self.image.bias = bright
+            self.image.gain = cont
+            self.image.gamma = gamma
             buf_scaled = update_image_bright_cont_gamma(self.image.buffer, brg=bright, cnt=cont, gam=gamma)
 
         # final image with all properties set
@@ -652,14 +653,17 @@ class TriangulateWidget(QtWidgets.QWidget):
         gamma_label = QtWidgets.QLabel('Gamma', self)
 
         self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.bright_slider.setFixedHeight(14)
         self.bright_slider.setRange(-255, 255)
         self.bright_slider.setValue(0)
 
         self.cont_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.cont_slider.setFixedHeight(14)
         self.cont_slider.setRange(1, 1785)
         self.cont_slider.setValue(255)
 
         self.gamma_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.gamma_slider.setFixedHeight(14)
         self.gamma_slider.setRange(10, 190)
         self.gamma_slider.setValue(100)
 

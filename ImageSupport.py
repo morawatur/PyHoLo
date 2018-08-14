@@ -112,6 +112,9 @@ class Image:
         self.prev = None
         self.next = None
         self.px_dim = px_dim_sz
+        self.bias = 0.0
+        self.gain = 255.0
+        self.gamma = 1.0
         if px_dim_sz < 0:
             self.px_dim = self.px_dim_default
         # ClearImageData(self)
