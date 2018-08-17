@@ -387,6 +387,10 @@ def PrepareImageToDisplay(img, capVar, scale=True, log=False, color=False):
     img.ChangeComplexRepr(dt)
 
     if log:
+        if np.min(imgVar) < 0:
+            imgVar -= np.min(imgVar)
+        if np.min(imgVar) == 0:
+            imgVar += 1e-6
         imgVar = np.log10(imgVar)
 
     if scale:

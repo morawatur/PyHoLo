@@ -806,15 +806,16 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         amp_tmp = np.copy(curr_img.amPh.am)
         curr_img.amPh.am = update_image_bright_cont_gamma(amp_tmp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
-        imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), False, log, color)
+        scale = True if log else False
+        imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), scale, log, color)
         curr_img.amPh.am = np.copy(amp_tmp)
 
     def save_phs_as_png(self, fname, log, color):
         curr_img = self.display.image
         phs_tmp = np.copy(curr_img.amPh.ph)
-        curr_img.amPh.ph = update_image_bright_cont_gamma(phs_tmp, brg=curr_img.bias, cnt=curr_img.gain,
-                                                          gam=curr_img.gamma)
-        imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), False, log, color)
+        curr_img.amPh.ph = update_image_bright_cont_gamma(phs_tmp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
+        scale = True if log else False
+        imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), scale, log, color)
         curr_img.amPh.ph = np.copy(phs_tmp)
 
     def export_image(self):
@@ -874,11 +875,13 @@ class TriangulateWidget(QtWidgets.QWidget):
         print('Saved log file: "{0}"'.format(log_fname))
 
     def export_all(self):
-        first_img = imsup.GetFirstImage(self.display.image)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
-        for img in imgs:
-            self.go_to_image(img.numInSeries - 1)
+        curr_img = imsup.GetFirstImage(self.display.image)
+        self.display.image = curr_img
+        self.export_image()
+        while curr_img.next is not None:
+            self.go_to_next_image()
             self.export_image()
+            curr_img = self.display.image
         print('All images saved')
 
     def delete_image(self):
