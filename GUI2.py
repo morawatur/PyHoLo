@@ -802,6 +802,21 @@ class TriangulateWidget(QtWidgets.QWidget):
         imsup.flip_image_h(self.display.image)
         self.display.setImage()
 
+    def save_amp_as_png(self, fname, log, color):
+        curr_img = self.display.image
+        amp_tmp = np.copy(curr_img.amPh.am)
+        curr_img.amPh.am = update_image_bright_cont_gamma(amp_tmp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
+        imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), False, log, color)
+        curr_img.amPh.am = np.copy(amp_tmp)
+
+    def save_phs_as_png(self, fname, log, color):
+        curr_img = self.display.image
+        phs_tmp = np.copy(curr_img.amPh.ph)
+        curr_img.amPh.ph = update_image_bright_cont_gamma(phs_tmp, brg=curr_img.bias, cnt=curr_img.gain,
+                                                          gam=curr_img.gamma)
+        imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), False, log, color)
+        curr_img.amPh.ph = np.copy(phs_tmp)
+
     def export_image(self):
         curr_num = self.display.image.numInSeries
         curr_img = self.display.image
@@ -835,13 +850,16 @@ class TriangulateWidget(QtWidgets.QWidget):
             color = True if self.color_radio_button.isChecked() else False
 
             if is_amp_checked:
-                imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), log, color)
+                # imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), True, log, color)
+                self.save_amp_as_png(fname, log, color)
             elif is_phs_checked:
-                imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
+                # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True, log, color)
+                self.save_phs_as_png(fname, log, color)
             else:
                 phs_tmp = np.copy(curr_img.amPh.ph)
                 curr_img.amPh.ph = np.cos(phs_tmp)
-                imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), log, color)
+                # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True log, color)
+                self.save_phs_as_png(fname, log, color)
                 curr_img.amPh.ph = np.copy(phs_tmp)
             print('Saved image as "{0}.png"'.format(fname))
 
@@ -1509,7 +1527,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         rec_holo2 = self.display.image
 
         phs_diff = holo.calc_phase_diff(rec_holo1, rec_holo2)
-        np.savetxt('ph_diff', phs_diff.amPh.ph)     # !!!
         self.insert_img_after_curr(phs_diff)
 
     def amplify_phase(self):

@@ -56,7 +56,6 @@ def mult_by_hann_window(img, N=100):
 
     hann_win = imsup.ImageExp(N, N)
     hann_win.LoadAmpData(hann_2d)
-    # imsup.SaveAmpImage(hann_win, 'hann.png')
 
     hmin, hmax = (img.width - N) // 2, (img.width + N) // 2
     new_img.amPh.am[hmin:hmax, hmin:hmax] *= hann_2d
@@ -81,8 +80,6 @@ def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_w
 
     sband_img_ap = insert_aperture(sband_mid_img, ap_sz)
     sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
-    imsup.SaveAmpImage(sband_img_ap, 'sband_am.png')
-    imsup.SavePhaseImage(sband_img_ap, 'sband_ph.png')
     return sband_img_ap
 
 #-------------------------------------------------------------------
@@ -115,20 +112,12 @@ def rec_holo_no_ref(holo_img, rec_sz=128, ap_sz=32, mask_sz=50, N_hann=100):
 
     sband_img_ap = mult_by_hann_window(sband_img, N=N_hann)
     sband_img_ap = insert_aperture(sband_img_ap, ap_sz)
-    imsup.SaveAmpImage(sband_img_ap, 'sband_am.png')
-    imsup.SavePhaseImage(sband_img_ap, 'sband_ph.png')
 
     sband_img_ap = cc.Diff2FFT(sband_img_ap)
     rec_holo = cc.IFFT(sband_img_ap)
 
-    imsup.SaveAmpImage(rec_holo, 'amp.png')
-    imsup.SavePhaseImage(rec_holo, 'phs.png')
-
     # factor = holo_img.width / rec_sz
     # rec_holo_resc = tr.RescaleImageSki(rec_holo, factor)
-
-    # imsup.SaveAmpImage(rec_holo_resc, 'amp.png')
-    # imsup.SavePhaseImage(rec_holo_resc, 'phs.png')
     rec_holo = imsup.CreateImageExpFromImage(rec_holo)
     return rec_holo
 

@@ -380,7 +380,7 @@ def ScaleAmpImages(images):
 #-------------------------------------------------------------------
 
 # should handle also GPU images
-def PrepareImageToDisplay(img, capVar, log=False, color=False):
+def PrepareImageToDisplay(img, capVar, scale=True, log=False, color=False):
     dt = img.cmpRepr
     img.ReIm2AmPh()
     imgVar = img.amPh.am if capVar == Image.capVar['AM'] else img.amPh.ph
@@ -389,12 +389,13 @@ def PrepareImageToDisplay(img, capVar, log=False, color=False):
     if log:
         imgVar = np.log10(imgVar)
 
-    imgVarScaled = ScaleImage(imgVar, 0.0, 255.0)
+    if scale:
+        imgVar = ScaleImage(imgVar, 0.0, 255.0)
 
     if not color:
-        imgToDisp = im.fromarray(imgVarScaled.astype(np.uint8))
+        imgToDisp = im.fromarray(imgVar.astype(np.uint8))
     else:
-        imgVarCol = grayscale_to_rgb(imgVarScaled)
+        imgVarCol = grayscale_to_rgb(imgVar)
         imgToDisp = im.fromarray(imgVarCol.astype(np.uint8), 'RGB')
 
     return imgToDisp
@@ -431,37 +432,37 @@ def grayscale_to_rgb(gs_arr):
 
 #-------------------------------------------------------------------
 
-def DisplayAmpImage(img, log=False):
+def DisplayAmpImage(img, scale=True, log=False):
     mt = img.memType
     img.MoveToCPU()
-    imgToDisp = PrepareImageToDisplay(img, Image.capVar['AM'], log)
+    imgToDisp = PrepareImageToDisplay(img, Image.capVar['AM'], scale, log)
     imgToDisp.show()
     img.ChangeMemoryType(mt)
 
 # -------------------------------------------------------------------
 
-def SaveAmpImage(img, fPath, log=False, color=False):
+def SaveAmpImage(img, fPath, scale=True, log=False, color=False):
     mt = img.memType
     img.MoveToCPU()
-    imgToSave = PrepareImageToDisplay(img, Image.capVar['AM'], log, color)
+    imgToSave = PrepareImageToDisplay(img, Image.capVar['AM'], scale, log, color)
     imgToSave.save(fPath)
     img.ChangeMemoryType(mt)
 
 #-------------------------------------------------------------------
 
-def DisplayPhaseImage(img, log=False):
+def DisplayPhaseImage(img, scale=True, log=False):
     mt = img.memType
     img.MoveToCPU()
-    imgToDisp = PrepareImageToDisplay(img, Image.capVar['PH'], log)
+    imgToDisp = PrepareImageToDisplay(img, Image.capVar['PH'], scale, log)
     imgToDisp.show()
     img.ChangeMemoryType(mt)
 
 # -------------------------------------------------------------------
 
-def SavePhaseImage(img, fPath, log=False, color=False):
+def SavePhaseImage(img, fPath, scale=True, log=False, color=False):
     mt = img.memType
     img.MoveToCPU()
-    imgToSave = PrepareImageToDisplay(img, Image.capVar['PH'], log, color)
+    imgToSave = PrepareImageToDisplay(img, Image.capVar['PH'], scale, log, color)
     imgToSave.save(fPath)
     img.ChangeMemoryType(mt)
 
