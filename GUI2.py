@@ -804,19 +804,31 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def save_amp_as_png(self, fname, log, color):
         curr_img = self.display.image
-        amp_tmp = np.copy(curr_img.amPh.am)
-        curr_img.amPh.am = update_image_bright_cont_gamma(amp_tmp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
-        scale = True if log else False
-        imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), scale, log, color)
-        curr_img.amPh.am = np.copy(amp_tmp)
+        amp = np.copy(curr_img.amPh.am)
+        if log:
+            amp[np.where(amp <= 0)] = 1e-5
+            amp = np.log(amp)
+        amp = update_image_bright_cont_gamma(amp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
+        if color:
+            amp = imsup.grayscale_to_rgb(amp)
+            amp_to_save = imsup.im.fromarray(amp.astype(np.uint8), 'RGB')
+        else:
+            amp_to_save = imsup.im.fromarray(amp.astype(np.uint8))
+        amp_to_save.save('{0}.png'.format(fname))
 
     def save_phs_as_png(self, fname, log, color):
         curr_img = self.display.image
-        phs_tmp = np.copy(curr_img.amPh.ph)
-        curr_img.amPh.ph = update_image_bright_cont_gamma(phs_tmp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
-        scale = True if log else False
-        imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), scale, log, color)
-        curr_img.amPh.ph = np.copy(phs_tmp)
+        phs = np.copy(curr_img.amPh.ph)
+        if log:
+            phs[np.where(phs <= 0)] = 1e-5
+            phs = np.log(phs)
+        phs = update_image_bright_cont_gamma(phs, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
+        if color:
+            phs = imsup.grayscale_to_rgb(phs)
+            phs_to_save = imsup.im.fromarray(phs.astype(np.uint8), 'RGB')
+        else:
+            phs_to_save = imsup.im.fromarray(phs.astype(np.uint8))
+        phs_to_save.save('{0}.png'.format(fname))
 
     def export_image(self):
         curr_num = self.display.image.numInSeries
