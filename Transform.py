@@ -6,7 +6,7 @@ from skimage.restoration import unwrap_phase
 #-------------------------------------------------------------------
 
 def rescale_pixel_dim(px_dim, old_dim, new_dim):
-    resc_factor = new_dim / old_dim
+    resc_factor = old_dim / new_dim
     return px_dim * resc_factor
 
 #-------------------------------------------------------------------

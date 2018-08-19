@@ -276,6 +276,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.changes_made = []
         self.shift = [0, 0]
         self.rot_angle = 0
+        # self.shift = [-41, -89]
+        # self.rot_angle = -20.15
         self.mag_coeff = 1.0
         self.warp_points = []
         self.initUI()
@@ -1770,7 +1772,7 @@ def zoom_fragment(img, coords):
     crop_width = np.abs(coords[2] - coords[0])
     zoom_factor = orig_width / crop_width
     zoom_img = tr.RescaleImageSki(crop_img, zoom_factor)
-    zoom_img.px_dim *= zoom_factor
+    # zoom_img.px_dim *= zoom_factor
     # self.insert_img_after_curr(zoom_img)
     return zoom_img
 
