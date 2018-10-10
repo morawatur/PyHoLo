@@ -415,6 +415,12 @@ def copy_image(img):
 
     imgCopy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries)
     imgCopy.reIm = np.copy(img.reIm)
+    # if img.cmpRepr == Image.cmp['CRI']:
+    #     imgCopy.reIm = np.copy(img.reIm)
+    # else:
+    #     imgCopy.amPh.am = np.copy(img.amPh.am)
+    #     imgCopy.amPh.ph = np.copy(img.amPh.ph)
+    #     imgCopy.UpdateBuffer()
 
     if img.prev is not None:
         imgCopy.prev = img.prev
@@ -428,10 +434,7 @@ def copy_image(img):
 #-------------------------------------------------------------------
 
 def create_imgexp_from_img(img):
-    img_exp = copy_image(img)
-    img_exp.ReIm2AmPh()
-    img_exp.UpdateBuffer()
-    return img_exp
+    return copy_image(img)
 
 #-------------------------------------------------------------------
 
@@ -635,7 +638,23 @@ def GetShift(ccf):
 
 def shift_array(arr, shift):
     dx, dy = shift
+    if dx == 0 and dy == 0:
+        return np.copy(arr)
     arr_shifted = np.zeros(arr.shape, dtype=arr.dtype)
+
+    if dx == 0:
+        if dy > 0:
+            arr_shifted[:, dy:] = arr[:, :-dy]
+        else:
+            arr_shifted[:, :dy] = arr[:, -dy:]
+        return arr_shifted
+
+    if dy == 0:
+        if dx > 0:
+            arr_shifted[dx:, :] = arr[:-dx, :]
+        else:
+            arr_shifted[:dx, :] = arr[-dx:, :]
+        return arr_shifted
 
     if dx > 0 and dy > 0:
         arr_shifted[dx:, dy:] = arr[:-dx, :-dy]

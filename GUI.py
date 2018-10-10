@@ -1284,7 +1284,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.shift = shift_avg
 
         shifted_img2 = imsup.shift_am_ph_image(curr_img, shift_avg)
-        shifted_img2 = imsup.create_imgexp_from_img(shifted_img2)
+        # shifted_img2 = imsup.create_imgexp_from_img(shifted_img2)
         self.insert_img_after_curr(shifted_img2)
 
     def reshift(self):
@@ -1293,14 +1293,14 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         if self.shift_radio_button.isChecked():
             shifted_img = imsup.shift_am_ph_image(curr_img, shift)
-            shifted_img = imsup.create_imgexp_from_img(shifted_img)
+            # shifted_img = imsup.create_imgexp_from_img(shifted_img)
             self.insert_img_after_curr(shifted_img)
         else:
             bufSz = max([abs(x) for x in shift])
             dirs = 'tblr'
             padded_img = imsup.PadImage(curr_img, bufSz, 0.0, dirs)
             shifted_img = imsup.shift_am_ph_image(padded_img, shift)
-            shifted_img = imsup.create_imgexp_from_img(shifted_img)
+            # shifted_img = imsup.create_imgexp_from_img(shifted_img)
 
             resc_factor = curr_img.width / padded_img.width
             resc_img = tr.RescaleImageSki(shifted_img, resc_factor)
@@ -1509,6 +1509,8 @@ class TriangulateWidget(QtWidgets.QWidget):
     def rec_holo_no_ref_3(self):
         sband_img = self.display.image
         rec_holo = holo.rec_holo_no_ref_3(sband_img)
+        imsup.DisplayAmpImage(rec_holo)
+        imsup.DisplayPhaseImage(rec_holo)
         self.insert_img_after_curr(rec_holo)
 
     # def rec_holo_no_ref(self):

@@ -80,7 +80,7 @@ def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_w
 def rec_holo_no_ref_3(sband_img):
     sband_img = imsup.Diff2FFT(sband_img)
     rec_holo = imsup.IFFT(sband_img)
-    # rec_holo = imsup.create_imgexp_from_img(rec_holo)
+    rec_holo = imsup.create_imgexp_from_img(rec_holo)
     return rec_holo
 
 #-------------------------------------------------------------------
