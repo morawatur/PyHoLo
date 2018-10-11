@@ -69,8 +69,8 @@ class Image:
     def ReIm2AmPh(self):
         if self.cmpRepr == self.cmp['CAP']:
             return
-        self.amPh.am = np.abs(self.reIm).astype(np.float32)
-        self.amPh.ph = np.angle(self.reIm).astype(np.float32)
+        self.amPh.am = np.abs(self.reIm)
+        self.amPh.ph = np.angle(self.reIm)
         self.cmpRepr = self.cmp['CAP']
 
     def AmPh2ReIm(self):
@@ -113,8 +113,6 @@ class ImageExp(Image):
         self.amPh.am = np.copy(self.buffer)
 
     def ReIm2AmPh(self):
-        if self.cmpRepr == self.cmp['CAP']:
-            return
         super(ImageExp, self).ReIm2AmPh()
         self.UpdateBuffer()
 
@@ -382,7 +380,8 @@ def ClearImageData(img):
 #-------------------------------------------------------------------
 
 def copy_re_im_image(img):
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries)
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
+                        px_dim_sz=img.px_dim)
     img_copy.reIm = np.copy(img.amPh.reIm)
 
     if img.prev is not None:
@@ -410,26 +409,11 @@ def copy_am_ph_image(img):
 #-------------------------------------------------------------------
 
 def copy_image(img):
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
-
-    imgCopy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries)
-    imgCopy.reIm = np.copy(img.reIm)
-    # if img.cmpRepr == Image.cmp['CRI']:
-    #     imgCopy.reIm = np.copy(img.reIm)
-    # else:
-    #     imgCopy.amPh.am = np.copy(img.amPh.am)
-    #     imgCopy.amPh.ph = np.copy(img.amPh.ph)
-    #     imgCopy.UpdateBuffer()
-
-    if img.prev is not None:
-        imgCopy.prev = img.prev
-    if img.next is not None:
-        imgCopy.next = img.next
-
-    img.ChangeComplexRepr(dt)
-    imgCopy.ChangeComplexRepr(dt)
-    return imgCopy
+    if img.cmpRepr == Image.cmp['CRI']:
+        img_copy = copy_re_im_image(img)
+    else:
+        img_copy = copy_am_ph_image(img)
+    return img_copy
 
 #-------------------------------------------------------------------
 
@@ -585,28 +569,31 @@ def FFT(img):
 #-------------------------------------------------------------------
 
 def IFFT(fft):
-    # dt = fft.cmpRepr
-    fft.AmPh2ReIm()
+    dt = fft.cmpRepr
 
-    ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
+    ifft = ImageExp(fft.height, fft.width, cmpRepr=Image.cmp['CRI'])
     # ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)   # doesn't work (don't know why)
     ifft.reIm = sp.fftpack.ifft2(fft.reIm)
 
-    # fft.ChangeComplexRepr(dt)
-    # ifft.ChangeComplexRepr(dt)
-    fft.ReIm2AmPh()
-    ifft.ReIm2AmPh()
+    fft.ChangeComplexRepr(dt)
+    ifft.ChangeComplexRepr(dt)
     return ifft
 
 #-------------------------------------------------------------------
 
 def FFT2Diff(fft):
-    diff = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
+    dt = fft.cmpRepr
+    fft.AmPh2ReIm()
+
+    diff = ImageExp(fft.height, fft.width, cmpRepr=Image.cmp['CRI'])
     mid = diff.width // 2
     diff.reIm[:mid, :mid] = fft.reIm[mid:, mid:]
     diff.reIm[:mid, mid:] = fft.reIm[mid:, :mid]
     diff.reIm[mid:, :mid] = fft.reIm[:mid, mid:]
     diff.reIm[mid:, mid:] = fft.reIm[:mid, :mid]
+
+    fft.ChangeComplexRepr(dt)
+    diff.ChangeComplexRepr(dt)
     return diff
 
 #-------------------------------------------------------------------

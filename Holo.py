@@ -28,8 +28,9 @@ def find_img_max(img):
 #-------------------------------------------------------------------
 
 def insert_aperture(img, ap):
-    img_ap = imsup.copy_image(img)
-    img_ap.ReIm2AmPh()
+    dt = img.cmpRepr
+    img.ReIm2AmPh()
+    img_ap = imsup.copy_am_ph_image(img)
 
     n = img_ap.width
     c = n // 2
@@ -38,23 +39,30 @@ def insert_aperture(img, ap):
 
     img_ap.amPh.am[mask] = 0.0
     img_ap.amPh.ph[mask] = 0.0
+
+    img.ChangeComplexRepr(dt)
+    img_ap.ChangeComplexRepr(dt)
     return img_ap
 
 # -------------------------------------------------------------------
 
 def mult_by_hann_window(img, N=100):
-    new_img = imsup.copy_image(img)
-    new_img.ReIm2AmPh()
+    dt = img.cmpRepr
+    img.ReIm2AmPh()
+    new_img = imsup.copy_am_ph_image(img)
 
     hann = np.hanning(N)
     hann_2d = np.sqrt(np.outer(hann, hann))
 
-    hann_win = imsup.ImageExp(N, N)
+    hann_win = imsup.ImageExp(N, N, cmpRepr=imsup.Image.cmp['CAP'])
     hann_win.LoadAmpData(hann_2d)
 
     hmin, hmax = (img.width - N) // 2, (img.width + N) // 2
     new_img.amPh.am[hmin:hmax, hmin:hmax] *= hann_2d
     new_img.amPh.ph[hmin:hmax, hmin:hmax] *= hann_2d
+
+    img.ChangeComplexRepr(dt)
+    new_img.ChangeComplexRepr(dt)
     return new_img
 
 #-------------------------------------------------------------------
@@ -67,7 +75,7 @@ def rec_holo_no_ref_1(holo_img):
     holo_fft.ReIm2AmPh()
     return holo_fft
 
-#-------------------------------------------------------------------
+#---------------------------------------`----------------------------
 
 def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_win):
     sband_mid_img = imsup.ShiftImage(holo_fft, shift)
@@ -80,7 +88,6 @@ def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_w
 def rec_holo_no_ref_3(sband_img):
     sband_img = imsup.Diff2FFT(sband_img)
     rec_holo = imsup.IFFT(sband_img)
-    rec_holo = imsup.create_imgexp_from_img(rec_holo)
     return rec_holo
 
 #-------------------------------------------------------------------

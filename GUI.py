@@ -1132,7 +1132,13 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr.amPh.am = np.copy(shifted_img.amPh.am)
         curr.amPh.ph = np.copy(shifted_img.amPh.ph)
         curr.shift = total_shift
-        self.display.setImage()
+
+        is_amp = self.amp_radio_button.isChecked()
+        is_phs = self.phs_radio_button.isChecked()
+        is_log = self.log_scale_checkbox.isChecked()
+        is_col = self.color_radio_button.isChecked()
+
+        self.display.setImage(dispAmp=is_amp, dispPhs=is_phs, logScale=is_log, color=is_col, update_bcg=True)
 
     def rot_left(self):
         ang = float(self.rot_angle_input.text())
@@ -1509,8 +1515,7 @@ class TriangulateWidget(QtWidgets.QWidget):
     def rec_holo_no_ref_3(self):
         sband_img = self.display.image
         rec_holo = holo.rec_holo_no_ref_3(sband_img)
-        imsup.DisplayAmpImage(rec_holo)
-        imsup.DisplayPhaseImage(rec_holo)
+        rec_holo.ReIm2AmPh()
         self.insert_img_after_curr(rec_holo)
 
     # def rec_holo_no_ref(self):
