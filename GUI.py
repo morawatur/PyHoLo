@@ -91,8 +91,8 @@ class LabelExt(QtWidgets.QLabel):
             rect = QtCore.QRect(pt1[0], pt1[1], w, h)
             qp.drawRect(rect)
             sq_coords = imsup.MakeSquareCoords(pt1 + pt2)
-            sq_pt1 = sq_coords[:2][::-1]
-            sq_pt2 = sq_coords[2:][::-1]
+            sq_pt1 = sq_coords[:2]
+            sq_pt2 = sq_coords[2:]
             w = np.abs(sq_pt2[0]-sq_pt1[0])
             h = np.abs(sq_pt2[1]-sq_pt1[1])
             square = QtCore.QRect(sq_pt1[0], sq_pt1[1], w, h)
@@ -1775,9 +1775,8 @@ def LoadImageSeriesFromFirstFile(imgPath):
 # --------------------------------------------------------
 
 def zoom_fragment(img, coords):
+    print(coords)
     crop_img = imsup.crop_am_ph_roi(img, coords)
-    crop_img = imsup.create_imgexp_from_img(crop_img)
-
     orig_width = img.width
     crop_width = np.abs(coords[2] - coords[0])
     zoom_factor = orig_width / crop_width

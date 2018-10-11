@@ -273,6 +273,8 @@ def crop_am_ph_roi(img, coords):
     roi_w = coords[2] - coords[0]
     roi = ImageExp(roi_h, roi_w, img.cmpRepr)
 
+    print(roi_h)
+    print(roi_w)
     roi.amPh.am[:] = img.amPh.am[coords[1]:coords[3], coords[0]:coords[2]]
     roi.amPh.ph[:] = img.amPh.ph[coords[1]:coords[3], coords[0]:coords[2]]
     roi.UpdateBuffer()
@@ -364,9 +366,11 @@ def MakeSquareCoords(coords):
     dimFix = 1 if (height + width) % 2 else 0
 
     if height > width:
-        squareCoords = [coords[1] + halfDiff + dimFix, coords[0], coords[3] - halfDiff, coords[2]]
+        # squareCoords = [coords[1] + halfDiff + dimFix, coords[0], coords[3] - halfDiff, coords[2]]
+        squareCoords = [coords[0], coords[1] + halfDiff + dimFix, coords[2], coords[3] - halfDiff]
     else:
-        squareCoords = [coords[1], coords[0] + halfDiff + dimFix, coords[3], coords[2] - halfDiff]
+        # squareCoords = [coords[1], coords[0] + halfDiff + dimFix, coords[3], coords[2] - halfDiff]
+        squareCoords = [coords[0] + halfDiff + dimFix, coords[1], coords[2] - halfDiff, coords[3]]
     return squareCoords
 
 #-------------------------------------------------------------------
