@@ -168,11 +168,13 @@ def PrepareImageMatrix(imgData, dimSize):
 
 def FileToImage(fPath):
     import Dm3Reader as dm3
-    imgData = dm3.ReadDm3File(fPath)
-    imgMatrix = PrepareImageMatrix(imgData, const.img_dim)
-    img = ImageExp(const.img_dim, const.img_dim, Image.cmp['CAP'])
-    img.amPh.am = np.sqrt(imgMatrix).astype(np.float32)
+    img_data, px_dims = dm3.ReadDm3File(fPath)
+    img_matrix = PrepareImageMatrix(img_data, img_data.shape[0])
+    img = ImageExp(img_data.shape[0], img_data.shape[1], Image.cmp['CAP'])
+    img.amPh.am = np.sqrt(img_matrix).astype(np.float32)
     img.UpdateBuffer()
+    img.px_dim = px_dims[0]
+    Image.px_dim_default = px_dims[0]
     return img
 
 #-------------------------------------------------------------------
