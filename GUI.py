@@ -483,7 +483,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         # Automatic alignment panel (4)
         # ------------------------------
 
-        alignButton = QtWidgets.QPushButton('Align', self)
+        auto_shift_button = QtWidgets.QPushButton('Auto-shift', self)
+        auto_rot_button = QtWidgets.QPushButton('Auto-rotate', self)
         warpButton = QtWidgets.QPushButton('Warp', self)
         magnify_button = QtWidgets.QPushButton('Magnify', self)
         reshift_button = QtWidgets.QPushButton('Re-Shift', self)
@@ -491,23 +492,14 @@ class TriangulateWidget(QtWidgets.QWidget):
         remag_button = QtWidgets.QPushButton('Re-Mag', self)
         rewarp_button = QtWidgets.QPushButton('Re-Warp', self)
 
-        self.shift_radio_button = QtWidgets.QRadioButton('Shift', self)
-        self.rot_radio_button = QtWidgets.QRadioButton('Rot', self)
-        self.shift_radio_button.setChecked(True)
-
-        shift_rot_group = QtWidgets.QButtonGroup(self)
-        shift_rot_group.addButton(self.shift_radio_button)
-        shift_rot_group.addButton(self.rot_radio_button)
-
-        alignButton.clicked.connect(self.align_images)
+        auto_shift_button.clicked.connect(self.auto_shift_image)
+        auto_rot_button.clicked.connect(self.auto_rot_image)
         warpButton.clicked.connect(partial(self.warp_image, False))
         magnify_button.clicked.connect(self.magnify)
         reshift_button.clicked.connect(self.reshift)
         rerot_button.clicked.connect(self.rerotate)
         remag_button.clicked.connect(self.remagnify)
         rewarp_button.clicked.connect(self.rewarp)
-
-        alignButton.setFixedHeight(50)
 
         grid_manual = QtWidgets.QGridLayout()
         grid_manual.setColumnStretch(0, 1)
@@ -535,21 +527,19 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         grid_auto = QtWidgets.QGridLayout()
         grid_auto.setColumnStretch(0, 1)
-        grid_auto.setColumnStretch(1, 1)
+        grid_auto.setColumnStretch(1, 2)
         grid_auto.setColumnStretch(2, 2)
-        grid_auto.setColumnStretch(3, 2)
-        grid_auto.setColumnStretch(4, 1)
+        grid_auto.setColumnStretch(3, 1)
         grid_auto.setRowStretch(0, 1)
         grid_auto.setRowStretch(5, 1)
-        grid_auto.addWidget(self.shift_radio_button, 1, 1)
-        grid_auto.addWidget(self.rot_radio_button, 2, 1)
-        grid_auto.addWidget(alignButton, 1, 2, 2, 1)
-        grid_auto.addWidget(magnify_button, 3, 2)
-        grid_auto.addWidget(warpButton, 4, 2)
-        grid_auto.addWidget(reshift_button, 1, 3)
-        grid_auto.addWidget(rerot_button, 2, 3)
-        grid_auto.addWidget(remag_button, 3, 3)
-        grid_auto.addWidget(rewarp_button, 4, 3)
+        grid_auto.addWidget(auto_shift_button, 1, 1)
+        grid_auto.addWidget(auto_rot_button, 2, 1)
+        grid_auto.addWidget(magnify_button, 3, 1)
+        grid_auto.addWidget(warpButton, 4, 1)
+        grid_auto.addWidget(reshift_button, 1, 2)
+        grid_auto.addWidget(rerot_button, 2, 2)
+        grid_auto.addWidget(remag_button, 3, 2)
+        grid_auto.addWidget(rewarp_button, 4, 2)
 
         self.tab_align = QtWidgets.QWidget()
         self.tab_align.layout = QtWidgets.QVBoxLayout()
@@ -1179,13 +1169,56 @@ class TriangulateWidget(QtWidgets.QWidget):
         # self.changes_made = []
         self.display.setImage()
 
-    def align_images(self):
-        if self.shift_radio_button.isChecked():
-            self.align_shift()
-        else:
-            self.align_rot()
+    # def align_images(self):
+    #     if self.shift_radio_button.isChecked():
+    #         self.align_shift()
+    #     else:
+    #         self.align_rot_dev()
 
-    def align_rot(self):
+    def auto_rot_image(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+
+        # p11, p12 = self.display.pointSets[curr_idx-1][:2]
+        # p21, p22 = self.display.pointSets[curr_idx][:2]
+
+        points1 = self.display.pointSets[curr_idx-1]
+        points2 = self.display.pointSets[curr_idx]
+
+        np1 = len(points1)
+        np2 = len(points2)
+
+        if np1 != np2:
+            print('Mark the same number of points on both images!')
+            return
+
+        if np1 % 2:
+            np1 -= 1
+            np2 -= 1
+            points1 = points1[:-1]
+            points2 = points2[:-1]
+
+        line1 = tr.Line(0, 0)
+        line2 = tr.Line(0, 0)
+        rot_angle_avg = 0.0
+        n_pairs = np1 // 2
+
+        for l in range(n_pairs):
+            p11, p12 = points1[2*l:2*(l+1)]
+            p21, p22 = points2[2*l:2*(l+1)]
+            line1.getFromPoints(p11, p12)
+            line2.getFromPoints(p21, p22)
+            rot_angle = imsup.Degrees(np.arctan(line2.a) - np.arctan(line1.a))
+            print('Rot. angle = {0:.2f} deg'.format(rot_angle))
+            rot_angle_avg += rot_angle
+
+        rot_angle_avg /= n_pairs
+        self.rot_angle = rot_angle_avg
+
+        img_rot = tr.RotateImageSki(curr_img, rot_angle_avg)
+        self.insert_img_after_curr(img_rot)
+
+    def auto_shift_rot_old(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
@@ -1263,7 +1296,7 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         print('Rotation complete!')
 
-    def align_shift(self):
+    def auto_shift_image(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
@@ -1290,7 +1323,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.shift = shift_avg
 
         shifted_img2 = imsup.shift_am_ph_image(curr_img, shift_avg)
-        # shifted_img2 = imsup.create_imgexp_from_img(shifted_img2)
         self.insert_img_after_curr(shifted_img2)
 
     def reshift(self):
