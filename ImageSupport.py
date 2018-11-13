@@ -20,6 +20,7 @@ def conj_am_ph_matrix(ap):
     ap_conj = ComplexAmPhMatrix(ap.am.shape[0], ap.am.shape[1])
     ap_conj.am = np.copy(ap.am)
     ap_conj.ph = -ap.ph
+    return ap_conj
 
 # -------------------------------------------------------------------
 
@@ -27,6 +28,7 @@ def mult_am_ph_matrices(ap1, ap2):
     ap3 = ComplexAmPhMatrix(ap1.am.shape[0], ap1.am.shape[1])
     ap3.am = ap1.am * ap2.am
     ap3.ph = ap1.ph + ap2.ph
+    return ap3
 
 #-------------------------------------------------------------------
 
@@ -126,11 +128,21 @@ class ImageList(list):
         super(ImageList, self).__init__(imgList)
         self.UpdateLinks()
 
+    def __delitem__(self, item):
+        super(ImageList, self).__delitem__(item)
+        self.UpdateAndRestrainLinks()
+
     def UpdateLinks(self):
         for imgPrev, imgNext in zip(self[:-1], self[1:]):
             imgPrev.next = imgNext
             imgNext.prev = imgPrev
             imgNext.numInSeries = imgPrev.numInSeries + 1
+
+    def UpdateAndRestrainLinks(self):
+        self[0].prev = None
+        self[0].numInSeries = 1
+        self[len(self)-1].next = None
+        self.UpdateLinks()
 
 #-------------------------------------------------------------------
 
@@ -436,6 +448,14 @@ def GetFirstImage(img):
 
 #-------------------------------------------------------------------
 
+def GetLastImage(img):
+    last = img
+    while last.next is not None:
+        last = last.next
+    return last
+
+#-------------------------------------------------------------------
+
 def CreateImageListFromFirstImage(img):
     imgList = ImageList()
     imgList.append(img)
@@ -576,8 +596,9 @@ def FFT(img):
 
 def IFFT(fft):
     dt = fft.cmpRepr
+    fft.AmPh2ReIm()
 
-    ifft = ImageExp(fft.height, fft.width, cmpRepr=Image.cmp['CRI'])
+    ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
     # ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)   # doesn't work (don't know why)
     ifft.reIm = sp.fftpack.ifft2(fft.reIm)
 
@@ -613,6 +634,32 @@ def frange(x, y, jump):
     while x < y:
         yield x
         x += jump
+
+#-------------------------------------------------------------------
+
+def CalcCrossCorrFun(img1, img2):
+    fft1 = FFT(img1)
+    fft2 = FFT(img2)
+
+    fft1.ReIm2AmPh()
+    fft2.ReIm2AmPh()
+
+    fft3 = ImageExp(fft1.height, fft1.width, Image.cmp['CAP'])
+    fft1.amPh = conj_am_ph_matrix(fft1.amPh)
+    fft3.amPh = mult_am_ph_matrices(fft1.amPh, fft2.amPh)
+    fft3.amPh.am = np.sqrt(fft3.amPh.am)			# mcf ON
+
+    # ---- ccf ----
+    # fft3.amPh.am = fft1.amPh.am * fft2.amPh.am
+    # fft3.amPh.ph = -fft1.amPh.ph + fft2.amPh.ph
+    # ---- mcf ----
+    # fft3.amPh.am = np.sqrt(fft1.amPh.am * fft2.amPh.am)
+    # fft3.amPh.ph = -fft1.amPh.ph + fft2.amPh.ph
+
+    ccf = IFFT(fft3)
+    ccf = FFT2Diff(ccf)
+    ccf.ReIm2AmPh()
+    return ccf
 
 #-------------------------------------------------------------------
 

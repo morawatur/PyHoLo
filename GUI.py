@@ -146,17 +146,9 @@ class LabelExt(QtWidgets.QLabel):
         self.setPixmap(pixmap)
         self.repaint()
 
-    def changeImage(self, toNext=True, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True, color=False):
-        newImage = self.image.next if toNext else self.image.prev
-        if newImage is None:
-            return
-
-        newImage.ReIm2AmPh()
-        self.image = newImage
-
+    def update_labs(self, dispLabs=True):
         if len(self.pointSets) < self.image.numInSeries:
             self.pointSets.append([])
-        self.setImage(dispAmp, dispPhs, logScale, color)
 
         labsToDel = self.children()
         for child in labsToDel:
@@ -164,6 +156,34 @@ class LabelExt(QtWidgets.QLabel):
 
         if dispLabs:
             self.show_labels()
+
+    def change_image(self, new_idx, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True, color=False):
+        curr = self.image
+        first = imsup.GetFirstImage(curr)
+        imgs = imsup.CreateImageListFromFirstImage(first)
+        if 0 > new_idx > len(imgs) - 1:
+            return
+
+        new_img = imgs[new_idx]
+        new_img.ReIm2AmPh()
+        self.image = new_img
+        self.setImage(dispAmp, dispPhs, logScale, color)
+        self.update_labs(dispLabs)
+
+    def change_image_adjacent(self, dir_to_img=1, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True,
+                              color=False):
+        if dir_to_img == 1:
+            new_img = self.image.next
+        else:
+            new_img = self.image.prev
+
+        if new_img is None:
+            return
+
+        new_img.ReIm2AmPh()
+        self.image = new_img
+        self.setImage(dispAmp, dispPhs, logScale, color)
+        self.update_labs(dispLabs)
 
     def hide_labels(self):
         labsToDel = self.children()
@@ -294,12 +314,16 @@ class TriangulateWidget(QtWidgets.QWidget):
         # Navigation panel (1)
         # ------------------------------
 
+        self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
+        self.clear_prev_checkbox.setChecked(True)
+
         prev_button = QtWidgets.QPushButton('Prev', self)
         next_button = QtWidgets.QPushButton('Next', self)
         lswap_button = QtWidgets.QPushButton('L-Swap', self)
         rswap_button = QtWidgets.QPushButton('R-Swap', self)
         flip_button = QtWidgets.QPushButton('Flip', self)
-        name_it_button = QtWidgets.QPushButton('Set name', self)
+        set_name_button = QtWidgets.QPushButton('Set name', self)
+        reset_names_button = QtWidgets.QPushButton('Reset names', self)
         zoom_button = QtWidgets.QPushButton('Crop N ROIs', self)
         delete_button = QtWidgets.QPushButton('Delete', self)
         clear_button = QtWidgets.QPushButton('Clear', self)
@@ -310,17 +334,18 @@ class TriangulateWidget(QtWidgets.QWidget):
         lswap_button.clicked.connect(self.swap_left)
         rswap_button.clicked.connect(self.swap_right)
         flip_button.clicked.connect(self.flip_image_h)
-        name_it_button.clicked.connect(self.set_image_name)
+        set_name_button.clicked.connect(self.set_image_name)
+        reset_names_button.clicked.connect(self.reset_image_names)
         zoom_button.clicked.connect(self.zoom_n_fragments)
         delete_button.clicked.connect(self.delete_image)
         clear_button.clicked.connect(self.clear_image)
         undo_button.clicked.connect(self.remove_last_point)
 
-        self.name_input = QtWidgets.QLineEdit('ref', self)
+        self.name_input = QtWidgets.QLineEdit('self.display.image.name', self)
         self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
 
         hbox_name = QtWidgets.QHBoxLayout()
-        hbox_name.addWidget(name_it_button)
+        hbox_name.addWidget(set_name_button)
         hbox_name.addWidget(self.name_input)
 
         hbox_zoom = QtWidgets.QHBoxLayout()
@@ -336,7 +361,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_nav.layout.setColumnStretch(4, 1)
         self.tab_nav.layout.setColumnStretch(5, 1)
         self.tab_nav.layout.setRowStretch(0, 1)
-        self.tab_nav.layout.setRowStretch(6, 1)
+        self.tab_nav.layout.setRowStretch(7, 1)
         self.tab_nav.layout.addWidget(prev_button, 1, 1, 1, 2)
         self.tab_nav.layout.addWidget(next_button, 1, 3, 1, 2)
         self.tab_nav.layout.addWidget(lswap_button, 2, 1, 1, 2)
@@ -346,9 +371,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_nav.layout.addWidget(zoom_button, 4, 1)
         self.tab_nav.layout.addWidget(self.n_to_zoom_input, 4, 2)
         self.tab_nav.layout.addWidget(delete_button, 4, 3, 1, 2)
-        self.tab_nav.layout.addWidget(name_it_button, 5, 1)
+        self.tab_nav.layout.addWidget(set_name_button, 5, 1)
         self.tab_nav.layout.addWidget(self.name_input, 5, 2)
         self.tab_nav.layout.addWidget(undo_button, 5, 3, 1, 2)
+        self.tab_nav.layout.addWidget(reset_names_button, 6, 1, 1, 2)
+        self.tab_nav.layout.addWidget(self.clear_prev_checkbox, 6, 3, 1, 2)
         self.tab_nav.setLayout(self.tab_nav.layout)
 
         # ------------------------------
@@ -491,6 +518,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         rerot_button = QtWidgets.QPushButton('Re-Rot', self)
         remag_button = QtWidgets.QPushButton('Re-Mag', self)
         rewarp_button = QtWidgets.QPushButton('Re-Warp', self)
+        cross_corr_w_prev_button = QtWidgets.QPushButton('Cross corr. w. prev.', self)
+        cross_corr_all_button = QtWidgets.QPushButton('Cross corr. all', self)
 
         auto_shift_button.clicked.connect(self.auto_shift_image)
         auto_rot_button.clicked.connect(self.auto_rot_image)
@@ -500,6 +529,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         rerot_button.clicked.connect(self.rerotate)
         remag_button.clicked.connect(self.remagnify)
         rewarp_button.clicked.connect(self.rewarp)
+        cross_corr_w_prev_button.clicked.connect(self.cross_corr_with_prev)
+        cross_corr_all_button.clicked.connect(self.cross_corr_all)
+
+        cross_corr_w_prev_button.setEnabled(False)
+        cross_corr_all_button.setEnabled(False)
 
         grid_manual = QtWidgets.QGridLayout()
         grid_manual.setColumnStretch(0, 1)
@@ -529,7 +563,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_auto.setColumnStretch(0, 1)
         grid_auto.setColumnStretch(1, 2)
         grid_auto.setColumnStretch(2, 2)
-        grid_auto.setColumnStretch(3, 1)
+        grid_auto.setColumnStretch(3, 2)
+        grid_auto.setColumnStretch(4, 1)
         grid_auto.setRowStretch(0, 1)
         grid_auto.setRowStretch(5, 1)
         grid_auto.addWidget(auto_shift_button, 1, 1)
@@ -540,6 +575,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_auto.addWidget(rerot_button, 2, 2)
         grid_auto.addWidget(remag_button, 3, 2)
         grid_auto.addWidget(rewarp_button, 4, 2)
+        grid_auto.addWidget(cross_corr_w_prev_button, 1, 3)
+        grid_auto.addWidget(cross_corr_all_button, 2, 3)
 
         self.tab_align = QtWidgets.QWidget()
         self.tab_align.layout = QtWidgets.QVBoxLayout()
@@ -733,6 +770,8 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         self.setLayout(hbox_main)
 
+        self.reset_image_names()  # !!!
+
         self.move(250, 50)
         self.setWindowTitle('Holo window')
         self.setWindowIcon(QtGui.QIcon('gui/world.png'))
@@ -767,34 +806,52 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.display.image.name = self.name_input.text()
         self.fname_input.setText(self.name_input.text())
 
-    def go_to_prev_image(self):
-        is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
-        is_log_scale_checked = self.log_scale_checkbox.isChecked()
+    def reset_image_names(self):
+        curr_img = self.display.image
+        first_img = imsup.GetFirstImage(curr_img)
+        img_queue = imsup.CreateImageListFromFirstImage(first_img)
+        for img, idx in zip(img_queue, range(len(img_queue))):
+            img.numInSeries = idx + 1
+            img.name = 'img0{0}'.format(idx + 1) if idx < 9 else 'img{0}'.format(idx + 1)
+        self.name_input.setText(curr_img.name)
+        self.fname_input.setText(curr_img.name)
+
+    def go_to_image(self, new_idx):
         is_show_labels_checked = self.show_labels_checkbox.isChecked()
-        is_color_checked = self.color_radio_button.isChecked()
-        if self.display.image.prev is not None:
-            self.name_input.setText(self.display.image.prev.name)
-            self.fname_input.setText(self.display.image.prev.name)
-            self.manual_mode_checkbox.setChecked(False)
-            self.disable_manual_panel()
-        self.display.changeImage(toNext=False, dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                                 logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
+        first_img = imsup.GetFirstImage(self.display.image)
+        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        if new_idx > len(imgs) - 1:
+            new_idx = len(imgs) - 1
+        curr_img = imgs[new_idx]
+        if curr_img.name == '':
+            curr_img.name = 'img0{0}'.format(new_idx + 1) if new_idx < 9 else 'img{0}'.format(new_idx + 1)
+        self.name_input.setText(curr_img.name)
+        self.fname_input.setText(curr_img.name)
+        self.manual_mode_checkbox.setChecked(False)
+        self.disable_manual_panel()
+        self.display.image = imgs[new_idx]
+        self.display.update_labs(is_show_labels_checked)
+        self.update_display_and_bcg()
+
+    def go_to_prev_image(self):
+        curr_img = self.display.image
+        if curr_img.prev is None:
+            return
+        prev_idx = curr_img.prev.numInSeries - 1
+        self.go_to_image(prev_idx)
 
     def go_to_next_image(self):
-        is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
-        is_log_scale_checked = self.log_scale_checkbox.isChecked()
-        is_show_labels_checked = self.show_labels_checkbox.isChecked()
-        is_color_checked = self.color_radio_button.isChecked()
-        if self.display.image.next is not None:
-            self.name_input.setText(self.display.image.next.name)
-            self.fname_input.setText(self.display.image.next.name)
-            self.manual_mode_checkbox.setChecked(False)
-            self.disable_manual_panel()
+        curr_img = self.display.image
+        if curr_img.next is None:
+            return
+        next_idx = curr_img.next.numInSeries - 1
+        self.go_to_image(next_idx)
 
-        self.display.changeImage(toNext=True, dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                                 logScale=is_log_scale_checked, dispLabs=is_show_labels_checked, color=is_color_checked)
+    def go_to_last_image(self):
+        curr_img = self.display.image
+        last_img = imsup.GetLastImage(curr_img)
+        last_idx = last_img.numInSeries - 1
+        self.go_to_image(last_idx)
 
     def flip_image_h(self):
         imsup.flip_image_h(self.display.image)
@@ -901,21 +958,13 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         curr_idx = curr_img.numInSeries - 1
         first_img = imsup.GetFirstImage(curr_img)
-        tmp_img_list = imsup.CreateImageListFromFirstImage(first_img)
+        all_img_list = imsup.CreateImageListFromFirstImage(first_img)
 
-        if curr_img.prev is not None:
-            curr_img.prev.next = None
-            self.go_to_prev_image()
-        else:
-            curr_img.next.prev = None
-            self.go_to_next_image()
-            if curr_idx == 0:
-                self.display.image.numInSeries = 1
+        new_idx = curr_idx - 1 if curr_img.prev is not None else curr_idx + 1
+        self.go_to_image(new_idx)
 
-        del tmp_img_list[curr_idx]
+        del all_img_list[curr_idx]
         del self.display.pointSets[curr_idx]
-        tmp_img_list.UpdateLinks()
-        del curr_img
 
     def toggle_lines(self):
         self.display.show_lines = not self.display.show_lines
@@ -1169,6 +1218,34 @@ class TriangulateWidget(QtWidgets.QWidget):
         # self.changes_made = []
         self.display.setImage()
 
+    def cross_corr_with_prev(self):
+        curr_img = self.display.image
+        if curr_img.prev is None:
+            print('There is no reference image!')
+            return
+        img_list_to_cc = imsup.CreateImageListFromImage(curr_img.prev, 2)
+        img_aligned = cross_corr_images(img_list_to_cc)[0]
+        self.insert_img_after_curr(img_aligned)
+        self.go_to_next_image()
+
+    def cross_corr_all(self):
+        curr_img = self.display.image
+        first_img = imsup.GetFirstImage(curr_img)
+        all_img_list = imsup.CreateImageListFromFirstImage(first_img)
+        n_imgs = len(all_img_list)
+        insert_idx = n_imgs
+        img_align_list = cross_corr_images(all_img_list)
+
+        ref_img = imsup.copy_am_ph_image(first_img)
+        img_align_list.insert(0, ref_img)
+        all_img_list += img_align_list
+        for i in range(n_imgs):
+            self.display.pointSets.append([])
+        all_img_list.UpdateAndRestrainLinks()
+
+        self.go_to_image(insert_idx)
+        print('Cross-correlation done!')
+
     # def align_images(self):
     #     if self.shift_radio_button.isChecked():
     #         self.align_shift()
@@ -1214,6 +1291,7 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         rot_angle_avg /= n_pairs
         self.rot_angle = rot_angle_avg
+        print('Avg. rot. angle = {0:.2f} deg'.format(rot_angle_avg))
 
         img_rot = tr.RotateImageSki(curr_img, rot_angle_avg)
         self.insert_img_after_curr(img_rot)
@@ -1328,21 +1406,8 @@ class TriangulateWidget(QtWidgets.QWidget):
     def reshift(self):
         curr_img = self.display.image
         shift = self.shift
-
-        if self.shift_radio_button.isChecked():
-            shifted_img = imsup.shift_am_ph_image(curr_img, shift)
-            # shifted_img = imsup.create_imgexp_from_img(shifted_img)
-            self.insert_img_after_curr(shifted_img)
-        else:
-            bufSz = max([abs(x) for x in shift])
-            dirs = 'tblr'
-            padded_img = imsup.PadImage(curr_img, bufSz, 0.0, dirs)
-            shifted_img = imsup.shift_am_ph_image(padded_img, shift)
-            # shifted_img = imsup.create_imgexp_from_img(shifted_img)
-
-            resc_factor = curr_img.width / padded_img.width
-            resc_img = tr.RescaleImageSki(shifted_img, resc_factor)
-            self.insert_img_after_curr(resc_img)
+        shifted_img = imsup.shift_am_ph_image(curr_img, shift)
+        self.insert_img_after_curr(shifted_img)
 
     def rerotate(self):
         curr_img = self.display.image
@@ -1806,8 +1871,22 @@ def LoadImageSeriesFromFirstFile(imgPath):
 
 # --------------------------------------------------------
 
+def cross_corr_images(img_list):
+    img_align_list = imsup.ImageList()
+    img_list[0].shift = [0, 0]
+    for img in img_list[1:]:
+        mcf = imsup.CalcCrossCorrFun(img.prev, img)
+        new_shift = imsup.GetShift(mcf)
+        img.shift = [ sp + sn for sp, sn in zip(img.prev.shift, new_shift) ]
+        # img.shift = list(np.array(img.shift) + np.array(new_shift))
+        print('"{0}" was shifted by {1} px'.format(img.name, img.shift))
+        img_shifted = imsup.shift_am_ph_image(img, img.shift)
+        img_align_list.append(img_shifted)
+    return img_align_list
+
+# --------------------------------------------------------
+
 def zoom_fragment(img, coords):
-    print(coords)
     crop_img = imsup.crop_am_ph_roi(img, coords)
     orig_width = img.width
     crop_width = np.abs(coords[2] - coords[0])
