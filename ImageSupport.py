@@ -287,8 +287,6 @@ def crop_am_ph_roi(img, coords):
     roi_w = coords[2] - coords[0]
     roi = ImageExp(roi_h, roi_w, img.cmpRepr)
 
-    print(roi_h)
-    print(roi_w)
     roi.amPh.am[:] = img.amPh.am[coords[1]:coords[3], coords[0]:coords[2]]
     roi.amPh.ph[:] = img.amPh.ph[coords[1]:coords[3], coords[0]:coords[2]]
     roi.UpdateBuffer()

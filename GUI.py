@@ -977,6 +977,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         else:
             self.display.hide_labels()
 
+    def toggle_log_scale(self):
+        self.log_scale_checkbox.setChecked(not self.log_scale_checkbox.isChecked())
+        self.update_display()
+
     def update_display(self):
         is_amp_checked = self.amp_radio_button.isChecked()
         is_phs_checked = self.phs_radio_button.isChecked()
@@ -1103,16 +1107,23 @@ class TriangulateWidget(QtWidgets.QWidget):
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
 
         n_to_zoom = np.int(self.n_to_zoom_input.text())
-        img_list = imsup.CreateImageListFromFirstImage(curr_img)
-        img_list2 = img_list[:n_to_zoom]
+        first_img = imsup.GetFirstImage(curr_img)
+        insert_idx = curr_idx + n_to_zoom
+        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        img_list2 = img_list[curr_idx:insert_idx]
 
-        for img, n in zip(img_list2, range(n_to_zoom, 2*n_to_zoom)):
+        for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_zoom)):
             frag = zoom_fragment(img, real_sq_coords)
             img_list.insert(n, frag)
+            self.display.pointSets.insert(n, [])
 
         img_list.UpdateLinks()
-        for i in range(n_to_zoom):
-            self.go_to_next_image()
+
+        if self.clear_prev_checkbox.isChecked():
+            del img_list[curr_idx:insert_idx]
+            del self.display.pointSets[curr_idx:insert_idx]
+
+        self.go_to_image(curr_idx)
         print('Zooming complete!')
 
     def clear_image(self):
@@ -1553,6 +1564,7 @@ class TriangulateWidget(QtWidgets.QWidget):
     def rec_holo_no_ref_1(self):
         holo_img = self.display.image
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
+        self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(holo_fft)
 
     def rec_holo_no_ref_2(self):
@@ -1576,7 +1588,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         hann_window = int(self.hann_win_input.text())
 
         sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
-        self.log_scale_checkbox.setChecked(False)
+        self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
 
     def rec_holo_with_ref_2(self):
@@ -1605,7 +1617,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
 
-        self.log_scale_checkbox.setChecked(False)
+        self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(ref_sband_ap)
         self.insert_img_after_curr(holo_sband_ap)
 
@@ -1613,6 +1625,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         sband_img = self.display.image
         rec_holo = holo.rec_holo_no_ref_3(sband_img)
         rec_holo.ReIm2AmPh()
+        self.log_scale_checkbox.setChecked(False)
         self.insert_img_after_curr(rec_holo)
 
     # def rec_holo_no_ref(self):
