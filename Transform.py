@@ -170,6 +170,23 @@ class Line:
 
 # -------------------------------------------------------------------
 
+# class Plane:
+#     def __init__(self, a_coeff, b_coeff, c_coeff, d_coeff):
+#         self.a = a_coeff
+#         self.b = b_coeff
+#         self.c = c_coeff
+#         self.d = d_coeff
+#
+#     def getFromTwoLines(self, line1, line2):
+#         self.a = line1.a
+#         self.b = line2.a
+#
+#     def generateArrPlane(self, width, height):
+#         arr = np.array((height, width), dtype=np.float32)
+
+
+# -------------------------------------------------------------------
+
 def FindPerpendicularLine(line, point):
     linePerp = Line(-1 / line.a, 0)
     linePerp.getFromDirCoeffAndPoint(linePerp.a, point)

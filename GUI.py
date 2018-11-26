@@ -315,7 +315,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         # ------------------------------
 
         self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
-        self.clear_prev_checkbox.setChecked(True)
+        self.clear_prev_checkbox.setChecked(False)
 
         prev_button = QtWidgets.QPushButton('Prev', self)
         next_button = QtWidgets.QPushButton('Next', self)
