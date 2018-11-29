@@ -595,6 +595,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         sum_button = QtWidgets.QPushButton('Sum', self)
         diff_button = QtWidgets.QPushButton('Diff', self)
         amplify_button = QtWidgets.QPushButton('Amplify', self)
+        rm_gradient_button = QtWidgets.QPushButton('Remove gradient', self)
 
         aperture_label = QtWidgets.QLabel('Aperture [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
@@ -612,6 +613,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
         amplify_button.clicked.connect(self.amplify_phase)
+        rm_gradient_button.clicked.connect(self.remove_gradient)
 
         hbox_holo = QtWidgets.QHBoxLayout()
         hbox_holo.addWidget(holo_no_ref_2_button)
@@ -622,7 +624,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_holo.layout.setColumnStretch(0, 1)
         self.tab_holo.layout.setColumnStretch(4, 1)
         self.tab_holo.layout.setRowStretch(0, 1)
-        self.tab_holo.layout.setRowStretch(5, 1)
+        self.tab_holo.layout.setRowStretch(6, 1)
         self.tab_holo.layout.addWidget(aperture_label, 1, 1)
         self.tab_holo.layout.addWidget(self.aperture_input, 2, 1)
         self.tab_holo.layout.addWidget(hann_win_label, 1, 2)
@@ -635,6 +637,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(amp_factor_label, 1, 3)
         self.tab_holo.layout.addWidget(self.amp_factor_input, 2, 3)
         self.tab_holo.layout.addWidget(amplify_button, 3, 3)
+        self.tab_holo.layout.addWidget(rm_gradient_button, 5, 1)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -1678,6 +1681,25 @@ class TriangulateWidget(QtWidgets.QWidget):
         phs_amplified.name = '{0}_x{1:.0f}'.format(curr_name, amp_factor)
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
+
+    def remove_gradient(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+        p1, p2, p3 = self.display.pointSets[curr_idx][:3]
+        p1.append(curr_img.amPh.ph[p1[1], p1[0]])
+        p2.append(curr_img.amPh.ph[p2[1], p2[0]])
+        p3.append(curr_img.amPh.ph[p3[1], p3[0]])
+        grad_plane = tr.Plane(0, 0, 0)
+        grad_plane.getFromThreePoints(p1, p2, p3)
+        print(grad_plane.a, grad_plane.b, grad_plane.c)
+        grad_arr = grad_plane.fillPlane(curr_img.height, curr_img.width)
+        grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        grad_img.amPh.ph = np.copy(grad_arr)
+        print(grad_arr[p1[1], p1[0]])
+        print(grad_arr[p2[1], p2[0]])
+        print(grad_arr[p3[1], p3[0]])
+        print(p1[2], p2[2], p3[2])
+        self.insert_img_after_curr(grad_img)
 
     def swap_left(self):
         curr_img = self.display.image

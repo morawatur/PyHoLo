@@ -170,20 +170,30 @@ class Line:
 
 # -------------------------------------------------------------------
 
-# class Plane:
-#     def __init__(self, a_coeff, b_coeff, c_coeff, d_coeff):
-#         self.a = a_coeff
-#         self.b = b_coeff
-#         self.c = c_coeff
-#         self.d = d_coeff
-#
-#     def getFromTwoLines(self, line1, line2):
-#         self.a = line1.a
-#         self.b = line2.a
-#
-#     def generateArrPlane(self, width, height):
-#         arr = np.array((height, width), dtype=np.float32)
+class Plane:
+    def __init__(self, a_coeff, b_coeff, c_coeff):
+        self.a = a_coeff
+        self.b = b_coeff
+        self.c = c_coeff
 
+    def getFromThreePoints(self, p1, p2, p3):
+        print(p1, p2)
+        dx1, dy1, dz1 = list(np.array(p1) - np.array(p2))
+        dx2, dy2, dz2 = list(np.array(p3) - np.array(p2))
+        a = dy1 * dz2 - dy2 * dz1
+        b = dz1 * dx2 - dz2 * dx1
+        c = dx1 * dy2 - dx2 * dy1
+        d = -(a * p1[0] + b * p1[1] + c * p1[2])
+        self.a = -a / c
+        self.b = -b / c
+        self.c = -d / c
+
+    def fillPlane(self, w, h):
+        arr = np.zeros((h, w), dtype=np.float32)
+        for y in range(h):
+            for x in range(w):
+                arr[y, x] = self.a * x + self.b * y + self.c
+        return arr
 
 # -------------------------------------------------------------------
 
