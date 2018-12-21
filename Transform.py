@@ -177,13 +177,12 @@ class Plane:
         self.c = c_coeff
 
     def getFromThreePoints(self, p1, p2, p3):
-        print(p1, p2)
         dx1, dy1, dz1 = list(np.array(p1) - np.array(p2))
         dx2, dy2, dz2 = list(np.array(p3) - np.array(p2))
         a = dy1 * dz2 - dy2 * dz1
         b = dz1 * dx2 - dz2 * dx1
         c = dx1 * dy2 - dx2 * dy1
-        d = -(a * p1[0] + b * p1[1] + c * p1[2])
+        d = -(a * p2[0] + b * p2[1] + c * p2[2])
         self.a = -a / c
         self.b = -b / c
         self.c = -d / c
