@@ -421,12 +421,12 @@ class TriangulateWidget(QtWidgets.QWidget):
         export_all_button = QtWidgets.QPushButton('Export all', self)
         norm_phase_button = QtWidgets.QPushButton('Normalize phase', self)
 
-        self.export_png_radio_button = QtWidgets.QRadioButton('PNG image', self)
+        self.export_tiff_radio_button = QtWidgets.QRadioButton('TIFF image', self)
         self.export_bin_radio_button = QtWidgets.QRadioButton('Binary', self)
-        self.export_png_radio_button.setChecked(True)
+        self.export_tiff_radio_button.setChecked(True)
 
         export_group = QtWidgets.QButtonGroup(self)
-        export_group.addButton(self.export_png_radio_button)
+        export_group.addButton(self.export_tiff_radio_button)
         export_group.addButton(self.export_bin_radio_button)
 
         self.amp_radio_button.toggled.connect(self.update_display)
@@ -466,7 +466,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         grid_exp.addWidget(self.fname_input, 2, 1)
         grid_exp.addWidget(export_button, 1, 2)
         grid_exp.addWidget(export_all_button, 2, 2)
-        grid_exp.addWidget(self.export_png_radio_button, 1, 3)
+        grid_exp.addWidget(self.export_tiff_radio_button, 1, 3)
         grid_exp.addWidget(self.export_bin_radio_button, 2, 3)
 
         self.tab_disp = QtWidgets.QWidget()
@@ -860,7 +860,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         imsup.flip_image_h(self.display.image)
         self.display.setImage()
 
-    def save_amp_as_png(self, fname, log, color):
+    def save_amp_as_tiff(self, fname, log, color):
         curr_img = self.display.image
         amp = np.copy(curr_img.amPh.am)
         if log:
@@ -872,9 +872,9 @@ class TriangulateWidget(QtWidgets.QWidget):
             amp_to_save = imsup.im.fromarray(amp.astype(np.uint8), 'RGB')
         else:
             amp_to_save = imsup.im.fromarray(amp.astype(np.uint8))
-        amp_to_save.save('{0}.png'.format(fname))
+        amp_to_save.save('{0}.tif'.format(fname))
 
-    def save_phs_as_png(self, fname, log, color):
+    def save_phs_as_tiff(self, fname, log, color):
         curr_img = self.display.image
         phs = np.copy(curr_img.amPh.ph)
         if log:
@@ -886,7 +886,7 @@ class TriangulateWidget(QtWidgets.QWidget):
             phs_to_save = imsup.im.fromarray(phs.astype(np.uint8), 'RGB')
         else:
             phs_to_save = imsup.im.fromarray(phs.astype(np.uint8))
-        phs_to_save.save('{0}.png'.format(fname))
+        phs_to_save.save('{0}.tif'.format(fname))
 
     def export_image(self):
         curr_num = self.display.image.numInSeries
@@ -916,23 +916,24 @@ class TriangulateWidget(QtWidgets.QWidget):
                 # np.save(fname, cos_phs)
             print('Saved image to binary file: "{0}"'.format(fname))
         else:
-            fname_ext = '.png'
+            fname_ext = '.tif'
+            # img_fname = '{0}{1}'.format(fname, fname_ext)
             log = True if self.log_scale_checkbox.isChecked() else False
             color = True if self.color_radio_button.isChecked() else False
 
             if is_amp_checked:
                 # imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), True, log, color)
-                self.save_amp_as_png(fname, log, color)
+                self.save_amp_as_tiff(fname, log, color)
             elif is_phs_checked:
                 # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True, log, color)
-                self.save_phs_as_png(fname, log, color)
+                self.save_phs_as_tiff(fname, log, color)
             else:
                 phs_tmp = np.copy(curr_img.amPh.ph)
                 curr_img.amPh.ph = np.cos(phs_tmp)
                 # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True log, color)
-                self.save_phs_as_png(fname, log, color)
+                self.save_phs_as_tiff(fname, log, color)
                 curr_img.amPh.ph = np.copy(phs_tmp)
-            print('Saved image as "{0}.png"'.format(fname))
+            print('Saved image as "{0}.tif"'.format(fname))
 
         # save log file
         log_fname = '{0}_log.txt'.format(fname)
@@ -1881,12 +1882,12 @@ def LoadImageSeriesFromFirstFile(imgPath):
         print('Reading file "' + imgPath + '"')
         imgData, pxDims = dm3.ReadDm3File(imgPath)
         imsup.Image.px_dim_default = pxDims[0]
-        imgData = np.abs(imgData)
+        # imgData = np.abs(imgData)
         img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'],
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
-        # img.amPh.ph = np.copy(img.amPh.am)
+        img.amPh.ph = np.copy(img.amPh.am)
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
         # imsup.RemovePixelArtifacts(img, 0.7, 1.3)

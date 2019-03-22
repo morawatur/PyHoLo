@@ -75,8 +75,8 @@ def RescaleImageSki(img, factor):
     else:
         phs_scaled = np.copy(img.amPh.ph)
 
-    amp_mag = tr.rescale(amp_scaled, scale=factor, mode='constant').astype(np.float32)
-    phs_mag = tr.rescale(phs_scaled, scale=factor, mode='constant').astype(np.float32)
+    amp_mag = tr.rescale(amp_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(np.float32)
+    phs_mag = tr.rescale(phs_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(np.float32)
 
     if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
         amp_mag_rescaled = imsup.ScaleImage(amp_mag, amp_limits[0], amp_limits[1])
