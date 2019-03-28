@@ -43,6 +43,21 @@ class RgbColorTable:
 
 # --------------------------------------------------------
 
+class RgbColorTable_B2R:
+    def __init__(self):
+        step = 4
+        inc_range = np.arange(0, 256, step)
+        dec_range = np.arange(255, -1, -step)
+        bcm1 = [QtGui.qRgb(0, i, 255) for i in inc_range]
+        gcm1 = [QtGui.qRgb(0, 255, i) for i in dec_range]
+        gcm2 = [QtGui.qRgb(i, 255, 0) for i in inc_range]
+        rcm1 = [QtGui.qRgb(255, i, 0) for i in dec_range]
+        # rcm2 = [QtGui.qRgb(255, 0, i) for i in inc_range]
+        # bcm2 = [QtGui.qRgb(i, 0, 255) for i in dec_range]
+        self.cm = bcm1 + gcm1 + gcm2 + rcm1
+
+# --------------------------------------------------------
+
 class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
         super(LabelExt, self).__init__(parent)
@@ -51,7 +66,7 @@ class LabelExt(QtWidgets.QLabel):
         self.pointSets = [[]]
         self.show_lines = True
         self.show_labs = True
-        self.rgb_cm = RgbColorTable()
+        self.rgb_cm = RgbColorTable_B2R()
 
     # prowizorka - stałe liczbowe do poprawy
     def paintEvent(self, event):
@@ -1207,7 +1222,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr = self.display.image
         total_rot = curr.rot + rot
 
-        if curr.shift != 0:
+        if curr.shift != [0, 0]:
             tmp = imsup.shift_am_ph_image(bckp, curr.shift)
             rotated_img = tr.RotateImageSki(tmp, total_rot)
         else:

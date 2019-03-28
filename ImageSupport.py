@@ -674,11 +674,12 @@ def GetShift(ccf):
 
 #-------------------------------------------------------------------
 
-def shift_array(arr, shift):
+def shift_array(arr, shift, fval=0):
     dx, dy = shift
     if dx == 0 and dy == 0:
         return np.copy(arr)
-    arr_shifted = np.zeros(arr.shape, dtype=arr.dtype)
+    # arr_shifted = np.zeros(arr.shape, dtype=arr.dtype)
+    arr_shifted = np.full(arr.shape, fval, dtype=arr.dtype)
 
     if dx == 0:
         if dy > 0:
@@ -709,8 +710,17 @@ def shift_array(arr, shift):
 
 def shift_am_ph_image(img, shift):
     img_shifted = ImageExp(img.height, img.width, img.cmpRepr, px_dim_sz=img.px_dim)
-    img_shifted.amPh.am = shift_array(img.amPh.am, shift)
-    img_shifted.amPh.ph = shift_array(img.amPh.ph, shift)
+
+    amp_tmp = np.copy(img.amPh.am)
+    phs_tmp = np.copy(img.amPh.ph)
+    amp_fval = (np.min(amp_tmp) + np.max(amp_tmp)) / 2.0
+    phs_fval = (np.min(phs_tmp) + np.max(phs_tmp)) / 2.0
+
+    print(amp_fval)
+    print(phs_fval)
+
+    img_shifted.amPh.am = shift_array(img.amPh.am, shift, fval=amp_fval)
+    img_shifted.amPh.ph = shift_array(img.amPh.ph, shift, fval=phs_fval)
 
     if img.cos_phase is not None:
         img_shifted.update_cos_phase()

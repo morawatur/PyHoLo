@@ -28,8 +28,14 @@ def RotateImageSki(img, angle, mode='constant'):
     else:
         phs_scaled = np.copy(img.amPh.ph)
 
-    amp_rot = tr.rotate(amp_scaled, angle, mode=mode).astype(np.float32)
-    phs_rot = tr.rotate(phs_scaled, angle, mode=mode).astype(np.float32)
+    amp_cval = (np.min(amp_scaled) + np.max(amp_scaled)) / 2.0
+    phs_cval = (np.min(phs_scaled) + np.max(phs_scaled)) / 2.0
+
+    print(amp_cval)
+    print(phs_cval)
+
+    amp_rot = tr.rotate(amp_scaled, angle, mode=mode, cval=amp_cval).astype(np.float32)
+    phs_rot = tr.rotate(phs_scaled, angle, mode=mode, cval=phs_cval).astype(np.float32)
 
     if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
         amp_rot_rescaled = imsup.ScaleImage(amp_rot, amp_limits[0], amp_limits[1])
