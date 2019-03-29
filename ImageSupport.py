@@ -237,7 +237,7 @@ def grayscale_to_rgb(gs_arr):
     gs_arr[gs_arr < 0] = 0
     gs_arr[gs_arr > 255] = 255
 
-    step = 6
+    step = 4
     inc_range = np.arange(0, 256, step)
     dec_range = np.arange(255, -1, -step)
 
@@ -245,9 +245,9 @@ def grayscale_to_rgb(gs_arr):
     gcm1 = [[0, 255, i] for i in dec_range]
     gcm2 = [[i, 255, 0] for i in inc_range]
     rcm1 = [[255, i, 0] for i in dec_range]
-    rcm2 = [[255, 0, i] for i in inc_range]
-    bcm2 = [[i, 0, 255] for i in dec_range]
-    rgb_cm = bcm1 + gcm1 + gcm2 + rcm1 + rcm2 + bcm2
+    # rcm2 = [[255, 0, i] for i in inc_range]
+    # bcm2 = [[i, 0, 255] for i in dec_range]
+    rgb_cm = bcm1 + gcm1 + gcm2 + rcm1
     rgb_cm = np.array(rgb_cm[:256])
 
     gs_arr_1d = gs_arr.reshape((1, -1))
