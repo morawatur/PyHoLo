@@ -676,6 +676,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         plot_button.clicked.connect(self.plot_profile)
         calc_B_button.clicked.connect(self.calc_magnetic_field)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
+        # calc_grad_button.clicked.connect(self.draw_image_with_arrows)
         filter_contours_button.clicked.connect(self.filter_contours)
 
         self.tab_calc = QtWidgets.QWidget()
@@ -1855,6 +1856,13 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(img_filtered)
         # find_contours(self.display.image)
 
+    # def draw_image_with_arrows(self):
+    #     import GradientArrows as grad_arr
+    #     curr_img = self.display.image
+    #     arr = np.copy(curr_img.amPh.ph)
+    #     print('ble1')
+    #     grad_arr.draw_image_with_gradient_arrows(arr, 20)
+
     # def plot_profile(self):
     #     curr_img = self.display.image
     #     curr_idx = curr_img.numInSeries - 1
@@ -1902,7 +1910,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
-        img.amPh.ph = np.copy(img.amPh.am)
+        img.amPh.ph = np.copy(img.amPh.am)        # !!!
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
         # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
