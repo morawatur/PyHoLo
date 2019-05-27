@@ -31,9 +31,6 @@ def RotateImageSki(img, angle, mode='constant'):
     amp_cval = (np.min(amp_scaled) + np.max(amp_scaled)) / 2.0
     phs_cval = (np.min(phs_scaled) + np.max(phs_scaled)) / 2.0
 
-    print(amp_cval)
-    print(phs_cval)
-
     amp_rot = tr.rotate(amp_scaled, angle, mode=mode, cval=amp_cval).astype(np.float32)
     phs_rot = tr.rotate(phs_scaled, angle, mode=mode, cval=phs_cval).astype(np.float32)
 

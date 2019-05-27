@@ -25,7 +25,7 @@ img.amPh.ph = np.copy(img.amPh.am)  # !!!
 fig = pplt.figure()
 ax = fig.add_subplot(111)
 width, height = img.amPh.ph.shape
-step = 60
+step = 100
 offset = 50
 h_min = offset
 h_max = width - offset
@@ -37,8 +37,8 @@ yv += step / 2.0
 print(step)
 
 yd, xd = np.gradient(img.amPh.ph)
-ydd = yd[h_min:h_max:60, h_min:h_max:60]
-xdd = xd[h_min:h_max:60, h_min:h_max:60]
+ydd = yd[h_min:h_max:100, h_min:h_max:100]
+xdd = xd[h_min:h_max:100, h_min:h_max:100]
 
 avg_ydd = np.average(np.abs(ydd))
 avg_xdd = np.average(np.abs(xdd))
@@ -64,7 +64,7 @@ print(xv.shape)
 print(xdd.shape)
 
 def func_to_vectorize(x, y, dx, dy, sc=1):
-    pplt.arrow(x, y, dx*sc, dy*sc, fc="yellow", ec="k", lw=0.6, head_width=14, head_length=18)
+    pplt.arrow(x, y, dx*sc, dy*sc, fc="blue", ec="blue", lw=0.8, head_width=14, head_length=18)
 
 vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
 
@@ -80,7 +80,7 @@ ph_d_roi = np.copy(ph_d[h_min:h_max, h_min:h_max])
 
 pplt.imshow(ph_roi)
 # ax.imshow(arr)
-vectorized_arrow_drawing(xv, yv, xdd, ydd, 3000)
+vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)
 # pplt.set_cmap(pplt.cm.Greys)
 pplt.set_cmap(pplt.cm.RdYlBu)
 pplt.colorbar()

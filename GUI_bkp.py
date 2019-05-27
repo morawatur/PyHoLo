@@ -129,31 +129,30 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
-        # if image wasn't cropped then update buffer
-        if self.image.buffer.am.shape[0] == self.image.height:
-            self.image.UpdateBuffer()       # ???
-
         if dispAmp:
-            px_arr = np.copy(self.image.buffer.am)
+            self.image.buffer = np.copy(self.image.amPh.am)
             if logScale:
-                buf_am = np.copy(px_arr)
-                buf_am[np.where(buf_am <= 0)] = 1e-5
-                px_arr = np.log(buf_am)
+                buf = self.image.buffer
+                buf[np.where(buf <= 0)] = 1e-5
+                self.image.buffer = np.log(buf)
+        elif dispPhs:
+            self.image.buffer = np.copy(self.image.amPh.ph)
         else:
-            px_arr = np.copy(self.image.buffer.ph)
-            if not dispPhs:
+            if self.image.cos_phase is None:
                 self.image.update_cos_phase()
-                px_arr = np.cos(px_arr)
+            self.image.buffer = np.copy(self.image.cos_phase)
 
         if not update_bcg:
-            pixmap_to_disp = imsup.ScaleImage(px_arr, 0.0, 255.0)
+            # buf_scaled = imsup.ScaleImage(self.image.buffer, 0.0, 255.0)
+            buf_scaled = update_image_bright_cont_gamma(self.image.buffer, brg=self.image.bias, cnt=self.image.gain, gam=self.image.gamma)
         else:
-            pixmap_to_disp = update_image_bright_cont_gamma(px_arr, brg=bright, cnt=cont, gam=gamma)
+            self.image.bias = bright
+            self.image.gain = cont
+            self.image.gamma = gamma
+            buf_scaled = update_image_bright_cont_gamma(self.image.buffer, brg=bright, cnt=cont, gam=gamma)
 
         # final image with all properties set
-        q_image = QtGui.QImage(pixmap_to_disp.astype(np.uint8), pixmap_to_disp.shape[0], pixmap_to_disp.shape[1],
-                               QtGui.QImage.Format_Indexed8)
-
+        q_image = QtGui.QImage(buf_scaled.astype(np.uint8), self.image.width, self.image.height, QtGui.QImage.Format_Indexed8)
         if color:
             q_image.setColorTable(self.rgb_cm.cm)
 
@@ -811,8 +810,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.reset_button.setEnabled(True)
 
     def disable_manual_panel(self):
-        if self.backup_image is not None:
-            self.reset_changes()
         self.left_button.setEnabled(False)
         self.right_button.setEnabled(False)
         self.up_button.setEnabled(False)
@@ -876,9 +873,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.go_to_image(last_idx)
 
     def flip_image_h(self):
-        curr = self.display.image
-        imsup.flip_image_h(curr)
-        self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
+        imsup.flip_image_h(self.display.image)
         self.display.setImage()
 
     def save_amp_as_tiff(self, fname, log, color):
@@ -1013,17 +1008,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         is_color_checked = self.color_radio_button.isChecked()
         self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
                               logScale=is_log_scale_checked, color=is_color_checked)
-
-    def update_bcg(self):
-        bright_val = int(self.bright_input.text())
-        cont_val = int(self.cont_input.text())
-        gamma_val = float(self.gamma_input.text())
-
-        self.change_bright_slider_value()
-        self.change_cont_slider_value()
-        self.change_gamma_slider_value()
-
-        self.display.setImage(update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
 
     def update_display_and_bcg(self):
         is_amp_checked = self.amp_radio_button.isChecked()
@@ -1182,10 +1166,10 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
-            self.backup_image = imsup.copy_am_ph_image(self.display.image)
+            if self.backup_image is None:
+                self.backup_image = imsup.copy_am_ph_image(self.display.image)
             self.enable_manual_panel()
         else:
-            self.backup_image = None
             self.disable_manual_panel()
 
     def move_left(self):
@@ -1217,9 +1201,14 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         curr.amPh.am = np.copy(shifted_img.amPh.am)
         curr.amPh.ph = np.copy(shifted_img.amPh.ph)
-        self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
-        self.display.image.shift = total_shift
-        self.display.setImage()
+        curr.shift = total_shift
+
+        is_amp = self.amp_radio_button.isChecked()
+        is_phs = self.phs_radio_button.isChecked()
+        is_log = self.log_scale_checkbox.isChecked()
+        is_col = self.color_radio_button.isChecked()
+
+        self.display.setImage(dispAmp=is_amp, dispPhs=is_phs, logScale=is_log, color=is_col, update_bcg=True)
 
     def rot_left(self):
         ang = float(self.rot_angle_input.text())
@@ -1242,37 +1231,23 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         curr.amPh.am = np.copy(rotated_img.amPh.am)
         curr.amPh.ph = np.copy(rotated_img.amPh.ph)
-        self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         curr.rot = total_rot
         self.display.setImage()
 
-    # def repeat_prev_mods(self):
-    #     curr = imsup.copy_am_ph_image(self.backup_image)
-    #     for mod in self.changes_made:
-    #         curr = modify_image(curr, mod[:2], bool(mod[2]))
-    #     self.display.image = curr
-
-    def zero_shift_rot(self):
-        self.display.image.shift = [0, 0]
-        self.display.image.rot = 0
+    def repeat_prev_mods(self):
+        curr = imsup.copy_am_ph_image(self.backup_image)
+        for mod in self.changes_made:
+            curr = modify_image(curr, mod[:2], bool(mod[2]))
+        self.display.image = curr
 
     def apply_changes(self):
-        self.zero_shift_rot()
-        self.backup_image = imsup.copy_am_ph_image(self.display.image)
-        print('Changes for {0} have been applied'.format(self.display.image.name))
-
-    def reset_changes(self):
-        curr = self.display.image
-        self.zero_shift_rot()
-        curr.amPh.am = np.copy(self.backup_image.amPh.am)
-        curr.amPh.ph = np.copy(self.backup_image.amPh.ph)
-        self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.backup_image = None
 
-    def reset_changes_and_update_display(self):
-        self.reset_changes()
+    def reset_changes(self):
+        self.display.image = imsup.copy_am_ph_image(self.backup_image)
+        self.backup_image = None
+        # self.changes_made = []
         self.display.setImage()
-        print('Changes for {0} have been revoked'.format(self.display.image.name))
 
     def cross_corr_with_prev(self):
         curr_img = self.display.image
@@ -1721,7 +1696,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         phs_amplified.amPh.ph *= amp_factor
         phs_amplified.update_cos_phase()
         phs_amplified.name = '{0}_x{1:.0f}'.format(curr_name, amp_factor)
-        phs_amplified = rescale_image_buffer_to_window(phs_amplified, const.disp_dim)
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
 
@@ -1929,18 +1903,14 @@ def LoadImageSeriesFromFirstFile(imgPath):
 
     while path.isfile(imgPath):
         print('Reading file "' + imgPath + '"')
-        img_name_match = re.search('(.+)/(.+).dm3$', imgPath)
-        img_name_text = img_name_match.group(2)
-
         imgData, pxDims = dm3.ReadDm3File(imgPath)
         imsup.Image.px_dim_default = pxDims[0]
+        # imgData = np.abs(imgData)
         img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'],
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
-        img = rescale_image_buffer_to_window(img, const.disp_dim)
         # img.amPh.ph = np.copy(img.amPh.am)        # !!!
-        img.name = img_name_text
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
         # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
@@ -1957,16 +1927,6 @@ def LoadImageSeriesFromFirstFile(imgPath):
 
     imgList.UpdateLinks()
     return imgList[0]
-
-# --------------------------------------------------------
-
-def rescale_image_buffer_to_window(img, win_dim):
-    zoom_factor = win_dim / img.width
-    img_to_disp = tr.RescaleImageSki(img, zoom_factor)
-    img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
-    img.buffer.am = np.copy(img_to_disp.amPh.am)
-    img.buffer.ph = np.copy(img_to_disp.amPh.ph)
-    return img
 
 # --------------------------------------------------------
 
@@ -1987,12 +1947,13 @@ def cross_corr_images(img_list):
 
 def zoom_fragment(img, coords):
     crop_img = imsup.crop_am_ph_roi(img, coords)
-    crop_img = imsup.create_imgexp_from_img(crop_img)
-    # crop_img.MoveToCPU()
-
-    crop_img.defocus = img.defocus
-    crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
-    return crop_img
+    orig_width = img.width
+    crop_width = np.abs(coords[2] - coords[0])
+    zoom_factor = orig_width / crop_width
+    zoom_img = tr.RescaleImageSki(crop_img, zoom_factor)
+    # zoom_img.px_dim *= zoom_factor
+    # self.insert_img_after_curr(zoom_img)
+    return zoom_img
 
 # --------------------------------------------------------
 

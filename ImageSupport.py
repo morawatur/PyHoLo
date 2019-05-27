@@ -1,7 +1,6 @@
 import numpy as np
 import scipy as sp
 from PIL import Image as im
-import Constants as const
 
 #-------------------------------------------------------------------
 
@@ -93,26 +92,31 @@ class ImageExp(Image):
         self.parent = super(ImageExp, self)
         self.shift = [0, 0]
         self.rot = 0
-        self.buffer = np.zeros(self.amPh.am.shape, dtype=np.float32)
+        self.amp_factor = 1.0
         self.cos_phase = None
+        self.buffer = ComplexAmPhMatrix(height, width)
 
     def __del__(self):
         super(ImageExp, self).__del__()
-        self.buffer = None
+        self.buffer.am = None
+        self.buffer.ph = None
         self.cos_phase = None
 
     def LoadAmpData(self, ampData):
         self.amPh.am = np.copy(ampData)
-        self.buffer = np.copy(ampData)
+        self.buffer.am = np.copy(ampData)
 
     def LoadPhsData(self, phsData):
         self.amPh.ph = np.copy(phsData)
+        self.buffer.ph = np.copy(phsData)
 
     def UpdateBuffer(self):
-        self.buffer = np.copy(self.amPh.am)
+        self.buffer.am = np.copy(self.amPh.am)
+        self.buffer.ph = np.copy(self.amPh.ph)
 
     def UpdateImageFromBuffer(self):
-        self.amPh.am = np.copy(self.buffer)
+        self.amPh.am = np.copy(self.buffer.am)
+        self.amPh.ph = np.copy(self.buffer.ph)
 
     def ReIm2AmPh(self):
         super(ImageExp, self).ReIm2AmPh()
