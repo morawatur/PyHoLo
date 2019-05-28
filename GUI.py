@@ -1703,6 +1703,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         rec_holo2 = self.display.image
 
         phs_sum = holo.calc_phase_sum(rec_holo1, rec_holo2)
+        phs_sum = rescale_image_buffer_to_window(phs_sum, const.disp_dim)
         self.insert_img_after_curr(phs_sum)
 
     def calc_phs_diff(self):
@@ -1710,6 +1711,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         rec_holo2 = self.display.image
 
         phs_diff = holo.calc_phase_diff(rec_holo1, rec_holo2)
+        phs_diff = rescale_image_buffer_to_window(phs_diff, const.disp_dim)
         self.insert_img_after_curr(phs_diff)
 
     def amplify_phase(self):
@@ -1938,8 +1940,8 @@ def LoadImageSeriesFromFirstFile(imgPath):
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
+        img.amPh.ph = np.copy(img.amPh.am)  # !!!
         img = rescale_image_buffer_to_window(img, const.disp_dim)
-        # img.amPh.ph = np.copy(img.amPh.am)        # !!!
         img.name = img_name_text
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
