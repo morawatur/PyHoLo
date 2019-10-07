@@ -302,6 +302,31 @@ class LineEditWithLabel(QtWidgets.QWidget):
 
 # --------------------------------------------------------
 
+class ImgScrollArea(QtWidgets.QScrollArea):
+    def __init__(self, img_list):
+        super(ImgScrollArea, self).__init__()
+
+        self.scroll_content = QtWidgets.QWidget(self)
+        scroll_layout = QtWidgets.QVBoxLayout(self.scroll_content)
+        self.scroll_content.setLayout(scroll_layout)
+
+        if len(img_list) > 0:
+            for img in img_list:
+                preview = create_preview_img(img)
+                scroll_layout.addWidget(preview)
+
+        self.setWidget(self.scroll_content)
+
+# --------------------------------------------------------
+
+def create_preview_img(self, full_img):
+    preview = imsup.ImageExp(64, 64, full_img.cmp)
+    preview.amPh.am = np.copy(full_img.amPh.am[:64, :64])
+    preview.amPh.ph = np.copy(full_img.amPh.ph[:64, :64])
+    return preview
+
+# --------------------------------------------------------
+
 class TriangulateWidget(QtWidgets.QWidget):
     def __init__(self):
         super(TriangulateWidget, self).__init__()
