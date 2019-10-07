@@ -72,6 +72,7 @@ class Image:
             return
         self.amPh.am = np.abs(self.reIm)
         self.amPh.ph = np.angle(self.reIm)
+        # self.amPh.ph = np.arctan2(self.reIm.imag, self.reIm.real)
         self.cmpRepr = self.cmp['CAP']
 
     def AmPh2ReIm(self):

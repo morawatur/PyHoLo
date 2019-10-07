@@ -664,6 +664,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         calc_B_button = QtWidgets.QPushButton('Calculate B', self)
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
+        fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
@@ -679,6 +680,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         # calc_grad_button.clicked.connect(self.draw_image_with_arrows)
         filter_contours_button.clicked.connect(self.filter_contours)
+        fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
 
         self.tab_calc = QtWidgets.QWidget()
         self.tab_calc.layout = QtWidgets.QGridLayout()
@@ -696,6 +698,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(threshold_label, 1, 3)
         self.tab_calc.layout.addWidget(self.threshold_input, 2, 3)
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 3)
+        self.tab_calc.layout.addWidget(fix_discont_phs_button, 4, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1111,6 +1114,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr_img.amPh.ph = np.copy(new_phs)
         self.update_display()
 
+    def fix_discont_phs(self):
+        curr_img = self.display.image
+        fixed_img = find_contours(curr_img)
+        self.insert_img_after_curr(fixed_img)
+
     def norm_phase(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -1150,6 +1158,7 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_zoom)):
             frag = zoom_fragment(img, real_sq_coords)
+            print(frag.width, frag.height)
             img_list.insert(n, frag)
             self.display.pointSets.insert(n, [])
 
@@ -1940,7 +1949,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
         img.LoadAmpData(imgData.astype(np.float32))
-        img.amPh.ph = np.copy(img.amPh.am)  # !!!
+        # img.amPh.ph = np.copy(img.amPh.am)  # !!!
         img = rescale_image_buffer_to_window(img, const.disp_dim)
         img.name = img_name_text
         # ---
@@ -2163,3 +2172,107 @@ def RunTriangulationWindow():
     app = QtWidgets.QApplication(sys.argv)
     trWindow = TriangulateWidget()
     sys.exit(app.exec_())
+
+# --------------------------------------------------------
+# REMOVING DISCONTINUITIES FROM PHASE IMAGE (in progress...)
+
+def trace_contour(arr, xy):
+    contour = [xy]
+    x, y = xy
+    adj_sum = 1
+    mid = np.ones(2)
+    last_xy = [1, 1]
+
+    while adj_sum > 0:
+        adj_arr = arr[x-1:x+2, y-1:y+2]
+        adj_arr[last_xy[0], last_xy[1]] = 0
+        adj_arr[1, 1] = 0
+        adj_sum = np.sum(np.array(adj_arr))
+        if adj_sum > 0:
+            next_xy = [ idx[0] for idx in np.where(adj_arr == 1) ]
+            last_xy = list(2 * mid - np.array(next_xy))
+            next_xy = list(np.array(next_xy)-1 + np.array(xy))
+            contour.append(next_xy)
+            x, y = next_xy
+            xy = [x, y]
+
+    # cont_arr = np.zeros(arr.shape)
+    # for idxs in contour:
+    #     cont_arr[idxs[0], idxs[1]] = 1
+
+    # cont_img = imsup.ImageExp(cont_arr.shape[0], cont_arr.shape[1])
+    # cont_img.LoadAmpData(cont_arr)
+    # imsup.DisplayAmpImage(cont_img)
+
+    return contour
+
+# --------------------------------------------------------
+
+def find_contours(img):
+    phs1 = np.copy(img.amPh.ph)
+    phs2 = np.zeros(phs1.shape, dtype=np.int32)
+
+    global_phs_min = np.min(phs1)
+
+    for y in range(10, phs1.shape[0] - 10):
+        for x in range(10, phs1.shape[1] - 10):
+            diff = phs1[y, x-1] - phs1[y, x]
+            if np.abs(diff) > np.pi:
+                phs2[y, x] = 1
+
+    for x in range(10, phs1.shape[1] - 10):
+        for y in range(10, phs1.shape[0] - 10):
+            diff = phs1[y-1, x] - phs1[y, x]
+            if np.abs(diff) > np.pi:
+                phs2[y, x] = 1
+
+    contours = []
+
+    for y in range(10, phs1.shape[0] - 10):
+        for x in range(10, phs1.shape[1] - 10):
+            if phs2[y, x]:
+                # print('Found one!')
+                # print(y, x)
+                contour = trace_contour(phs2, [y, x])
+                contours.append(contour)
+
+    ble = 0
+    print(len(contours))
+    for cont in contours:
+        py1, px1 = cont[0]
+        py2, px2 = cont[len(cont)-1]
+
+        if px1 == px2 or py1 == py2:
+            continue
+
+        a_coeff = (py2 - py1) / (px2 - px1)
+        b_coeff = py1 - a_coeff * px1
+
+        x_idxs = [ i[1] for i in cont ]
+        y_idxs = [ j[0] for j in cont ]
+
+        x_min, x_max = min(x_idxs), max(x_idxs)
+        y_min, y_max = min(y_idxs), max(y_idxs)
+
+        phs1[y_min:y_max, x_min:x_max] = global_phs_min-1
+
+        # for y in range(y_min, y_max+1):
+        #     for x in range(x_min, x_max+1):
+        #         if px1 == px2:
+        #             line_x = px1
+        #         else:
+        #             line_x = (y - b_coeff) / a_coeff
+        #
+        #         cont_x = [ yx[1] for yx in cont if yx[0] == y ][0]
+        #         if line_x < x < cont_x or cont_x < x < line_x:
+        #             ble += 1
+        #             phs1[y, x] = global_phs_min-1
+        #             print(phs1[y, x])
+
+    fixed_img = imsup.ImageExp(img.height, img.width, img.cmpRepr)
+    fixed_img.amPh.am = np.copy(img.amPh.am)
+    fixed_img.amPh.ph = np.copy(phs1)
+    print(ble)
+
+    return fixed_img
+
