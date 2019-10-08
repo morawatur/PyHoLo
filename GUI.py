@@ -58,6 +58,26 @@ class RgbColorTable_B2R:
 
 # --------------------------------------------------------
 
+class SimpleImageLabel(QtWidgets.QLabel):
+    def __init__(self, image=None):
+        super(SimpleImageLabel, self).__init__()
+        self.image = image
+        self.set_image()
+
+    def set_image(self, disp_amp=True):
+        if disp_amp:
+            px_arr = np.copy(self.image.amPh.am)
+        else:
+            px_arr = np.copy(self.image.amPh.ph)
+
+        pixmap = imsup.ScaleImage(px_arr, 0.0, 255.0)
+        q_image = QtGui.QImage(pixmap.astype(np.uint8), pixmap.shape[0], pixmap.shape[1], QtGui.QImage.Format_Indexed8)
+        pixmap = QtGui.QPixmap(q_image)
+        self.setPixmap(pixmap)
+        self.repaint()
+
+# --------------------------------------------------------
+
 class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
         super(LabelExt, self).__init__(parent)
@@ -303,26 +323,39 @@ class LineEditWithLabel(QtWidgets.QWidget):
 # --------------------------------------------------------
 
 class ImgScrollArea(QtWidgets.QScrollArea):
-    def __init__(self, img_list):
+    def __init__(self, any_img=None):
         super(ImgScrollArea, self).__init__()
 
         self.scroll_content = QtWidgets.QWidget(self)
-        scroll_layout = QtWidgets.QVBoxLayout(self.scroll_content)
-        self.scroll_content.setLayout(scroll_layout)
+        self.scroll_layout = QtWidgets.QHBoxLayout(self.scroll_content)
+        self.scroll_content.setLayout(self.scroll_layout)
 
-        if len(img_list) > 0:
-            for img in img_list:
-                preview = create_preview_img(img)
-                scroll_layout.addWidget(preview)
+        if any_img is not None:
+            self.update_scroll_list(any_img)
 
         self.setWidget(self.scroll_content)
 
+    def update_scroll_list(self, any_img):
+        n_items = self.scroll_layout.count()
+        if n_items > 0:
+            for i in reversed(range(n_items)):
+                self.scroll_layout.itemAt(i).widget().deleteLater()
+
+        first_img = imsup.GetFirstImage(any_img)
+        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        if len(img_list) > 0:
+            for img in img_list:
+                preview_img = create_preview_img(img, (64, 64))
+                preview = SimpleImageLabel(preview_img)
+                self.scroll_layout.addWidget(preview)
+
 # --------------------------------------------------------
 
-def create_preview_img(self, full_img):
-    preview = imsup.ImageExp(64, 64, full_img.cmp)
-    preview.amPh.am = np.copy(full_img.amPh.am[:64, :64])
-    preview.amPh.ph = np.copy(full_img.amPh.ph[:64, :64])
+def create_preview_img(full_img, new_sz):
+    sx, sy = new_sz
+    preview = imsup.ImageExp(sx, sy, full_img.cmp)
+    preview.amPh.am = np.copy(full_img.amPh.am[:sx, :sy])
+    preview.amPh.ph = np.copy(full_img.amPh.ph[:sx, :sy])
     return preview
 
 # --------------------------------------------------------
@@ -340,6 +373,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.display.setFixedWidth(const.disp_dim)
         self.display.setFixedHeight(const.disp_dim)
         self.plot_widget = PlotWidget()
+        self.preview_scroll = ImgScrollArea(image)
         self.backup_image = None
         self.changes_made = []
         self.shift = [0, 0]
@@ -811,6 +845,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         vbox_panel = QtWidgets.QVBoxLayout()
         vbox_panel.addWidget(self.tabs)
         vbox_panel.addWidget(self.plot_widget)
+        vbox_panel.addWidget(self.preview_scroll)
 
         hbox_main = QtWidgets.QHBoxLayout()
         hbox_main.addWidget(self.display)
@@ -1639,6 +1674,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.display.pointSets.insert(curr_num, [])
         tmp_img_list.UpdateLinks()
         self.go_to_next_image()
+        self.preview_scroll.update_scroll_list(self.display.image)
 
     def rec_holo_no_ref_1(self):
         holo_img = self.display.image
