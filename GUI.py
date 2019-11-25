@@ -416,7 +416,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         clear_button.clicked.connect(self.clear_image)
         undo_button.clicked.connect(self.remove_last_point)
 
-        self.name_input = QtWidgets.QLineEdit('self.display.image.name', self)
+        self.name_input = QtWidgets.QLineEdit(self.display.image.name, self)
         self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
 
         hbox_name = QtWidgets.QHBoxLayout()
@@ -852,8 +852,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         hbox_main.addLayout(vbox_panel)
 
         self.setLayout(hbox_main)
-
-        self.reset_image_names()  # !!!
 
         self.move(250, 50)
         self.setWindowTitle('Holo window')
@@ -1999,6 +1997,20 @@ def LoadImageSeriesFromFirstFile(imgPath):
     imgNumText = imgNumMatch.group(1)
     imgNum = int(imgNumText)
 
+    img_idx = 0
+    is_there_info = False
+    imgs_info = None
+
+    if img_idx == 0:
+        import pandas as pd
+        first_img_name_match = re.search('(.+)/(.+).dm3$', imgPath)
+        dir_path = first_img_name_match.group(1)
+        info_file_path = '{0}/info.txt'.format(dir_path)
+        if path.isfile(info_file_path):
+            is_there_info = True
+            imgs_info = pd.read_csv(info_file_path, sep='\t', header=None)
+            imgs_info = imgs_info.values
+
     while path.isfile(imgPath):
         print('Reading file "' + imgPath + '"')
         img_name_match = re.search('(.+)/(.+).dm3$', imgPath)
@@ -2012,7 +2024,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
         img.LoadAmpData(imgData.astype(np.float32))
         # img.amPh.ph = np.copy(img.amPh.am)  # !!!
         img = rescale_image_buffer_to_window(img, const.disp_dim)
-        img.name = img_name_text
+        img.name = img_name_text if not is_there_info else imgs_info[img_idx, 1]
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
         # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
@@ -2020,6 +2032,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
         # ---
         imgList.append(img)
 
+        img_idx += 1
         imgNum += 1
         imgNumTextNew = imgNumText.replace(str(imgNum-1), str(imgNum))
         if imgNum == 10:
