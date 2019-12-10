@@ -2021,8 +2021,12 @@ def LoadImageSeriesFromFirstFile(imgPath):
         img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'],
                              num=imgNum, px_dim_sz=pxDims[0])
         # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
-        img.LoadAmpData(imgData.astype(np.float32))
         # img.amPh.ph = np.copy(img.amPh.am)  # !!!
+        img_type = imgs_info[img_idx, 2]
+        if img_type == 'amp':
+            img.LoadAmpData(imgData.astype(np.float32))
+        else:
+            img.LoadPhsData(imgData.astype(np.float32))
         img = rescale_image_buffer_to_window(img, const.disp_dim)
         img.name = img_name_text if not is_there_info else imgs_info[img_idx, 1]
         # ---
