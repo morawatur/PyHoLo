@@ -724,6 +724,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
+        show_img3d_button = QtWidgets.QPushButton('Show 3D image', self)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
@@ -740,6 +741,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         # calc_grad_button.clicked.connect(self.draw_image_with_arrows)
         filter_contours_button.clicked.connect(self.filter_contours)
         fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
+        show_img3d_button.clicked.connect(self.show_3d_image)
 
         self.tab_calc = QtWidgets.QWidget()
         self.tab_calc.layout = QtWidgets.QGridLayout()
@@ -758,6 +760,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(self.threshold_input, 2, 3)
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 3)
         self.tab_calc.layout.addWidget(fix_discont_phs_button, 4, 2)
+        self.tab_calc.layout.addWidget(show_img3d_button, 4, 3)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1176,6 +1179,36 @@ class TriangulateWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         fixed_img = find_contours(curr_img)
         self.insert_img_after_curr(fixed_img)
+
+    def show_3d_image(self):
+        from matplotlib import cm
+        from mpl_toolkits.mplot3d import Axes3D
+
+        curr_img = self.display.image
+        img_dim = curr_img.width
+        px_sz = curr_img.px_dim * 1e9
+
+        step = 10
+
+        X = np.arange(0, img_dim, dtype=np.float32)
+        Y = np.arange(0, img_dim, dtype=np.float32)
+        X, Y = np.meshgrid(X, Y)
+        X *= px_sz
+        Y *= px_sz
+
+        fig = plt.figure()
+        # ax = fig.gca(projection='3d')
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)
+        # plt.show()
+        # plt.savefig('{0}_3d.png'.format(curr_img.name), dpi=300)
+        # for ang1 in range(0, 91, 15):
+            # for ang2 in range(0, 361, 30):
+        ang1 = 90
+        ang2 = 180
+        ax.view_init(ang1, ang2)
+        plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
+        print('3D images saved!')
 
     def norm_phase(self):
         curr_img = self.display.image
