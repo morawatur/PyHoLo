@@ -1,11 +1,30 @@
+# Copyright (C) 2020  Krzysztof Morawiec
+#
+# This file is part of PyHoLo.
+#
+# PyHoLo is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyHoLo is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
+
+#-------------------------------------------------------------------
+
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+# from mpl_toolkits.mplot3d import Axes3D
 
 import Dm3Reader as dm3
 
-phs_file = 'G:\Holografia_Ogulnie\LNT\\usrednianie\\07_23_-10%__25_0%\diff_23_25\\res\\bins\phs3d\\diff_23_-10%_25_0%.dm3'
+phs_file = 'C:\\example\\path\\phase_image.dm3'
 
 img_data, px_dims = dm3.ReadDm3File(phs_file)
 phs = img_data.astype(np.float32)
