@@ -35,10 +35,7 @@ def func_to_vectorize(x, y, dx, dy, sc=1):
 
 # def draw_image_with_gradient_arrows(arr, step=20):
 
-# img_dir = 'input/strzalki'
-# img_dir = 'input/FeSiB_brzeg'
-# img_dir = 'input/temp'
-img_dir = 'G:\Holografia_Ogulnie\LNT\profile_kolaz\\nowy_slimak2\cz1\\bins\glob_scale'
+img_dir = 'C:\\example\\directory'
 files = [ '{0}/{1}'.format(img_dir, f) for f in listdir(img_dir) if isfile(join(img_dir, f)) and f.endswith('.dm3') ]
 global_limits = [1e5, 0]
 
@@ -117,7 +114,7 @@ for f in files:
     # ph_d_roi = np.copy(ph_d[h_min:h_max, h_min:h_max])
 
     plt.imshow(ph_roi, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
-    # vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # pokazuje / ukrywa strzalki
+    vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # show/hide arrows
     # plt.set_cmap(pplt.cm.Greys)
     # plt.set_cmap('jet')
     plt.axis('off')
