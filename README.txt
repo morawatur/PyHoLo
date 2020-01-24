@@ -10,12 +10,9 @@ Current version of PyHoLo can be downloaded from the following github repository
 
 https://github.com/morawatur/PyHoLo
 
-This repository contains source files needed for running PyHoLo.
-To run PyHoLo from source you will need to install Python interpreter and PyQt5 library.
-For instructions on how to do that see sections III and IV(a).
+This repository contains source files needed for running PyHoLo. To run PyHoLo from source you will need to install Python interpreter. For instructions on how to do that see sections III and IV(a).
 
-Alternatively, I can send you precompiled package with ready-to-use executable, which would not require you
-to install any additional tools or libraries. If you are interested, please e-mail me at morawk@ifpan.edu.pl
+Alternatively, I can send you precompiled package with ready-to-use executable, which would not require you to install any additional tools or libraries. If you are interested, please e-mail me at morawk@ifpan.edu.pl
 For instruction on how to run PyHoLo from precompiled package see section IV(b).
 
 ---------------------------------------------------------------------------------------------
@@ -42,22 +39,23 @@ III. Installation prerequisities
 In order to run PyHoLo you will require:
 
 - Windows Vista, 7, 8 or 10 (≥ Vista),
-- Python language interpreter version 3.6 or later (e.g. Anaconda),
-- PyQt5 library supporting the graphical user interface.
+- Python language interpreter version 3.6 or later (e.g. Anaconda3),
+- (optionally) external Python libraries, such as PyQt5.
 
-1. Download the Anaconda environment from  https://www.continuum.io/downloads. Choose a version compatible with Python 3.6 or later.
+1. Download the Anaconda environment from https://www.anaconda.com/distribution/. Choose a version compatible with Python 3.6 or later.
 
 2. Install the Anaconda environment by running the installation file and following the instructions on the screen. We recommend you to install Anaconda in the default location suggested by the instalator. In Windows it will be 'C:\Users\user_name\Anaconda3'.
 
-3. After installation open Anaconda Prompt. In Windows 7 it can be found under Start menu, in All Programs -> Anaconda -> Anaconda Prompt.
+3. After installation open Anaconda Prompt. In Windows 7 it can be found under Start menu, in All Programs -> Anaconda3 -> Anaconda Prompt.
 
-4. Type the following command in the Anaconda Prompt in order to install PyQt5 library:
+4 (May not be necessary). New version of Anaconda (3.7) comes with a number of libraries which are required for PyHoLo to work. However, older Anaconda versions may be missing newer distributions of those libraries, e.g. PyQt5, scikit-image. To install those packages (i.e. if you stumble upon some error during running PyHoLo), type the following command in the Anaconda Prompt:
 
-conda install pyqt
+conda install <package_name>
+(e.g. conda install pyqt)
 
-You will be asked for confirmation of the library name which you want to install. You can confirm it by typing 'y' into the Anaconda Prompt and pressing Enter. If the installation of library is complete, you can close the Anaconda Prompt.
+You will be asked for confirmation of the package name which you want to install. You can confirm it by typing 'y' into the Anaconda Prompt and pressing Enter. If the installation of library is complete, you can close the Anaconda Prompt.
 
-PyHoLo should be ready to use!
+5. PyHoLo should be ready to use!
 
 ---------------------------------------------------------------------------------------------
 
@@ -65,26 +63,25 @@ IV.(a) Running PyHoLo from Python interpreter (source)
 
 1. Extract files from downloaded zip archive to a directory on local disk (e.g. C:\python_programs\PyHoLo).
 
-2. Open the Python command interpreter (e.g. IPython). If you have Anaconda, then in Windows 7 it can be found under Start menu, in All Programs -> Anaconda -> IPython.
+2. Open the Anaconda Prompt. In Windows 7 it can be found under Start menu, in All Programs -> Anaconda3 -> Anaconda Prompt.
 
-3. From the command interpreter level go to the directory with extracted files. You can do it by typing in the interpreter the following command:
+3. From the Anaconda Prompt level go to the directory with extracted files. You can do it by entering the following command:
 
 cd path_to_directory
 (e.g. cd C:\python_programs\PyHoLo)
 
 4. Run the PyHoLo.py script by entering the following command:
 
-%run PyHoLo.py
+python PyHoLo.py
 
-A dialog window should appear, which allows you to point to a directory with series of experimental images stored in DM3 file format.
-Mark the first image from series and press Open.
+A dialog window should appear, asking you to point to a directory with series of experimental images stored in DM3 file format. Mark the first image from series and press Open.
 
 Note 1: Input images must be stored in DM3 format (internal file format of Gatan Microscopy Suite software).
 
 Note 2: Image names must have a common set of characters which denote series name and they must be numbered according to the following convention:
 
-ser_name_01.dm3, holo02.dm3, holo03.dm3 etc.
-where in this case 'ser_name_' is a name of series (digits smaller than 10 must be preceeded with '0', eg. 'holo03.dm3').
+ser_name_01.dm3, ser_name_02.dm3, ser_name_03.dm3 etc.
+where in this case 'ser_name_' is a name of hologram series (digits smaller than 10 must be preceeded with '0', eg. 'ser_name_03.dm3').
 
 ---------------------------------------------------------------------------------------------
 
@@ -94,16 +91,12 @@ IV.(b) Running PyHoLo from EXE
 
 2. Find PyHoLo.exe in the following directory: extraction_path\PyHoLo\dist\PyHoLo
 
-3. Run PyHoLo.exe or create a shortcut to it on desktop.
+3. Run PyHoLo.exe (you can create a shortcut to it on your desktop).
 
 ---------------------------------------------------------------------------------------------
 
-V. Unit test
+V. Sample input and output
 
-1. Run PyHoLo.
+Sample input data consisting of four electron holograms (two "upside" and two "downside" holograms) is stored in the "input" directory. This data was used as the input for PyHoLo software to restore phase shifts of electron wave and determine maps of electric and magnetic fields in the investigated area of FeCuSiB sample. "Output" directory contains results (tiff images and binary data) generated by PyHoLo throughout the analysis of holograms.
 
-2. Load set of holograms from the "input" directory, provided with the source files.
-
-3. Navigate to 3rd image ("ref_down") by clicking Next (Navigation tab), and flip the image by clicking Flip button (Navigation tab).
-
-4. Do the same for 4th image ("obj_down").
+For more detailed information about the procedure of translating experimental holograms into phase shift images see the manual in "man" directory.
