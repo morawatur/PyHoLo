@@ -742,7 +742,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         calc_B_button = QtWidgets.QPushButton('Calculate B', self)
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
-        fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
+        # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
         show_img3d_button = QtWidgets.QPushButton('Show 3D image', self)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
@@ -754,32 +754,51 @@ class TriangulateWidget(QtWidgets.QWidget):
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
 
+        ph3d_ang1_label = QtWidgets.QLabel('Ang #1', self)
+        self.ph3d_ang1_input = QtWidgets.QLineEdit('0', self)
+
+        ph3d_ang2_label = QtWidgets.QLabel('Ang #2', self)
+        self.ph3d_ang2_input = QtWidgets.QLineEdit('0', self)
+
         plot_button.clicked.connect(self.plot_profile)
         calc_B_button.clicked.connect(self.calc_magnetic_field)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         # calc_grad_button.clicked.connect(self.draw_image_with_arrows)
         filter_contours_button.clicked.connect(self.filter_contours)
-        fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
+        # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
         show_img3d_button.clicked.connect(self.show_3d_image)
+
+        ph3d_ang1_vbox = QtWidgets.QVBoxLayout()
+        ph3d_ang1_vbox.addWidget(ph3d_ang1_label)
+        ph3d_ang1_vbox.addWidget(self.ph3d_ang1_input)
+
+        ph3d_ang2_vbox = QtWidgets.QVBoxLayout()
+        ph3d_ang2_vbox.addWidget(ph3d_ang2_label)
+        ph3d_ang2_vbox.addWidget(self.ph3d_ang2_input)
 
         self.tab_calc = QtWidgets.QWidget()
         self.tab_calc.layout = QtWidgets.QGridLayout()
         self.tab_calc.layout.setColumnStretch(0, 1)
-        self.tab_calc.layout.setColumnStretch(4, 1)
+        self.tab_calc.layout.setColumnStretch(1, 2)
+        self.tab_calc.layout.setColumnStretch(2, 1)
+        self.tab_calc.layout.setColumnStretch(3, 1)
+        self.tab_calc.layout.setColumnStretch(4, 2)
+        self.tab_calc.layout.setColumnStretch(5, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
-        self.tab_calc.layout.setRowStretch(5, 1)
+        self.tab_calc.layout.setRowStretch(6, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
         self.tab_calc.layout.addWidget(calc_B_button, 4, 1)
-        self.tab_calc.layout.addWidget(int_width_label, 1, 2)
-        self.tab_calc.layout.addWidget(self.int_width_input, 2, 2)
-        self.tab_calc.layout.addWidget(plot_button, 3, 2)
-        self.tab_calc.layout.addWidget(threshold_label, 1, 3)
-        self.tab_calc.layout.addWidget(self.threshold_input, 2, 3)
-        self.tab_calc.layout.addWidget(filter_contours_button, 3, 3)
-        self.tab_calc.layout.addWidget(fix_discont_phs_button, 4, 2)
-        self.tab_calc.layout.addWidget(show_img3d_button, 4, 3)
+        self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
+        self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
+        self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
+        self.tab_calc.layout.addWidget(threshold_label, 1, 4)
+        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4)
+        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4)
+        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 2)
+        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 3)
+        self.tab_calc.layout.addWidget(show_img3d_button, 5, 2, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1221,10 +1240,9 @@ class TriangulateWidget(QtWidgets.QWidget):
         ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)
         # plt.show()
         # plt.savefig('{0}_3d.png'.format(curr_img.name), dpi=300)
-        # for ang1 in range(0, 91, 15):
-            # for ang2 in range(0, 361, 30):
-        ang1 = 90
-        ang2 = 180
+
+        ang1 = int(self.ph3d_ang1_input.text())
+        ang2 = int(self.ph3d_ang2_input.text())
         ax.view_init(ang1, ang2)
         plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
         print('3D images saved!')
