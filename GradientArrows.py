@@ -67,15 +67,17 @@ for f in files:
     h_min = offset
     h_max = width - offset
     h_dist = h_max - h_min
-    step = h_dist / float(np.ceil(h_dist / def_step))
+    step = np.ceil(h_dist / float(np.ceil(h_dist / def_step)))
     xv, yv = np.meshgrid(np.arange(0, h_dist, step), np.arange(0, h_dist, step))
     xv += step / 2.0
     yv += step / 2.0
     # print(step)
 
-    yd, xd = np.gradient(img.amPh.ph)
-    ydd = yd[h_min:h_max:def_step, h_min:h_max:def_step]
-    xdd = xd[h_min:h_max:def_step, h_min:h_max:def_step]
+    # yd, xd = np.gradient(img.amPh.ph)
+    # ydd = yd[h_min:h_max:def_step, h_min:h_max:def_step]
+    # xdd = xd[h_min:h_max:def_step, h_min:h_max:def_step]
+    phd = img.amPh.ph[h_min:h_max:def_step, h_min:h_max:def_step]
+    ydd, xdd = np.gradient(phd)
 
     # prevent artifacts
     # avg_ydd = np.average(np.abs(ydd))
@@ -114,7 +116,8 @@ for f in files:
     # ph_d_roi = np.copy(ph_d[h_min:h_max, h_min:h_max])
 
     plt.imshow(ph_roi, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
-    vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # show/hide arrows
+    # vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # show/hide arrows (adjacent phases)
+    vectorized_arrow_drawing(xv, yv, xdd, ydd, 15)          # show/hide arrows (phases being 'def_step' apart)
     # plt.set_cmap(pplt.cm.Greys)
     # plt.set_cmap('jet')
     plt.axis('off')
@@ -125,6 +128,10 @@ for f in files:
 
     idx += 1
     out_f = f.replace('dm3', 'png')
-    plt.savefig(out_f, dpi=300)
-    # plt.savefig(out_f, dpi=300, bbox_inches = 'tight')
+    # plt.savefig(out_f, dpi=300)
+
+    plt.margins(0, 0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    plt.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
     # plt.show()

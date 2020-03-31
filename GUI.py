@@ -159,6 +159,8 @@ class LabelExt(QtWidgets.QLabel):
         pos = QMouseEvent.pos()
         currPos = [pos.x(), pos.y()]
         self.pointSets[self.image.numInSeries - 1].append(currPos)
+        pt_idx = len(self.pointSets[self.image.numInSeries - 1])
+        print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         self.repaint()
 
         if self.parent().show_labels_checkbox.isChecked():
@@ -422,6 +424,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         delete_button = QtWidgets.QPushButton('Delete', self)
         clear_button = QtWidgets.QPushButton('Clear', self)
         undo_button = QtWidgets.QPushButton('Undo', self)
+        add_marker_at_xy_button = QtWidgets.QPushButton('Add marker', self)
 
         prev_button.clicked.connect(self.go_to_prev_image)
         next_button.clicked.connect(self.go_to_next_image)
@@ -434,9 +437,14 @@ class TriangulateWidget(QtWidgets.QWidget):
         delete_button.clicked.connect(self.delete_image)
         clear_button.clicked.connect(self.clear_image)
         undo_button.clicked.connect(self.remove_last_point)
+        add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
 
         self.name_input = QtWidgets.QLineEdit(self.display.image.name, self)
         self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
+
+        marker_xy_label = QtWidgets.QLabel('Marker xy-coords:')
+        self.marker_x_input = QtWidgets.QLineEdit('0', self)
+        self.marker_y_input = QtWidgets.QLineEdit('0', self)
 
         hbox_name = QtWidgets.QHBoxLayout()
         hbox_name.addWidget(set_name_button)
@@ -455,7 +463,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_nav.layout.setColumnStretch(4, 1)
         self.tab_nav.layout.setColumnStretch(5, 1)
         self.tab_nav.layout.setRowStretch(0, 1)
-        self.tab_nav.layout.setRowStretch(7, 1)
+        self.tab_nav.layout.setRowStretch(8, 1)
         self.tab_nav.layout.addWidget(prev_button, 1, 1, 1, 2)
         self.tab_nav.layout.addWidget(next_button, 1, 3, 1, 2)
         self.tab_nav.layout.addWidget(lswap_button, 2, 1, 1, 2)
@@ -470,6 +478,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_nav.layout.addWidget(undo_button, 5, 3, 1, 2)
         self.tab_nav.layout.addWidget(reset_names_button, 6, 1, 1, 2)
         self.tab_nav.layout.addWidget(self.clear_prev_checkbox, 6, 3, 1, 2)
+        self.tab_nav.layout.addWidget(marker_xy_label, 7, 1)
+        self.tab_nav.layout.addWidget(self.marker_x_input, 7, 2)
+        self.tab_nav.layout.addWidget(self.marker_y_input, 7, 3)
+        self.tab_nav.layout.addWidget(add_marker_at_xy_button, 7, 4)
         self.tab_nav.setLayout(self.tab_nav.layout)
 
         # ------------------------------
@@ -690,6 +702,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         diff_button = QtWidgets.QPushButton('Diff', self)
         amplify_button = QtWidgets.QPushButton('Amplify', self)
         rm_gradient_button = QtWidgets.QPushButton('Remove gradient', self)
+        get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
+        do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
         aperture_label = QtWidgets.QLabel('Aperture [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
@@ -700,6 +714,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         amp_factor_label = QtWidgets.QLabel('Amp. factor', self)
         self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
 
+        sideband_xy_label = QtWidgets.QLabel('Sideband xy-coords:')
+        self.sideband_x_input = QtWidgets.QLineEdit('0', self)
+        self.sideband_y_input = QtWidgets.QLineEdit('0', self)
+
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
         holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
@@ -708,6 +726,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         diff_button.clicked.connect(self.calc_phs_diff)
         amplify_button.clicked.connect(self.amplify_phase)
         rm_gradient_button.clicked.connect(self.remove_gradient)
+        get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
+        do_all_button.clicked.connect(self.do_all)
 
         hbox_holo = QtWidgets.QHBoxLayout()
         hbox_holo.addWidget(holo_no_ref_2_button)
@@ -718,7 +738,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_holo.layout.setColumnStretch(0, 1)
         self.tab_holo.layout.setColumnStretch(4, 1)
         self.tab_holo.layout.setRowStretch(0, 1)
-        self.tab_holo.layout.setRowStretch(6, 1)
+        self.tab_holo.layout.setRowStretch(7, 1)
         self.tab_holo.layout.addWidget(aperture_label, 1, 1)
         self.tab_holo.layout.addWidget(self.aperture_input, 2, 1)
         self.tab_holo.layout.addWidget(hann_win_label, 1, 2)
@@ -732,6 +752,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(self.amp_factor_input, 2, 3)
         self.tab_holo.layout.addWidget(amplify_button, 3, 3)
         self.tab_holo.layout.addWidget(rm_gradient_button, 5, 1)
+        self.tab_holo.layout.addWidget(sideband_xy_label, 5, 2)
+        self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 3)
+        self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 3)
+        self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 2)
+        self.tab_holo.layout.addWidget(do_all_button, 6, 1)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -1237,6 +1262,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
         ax = fig.add_subplot(111, projection='3d')
+        # ax.plot_surface(X, Y, curr_img.amPh.am, cmap=cm.jet, rstride=step, cstride=step)
         ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)
         # plt.show()
         # plt.savefig('{0}_3d.png'.format(curr_img.name), dpi=300)
@@ -1255,6 +1281,7 @@ class TriangulateWidget(QtWidgets.QWidget):
             return
         pt_disp = self.display.pointSets[curr_idx][0]
         pt_real = CalcRealTLCoords(curr_img.width, pt_disp)
+        print(pt_disp, pt_real)
 
         first_img = imsup.GetFirstImage(curr_img)
         img_list = imsup.CreateImageListFromFirstImage(first_img)
@@ -1277,6 +1304,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         disp_crop_coords = pt1 + pt2
         real_tl_coords = CalcRealTLCoords(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
+        if np.abs(real_sq_coords[2] - real_sq_coords[0]) % 2:
+            real_sq_coords[2] += 1
+            real_sq_coords[3] += 1
+
+        print(real_sq_coords)
 
         n_to_zoom = np.int(self.n_to_zoom_input.text())
         first_img = imsup.GetFirstImage(curr_img)
@@ -1286,6 +1318,7 @@ class TriangulateWidget(QtWidgets.QWidget):
 
         for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_zoom)):
             frag = zoom_fragment(img, real_sq_coords)
+            frag.name = 'crop_from_{0}'.format(img.name)
             print(frag.width, frag.height)
             img_list.insert(n, frag)
             self.display.pointSets.insert(n, [])
@@ -1316,6 +1349,14 @@ class TriangulateWidget(QtWidgets.QWidget):
             last_label.deleteLater()
         del self.display.pointSets[curr_idx][-1]
         self.display.repaint()
+
+    def add_marker_at_xy(self):
+        curr_idx = self.display.image.numInSeries - 1
+        curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
+        self.display.pointSets[curr_idx].append(curr_pos)
+        pt_idx = len(self.display.pointSets[curr_idx])
+        self.display.repaint()
+        print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, curr_pos[0], curr_pos[1]))
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
@@ -1746,6 +1787,9 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def rec_holo_no_ref_1(self):
         holo_img = self.display.image
+        if holo_img.width % 4:
+            print('Image must be divisible by 4')
+            return
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(holo_fft)
@@ -1763,6 +1807,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         sband_xy.reverse()
 
         sband_xy = [ px + sx for px, sx in zip(rpt1, sband_xy) ]    # konwencja x, y
+        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
 
         mid = holo_fft.width // 2
         shift = [ mid - sband_xy[1], mid - sband_xy[0] ]    # konwencja x, y
@@ -1787,6 +1832,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         sband_xy.reverse()
 
         sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
+        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
 
         mid = ref_fft.width // 2
         shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
@@ -1883,6 +1929,67 @@ class TriangulateWidget(QtWidgets.QWidget):
         # print(grad_arr[p3[1], p3[0]])
         # print(p1[2], p2[2], p3[2])
         self.insert_img_after_curr(grad_img)
+
+    def get_sideband_from_xy(self):
+        curr_img = self.display.image
+
+        sbx = int(self.sideband_x_input.text())
+        sby = int(self.sideband_y_input.text())
+        sband_xy = [sbx, sby]
+
+        mid = curr_img.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
+
+        aperture = int(self.aperture_input.text())
+        hann_window = int(self.hann_win_input.text())
+
+        sband_img_ap = holo.rec_holo_no_ref_2(curr_img, shift, ap_sz=aperture, N_hann=hann_window)
+        self.log_scale_checkbox.setChecked(True)
+        self.insert_img_after_curr(sband_img_ap)
+
+    # temporary method?
+    def do_all(self):
+        ref_fft = self.display.image
+        [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
+        dpts = pt1 + pt2
+        rpts = CalcRealTLCoords(ref_fft.width, dpts)
+        rpt1 = rpts[:2]  # konwencja x, y
+        rpt2 = rpts[2:]
+
+        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
+        sband_xy = holo.find_img_max(sband)  # konwencja y, x
+        sband_xy.reverse()
+
+        sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
+        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
+
+        mid = ref_fft.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
+
+        aperture = int(self.aperture_input.text())
+        hann_window = int(self.hann_win_input.text())
+
+        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_sz=aperture, N_hann=hann_window)
+
+        holo_img = ref_fft.next
+        holo_fft = holo.rec_holo_no_ref_1(holo_img)
+        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
+
+        rec_ref = holo.rec_holo_no_ref_3(ref_sband_ap)
+        rec_holo = holo.rec_holo_no_ref_3(holo_sband_ap)
+        rec_ref.ReIm2AmPh()
+        rec_holo.ReIm2AmPh()
+
+        # unwrapping
+        new_ref_phs = tr.unwrap_phase(rec_ref.amPh.ph)
+        new_holo_phs = tr.unwrap_phase(rec_holo.amPh.ph)
+        rec_ref.amPh.ph = np.copy(new_ref_phs)
+        rec_holo.amPh.ph = np.copy(new_holo_phs)
+
+        rec_holo_corr = holo.calc_phase_diff(rec_ref, rec_holo)
+        rec_holo_corr = rescale_image_buffer_to_window(rec_holo_corr, const.disp_dim)
+        rec_holo_corr.name = 'ph_from_{0}'.format(holo_img.name)
+        self.insert_img_after_curr(rec_holo_corr)
 
     def swap_left(self):
         curr_img = self.display.image
@@ -2018,7 +2125,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0
         img_filtered = imsup.copy_am_ph_image(curr_img)
-        img_filtered.cos_phase = np.copy(conts_scaled)
+        img_filtered.amPh.ph = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
         # find_contours(self.display.image)
 
@@ -2166,7 +2273,7 @@ def modify_image(img, mod=list([0, 0]), is_shift=True):
 # --------------------------------------------------------
 
 def norm_phase_to_pt(phase, pt):
-    y, x = pt
+    x, y = pt
     phase_norm = phase - phase[y, x]
     return phase_norm
 
