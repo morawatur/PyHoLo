@@ -165,7 +165,7 @@ class LabelExt(QtWidgets.QLabel):
         real_x, real_y = CalcRealTLCoords(self.image.width, curr_pos)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
-        print('Amp = {0}\nPhs = {1}\n'.format(self.image.amPh.am[real_y, real_x], self.image.amPh.ph[real_y, real_x]))
+        print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(self.image.amPh.am[real_y, real_x], self.image.amPh.ph[real_y, real_x]))
 
         if self.show_labs:
             lab = QtWidgets.QLabel('{0}'.format(pt_idx), self)
@@ -225,13 +225,14 @@ class LabelExt(QtWidgets.QLabel):
         img_idx = self.image.numInSeries - 1
         pt_idx = len(self.pointSets[img_idx]) - 1
         last_pt = self.pointSets[img_idx][pt_idx]
-        print(last_pt)
         lab = QtWidgets.QLabel('{0}'.format(pt_idx+1), self)
         lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
         lab.move(last_pt[0] + 4, last_pt[1] + 4)
         lab.show()
 
     def update_labels(self):
+        # if len(self.pointSets) < self.image.numInSeries:
+        #     self.pointSets.append([])
         self.hide_labels()
         if self.show_labs:
             self.show_labels()
@@ -682,7 +683,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         sum_button = QtWidgets.QPushButton('Sum', self)
         diff_button = QtWidgets.QPushButton('Diff', self)
         amplify_button = QtWidgets.QPushButton('Amplify', self)
-        rm_gradient_button = QtWidgets.QPushButton('Remove gradient', self)
+        add_radians_button = QtWidgets.QPushButton('Add radians', self)
+        # rm_gradient_button = QtWidgets.QPushButton('Remove gradient', self)
         get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
         do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
@@ -695,6 +697,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         amp_factor_label = QtWidgets.QLabel('Amp. factor', self)
         self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
 
+        self.radians2add_input = QtWidgets.QLineEdit('3.14', self)
+
         sideband_xy_label = QtWidgets.QLabel('Sideband xy-coords:')
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
         self.sideband_y_input = QtWidgets.QLineEdit('0', self)
@@ -706,7 +710,8 @@ class TriangulateWidget(QtWidgets.QWidget):
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
         amplify_button.clicked.connect(self.amplify_phase)
-        rm_gradient_button.clicked.connect(self.remove_gradient)
+        add_radians_button.clicked.connect(self.add_radians)
+        # rm_gradient_button.clicked.connect(self.remove_gradient)
         get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
         do_all_button.clicked.connect(self.do_all)
 
@@ -717,27 +722,35 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_holo = QtWidgets.QWidget()
         self.tab_holo.layout = QtWidgets.QGridLayout()
         self.tab_holo.layout.setColumnStretch(0, 1)
+        self.tab_holo.layout.setColumnStretch(1, 1)
+        self.tab_holo.layout.setColumnStretch(2, 1)
+        self.tab_holo.layout.setColumnStretch(3, 1)
         self.tab_holo.layout.setColumnStretch(4, 1)
+        self.tab_holo.layout.setColumnStretch(5, 1)
+        self.tab_holo.layout.setColumnStretch(6, 1)
+        self.tab_holo.layout.setColumnStretch(7, 1)
         self.tab_holo.layout.setRowStretch(0, 1)
         self.tab_holo.layout.setRowStretch(7, 1)
-        self.tab_holo.layout.addWidget(aperture_label, 1, 1)
-        self.tab_holo.layout.addWidget(self.aperture_input, 2, 1)
-        self.tab_holo.layout.addWidget(hann_win_label, 1, 2)
-        self.tab_holo.layout.addWidget(self.hann_win_input, 2, 2)
-        self.tab_holo.layout.addWidget(holo_no_ref_1_button, 3, 1)
-        self.tab_holo.layout.addLayout(hbox_holo, 3, 2)
-        self.tab_holo.layout.addWidget(holo_no_ref_3_button, 4, 1)
-        self.tab_holo.layout.addWidget(sum_button, 4, 2)
-        self.tab_holo.layout.addWidget(diff_button, 4, 3)
-        self.tab_holo.layout.addWidget(amp_factor_label, 1, 3)
-        self.tab_holo.layout.addWidget(self.amp_factor_input, 2, 3)
-        self.tab_holo.layout.addWidget(amplify_button, 3, 3)
-        self.tab_holo.layout.addWidget(rm_gradient_button, 5, 1)
-        self.tab_holo.layout.addWidget(sideband_xy_label, 5, 2)
-        self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 3)
-        self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 3)
-        self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 2)
-        self.tab_holo.layout.addWidget(do_all_button, 6, 1)
+        self.tab_holo.layout.addWidget(aperture_label, 1, 1, 1, 2)
+        self.tab_holo.layout.addWidget(self.aperture_input, 2, 1, 1, 2)
+        self.tab_holo.layout.addWidget(hann_win_label, 1, 3, 1, 2)
+        self.tab_holo.layout.addWidget(self.hann_win_input, 2, 3, 1, 2)
+        self.tab_holo.layout.addWidget(holo_no_ref_1_button, 3, 1, 1, 2)
+        self.tab_holo.layout.addLayout(hbox_holo, 3, 3, 1, 2)
+        self.tab_holo.layout.addWidget(holo_no_ref_3_button, 4, 1, 1, 2)
+        self.tab_holo.layout.addWidget(sum_button, 4, 3, 1, 2)
+        self.tab_holo.layout.addWidget(diff_button, 4, 5, 1, 2)
+        self.tab_holo.layout.addWidget(amp_factor_label, 1, 5, 1, 2)
+        self.tab_holo.layout.addWidget(self.amp_factor_input, 2, 5, 1, 2)
+        self.tab_holo.layout.addWidget(amplify_button, 3, 5, 1, 2)
+        self.tab_holo.layout.addWidget(add_radians_button, 5, 1, 1, 1)
+        self.tab_holo.layout.addWidget(self.radians2add_input, 5, 2, 1, 1)
+        # self.tab_holo.layout.addWidget(rm_gradient_button, 5, 1)
+        self.tab_holo.layout.addWidget(sideband_xy_label, 5, 3, 1, 2)
+        self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 5, 1, 2)
+        self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 5, 1, 2)
+        self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 3, 1, 2)
+        self.tab_holo.layout.addWidget(do_all_button, 6, 1, 1, 2)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -749,7 +762,11 @@ class TriangulateWidget(QtWidgets.QWidget):
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
-        show_img3d_button = QtWidgets.QPushButton('Show 3D image', self)
+        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
+        export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
+
+        self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
+        self.add_arrows_checkbox.setChecked(False)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
@@ -760,19 +777,35 @@ class TriangulateWidget(QtWidgets.QWidget):
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
 
-        ph3d_ang1_label = QtWidgets.QLabel('Ang #1', self)
-        self.ph3d_ang1_input = QtWidgets.QLineEdit('0', self)
+        arr_size_label = QtWidgets.QLabel('Arrow size', self)
+        arr_dist_label = QtWidgets.QLabel('Arrow dist.', self)
+        self.arr_size_input = QtWidgets.QLineEdit('20', self)
+        self.arr_dist_input = QtWidgets.QLineEdit('50', self)
 
+        self.only_int = QtGui.QIntValidator()
+        self.arr_size_input.setValidator(self.only_int)
+        self.arr_dist_input.setValidator(self.only_int)
+
+        ph3d_ang1_label = QtWidgets.QLabel('Ang #1', self)
         ph3d_ang2_label = QtWidgets.QLabel('Ang #2', self)
+        self.ph3d_ang1_input = QtWidgets.QLineEdit('0', self)
         self.ph3d_ang2_input = QtWidgets.QLineEdit('0', self)
 
         plot_button.clicked.connect(self.plot_profile)
         calc_B_button.clicked.connect(self.calc_magnetic_field)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
-        # calc_grad_button.clicked.connect(self.draw_image_with_arrows)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
-        show_img3d_button.clicked.connect(self.show_3d_image)
+        export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
+        export_img3d_button.clicked.connect(self.export_3d_image)
+
+        arr_size_vbox = QtWidgets.QVBoxLayout()
+        arr_size_vbox.addWidget(arr_size_label)
+        arr_size_vbox.addWidget(self.arr_size_input)
+
+        arr_dist_vbox = QtWidgets.QVBoxLayout()
+        arr_dist_vbox.addWidget(arr_dist_label)
+        arr_dist_vbox.addWidget(self.arr_dist_input)
 
         ph3d_ang1_vbox = QtWidgets.QVBoxLayout()
         ph3d_ang1_vbox.addWidget(ph3d_ang1_label)
@@ -788,10 +821,12 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_calc.layout.setColumnStretch(1, 2)
         self.tab_calc.layout.setColumnStretch(2, 1)
         self.tab_calc.layout.setColumnStretch(3, 1)
-        self.tab_calc.layout.setColumnStretch(4, 2)
+        self.tab_calc.layout.setColumnStretch(4, 1)
         self.tab_calc.layout.setColumnStretch(5, 1)
+        self.tab_calc.layout.setColumnStretch(6, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
-        self.tab_calc.layout.setRowStretch(6, 1)
+        self.tab_calc.layout.setRowStretch(4, 2)
+        self.tab_calc.layout.setRowStretch(7, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
@@ -799,12 +834,16 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
-        self.tab_calc.layout.addWidget(threshold_label, 1, 4)
-        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4)
-        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4)
-        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 2)
-        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 3)
-        self.tab_calc.layout.addWidget(show_img3d_button, 5, 2, 1, 2)
+        self.tab_calc.layout.addWidget(threshold_label, 1, 4, 1, 2)
+        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4, 1, 2)
+        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
+        self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
+        self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
+        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 5, 1)
+        self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
+        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
+        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
+        self.tab_calc.layout.addWidget(export_img3d_button, 6, 4, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -947,7 +986,6 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.fname_input.setText(curr_img.name)
 
     def go_to_image(self, new_idx):
-        is_show_labels_checked = self.show_labels_checkbox.isChecked()
         first_img = imsup.GetFirstImage(self.display.image)
         imgs = imsup.CreateImageListFromFirstImage(first_img)
         if new_idx > len(imgs) - 1:
@@ -960,7 +998,9 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.manual_mode_checkbox.setChecked(False)
         self.disable_manual_panel()
         self.display.image = imgs[new_idx]
-        self.display.update_labs(is_show_labels_checked)
+        if len(self.display.pointSets) < self.display.image.numInSeries:
+            self.display.pointSets.append([])
+        self.display.update_labels()
         self.update_display_and_bcg()
 
     def go_to_prev_image(self):
@@ -1224,7 +1264,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         fixed_img = find_contours(curr_img)
         self.insert_img_after_curr(fixed_img)
 
-    def show_3d_image(self):
+    def export_3d_image(self):
         from matplotlib import cm
         from mpl_toolkits.mplot3d import Axes3D
 
@@ -1252,7 +1292,16 @@ class TriangulateWidget(QtWidgets.QWidget):
         ang2 = int(self.ph3d_ang2_input.text())
         ax.view_init(ang1, ang2)
         plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
-        print('3D images saved!')
+        print('3D image exported!')
+
+    def export_glob_sc_phases(self):
+        first_img = imsup.GetFirstImage(self.display.image)
+        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        is_arrows_checked = self.add_arrows_checkbox.isChecked()
+        arrow_size = int(self.arr_size_input.text())
+        arrow_dist = int(self.arr_dist_input.text())
+        export_glob_sc_images(img_list, is_arrows_checked, arrow_size, arrow_dist)
+        print('Phases exported!')
 
     def norm_phase(self):
         curr_img = self.display.image
@@ -1346,7 +1395,7 @@ class TriangulateWidget(QtWidgets.QWidget):
             real_x, real_y = CalcRealTLCoords(curr_img.width, curr_pos)
             print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
             print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
-            print('Amp = {0}\nPhs = {1}'.format(curr_img.amPh.am[real_y, real_x], curr_img.amPh.ph[real_y, real_x]))
+            print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amPh.am[real_y, real_x], curr_img.amPh.ph[real_y, real_x]))
         else:
             print('Wrong marker coordinates!')
 
@@ -1903,6 +1952,20 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
 
+    def add_radians(self):
+        curr_img = self.display.image
+        curr_name = self.name_input.text()
+        radians = float(self.radians2add_input.text())
+
+        new_phs_img = imsup.copy_am_ph_image(curr_img)
+        new_phs_img.amPh.ph += radians
+        new_phs_img.update_cos_phase()
+        new_phs_img.name = '{0}_+{1:.2f}rad'.format(curr_name, radians)
+        new_phs_img = rescale_image_buffer_to_window(new_phs_img, const.disp_dim)
+        self.insert_img_after_curr(new_phs_img)
+        self.cos_phs_radio_button.setChecked(True)
+        print('Added {0:.2f} rad to "{1}"'.format(radians, curr_name))
+
     def remove_gradient(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -2419,6 +2482,47 @@ def RunTriangulationWindow():
     app = QtWidgets.QApplication(sys.argv)
     trWindow = TriangulateWidget()
     sys.exit(app.exec_())
+
+# --------------------------------------------------------
+
+def export_glob_sc_images(img_list, add_arrows=True, arr_size=20, arr_dist=50):
+    from GradientArrows import func_to_vectorize
+
+    global_limits = [1e5, 0]
+
+    for img in img_list:
+        limits = [np.min(img.amPh.ph), np.max(img.amPh.ph)]
+        if limits[0] < global_limits[0]:
+            global_limits[0] = limits[0]
+        if limits[1] > global_limits[1]:
+            global_limits[1] = limits[1]
+
+    for img, idx in zip(img_list, range(1, len(img_list)+1)):
+        fig = plt.figure()
+        plt.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
+
+        if idx == len(img_list):
+            cbar = plt.colorbar(label='phase shift [rad]')
+            cbar.set_label('phase shift [rad]')
+
+        if add_arrows:
+            width, height = img.amPh.ph.shape
+            xv, yv = np.meshgrid(np.arange(0, width, float(arr_dist)), np.arange(0, height, float(arr_dist)))
+            xv += arr_dist / 2.0
+            yv += arr_dist / 2.0
+
+            phd = img.amPh.ph[0:height:arr_dist, 0:width:arr_dist]
+            yd, xd = np.gradient(phd)
+
+            vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
+            vectorized_arrow_drawing(xv, yv, xd, yd, arr_size)
+
+        out_f = '{0}.png'.format(img.name)
+        plt.axis('off')
+        plt.margins(0, 0)
+        plt.gca().xaxis.set_major_locator(plt.NullLocator())
+        plt.gca().yaxis.set_major_locator(plt.NullLocator())
+        plt.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
 
 # --------------------------------------------------------
 # REMOVING DISCONTINUITIES FROM PHASE IMAGE (in progress...)
