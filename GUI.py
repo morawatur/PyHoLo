@@ -157,14 +157,18 @@ class LabelExt(QtWidgets.QLabel):
 
     def mouseReleaseEvent(self, QMouseEvent):
         pos = QMouseEvent.pos()
-        currPos = [pos.x(), pos.y()]
-        self.pointSets[self.image.numInSeries - 1].append(currPos)
-        pt_idx = len(self.pointSets[self.image.numInSeries - 1])
-        print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
+        curr_pos = [pos.x(), pos.y()]
+        self.pointSets[self.image.numInSeries - 1].append(curr_pos)
         self.repaint()
 
-        if self.parent().show_labels_checkbox.isChecked():
-            lab = QtWidgets.QLabel('{0}'.format(len(self.pointSets[self.image.numInSeries - 1])), self)
+        pt_idx = len(self.pointSets[self.image.numInSeries - 1])
+        real_x, real_y = CalcRealTLCoords(self.image.width, curr_pos)
+        print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
+        print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
+        print('Amp = {0}\nPhs = {1}\n'.format(self.image.amPh.am[real_y, real_x], self.image.amPh.ph[real_y, real_x]))
+
+        if self.show_labs:
+            lab = QtWidgets.QLabel('{0}'.format(pt_idx), self)
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
@@ -203,57 +207,34 @@ class LabelExt(QtWidgets.QLabel):
         self.setPixmap(pixmap)
         self.repaint()
 
-    def update_labs(self, dispLabs=True):
-        if len(self.pointSets) < self.image.numInSeries:
-            self.pointSets.append([])
-
-        labsToDel = self.children()
-        for child in labsToDel:
-            child.deleteLater()
-
-        if dispLabs:
-            self.show_labels()
-
-    def change_image(self, new_idx, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True, color=False):
-        curr = self.image
-        first = imsup.GetFirstImage(curr)
-        imgs = imsup.CreateImageListFromFirstImage(first)
-        if 0 > new_idx > len(imgs) - 1:
-            return
-
-        new_img = imgs[new_idx]
-        new_img.ReIm2AmPh()
-        self.image = new_img
-        self.setImage(dispAmp, dispPhs, logScale, color)
-        self.update_labs(dispLabs)
-
-    def change_image_adjacent(self, dir_to_img=1, dispAmp=True, dispPhs=False, logScale=False, dispLabs=True,
-                              color=False):
-        if dir_to_img == 1:
-            new_img = self.image.next
-        else:
-            new_img = self.image.prev
-
-        if new_img is None:
-            return
-
-        new_img.ReIm2AmPh()
-        self.image = new_img
-        self.setImage(dispAmp, dispPhs, logScale, color)
-        self.update_labs(dispLabs)
-
     def hide_labels(self):
         labsToDel = self.children()
         for child in labsToDel:
             child.deleteLater()
 
     def show_labels(self):
-        imgIdx = self.image.numInSeries - 1
-        for pt, idx in zip(self.pointSets[imgIdx], range(1, len(self.pointSets[imgIdx]) + 1)):
+        img_idx = self.image.numInSeries - 1
+        n_pt = len(self.pointSets[img_idx])
+        for pt, idx in zip(self.pointSets[img_idx], range(1, n_pt+1)):
             lab = QtWidgets.QLabel('{0}'.format(idx), self)
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pt[0] + 4, pt[1] + 4)
             lab.show()
+
+    def show_last_label(self):
+        img_idx = self.image.numInSeries - 1
+        pt_idx = len(self.pointSets[img_idx]) - 1
+        last_pt = self.pointSets[img_idx][pt_idx]
+        print(last_pt)
+        lab = QtWidgets.QLabel('{0}'.format(pt_idx+1), self)
+        lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
+        lab.move(last_pt[0] + 4, last_pt[1] + 4)
+        lab.show()
+
+    def update_labels(self):
+        self.hide_labels()
+        if self.show_labs:
+            self.show_labels()
 
 # --------------------------------------------------------
 
@@ -1351,12 +1332,23 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.display.repaint()
 
     def add_marker_at_xy(self):
-        curr_idx = self.display.image.numInSeries - 1
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
-        self.display.pointSets[curr_idx].append(curr_pos)
-        pt_idx = len(self.display.pointSets[curr_idx])
-        self.display.repaint()
-        print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, curr_pos[0], curr_pos[1]))
+        if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
+            self.display.pointSets[curr_idx].append(curr_pos)
+            self.display.repaint()
+            if self.display.show_labs:
+                self.display.show_last_label()
+
+            pt_idx = len(self.display.pointSets[curr_idx])
+            disp_x, disp_y = curr_pos
+            real_x, real_y = CalcRealTLCoords(curr_img.width, curr_pos)
+            print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
+            print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
+            print('Amp = {0}\nPhs = {1}'.format(curr_img.amPh.am[real_y, real_x], curr_img.amPh.ph[real_y, real_x]))
+        else:
+            print('Wrong marker coordinates!')
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
