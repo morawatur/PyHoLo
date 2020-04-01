@@ -768,6 +768,9 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
         self.add_arrows_checkbox.setChecked(False)
 
+        self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
+        self.perpendicular_arrows_checkbox.setChecked(False)
+
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
 
@@ -840,6 +843,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
         self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
         self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 5, 1)
+        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 6, 1)
         self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
         self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
         self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
@@ -1298,9 +1302,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         first_img = imsup.GetFirstImage(self.display.image)
         img_list = imsup.CreateImageListFromFirstImage(first_img)
         is_arrows_checked = self.add_arrows_checkbox.isChecked()
+        is_perpendicular_checked = self.perpendicular_arrows_checkbox.isChecked()
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
-        export_glob_sc_images(img_list, is_arrows_checked, arrow_size, arrow_dist)
+        export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist)
         print('Phases exported!')
 
     def norm_phase(self):
@@ -2485,7 +2490,7 @@ def RunTriangulationWindow():
 
 # --------------------------------------------------------
 
-def export_glob_sc_images(img_list, add_arrows=True, arr_size=20, arr_dist=50):
+def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50):
     from GradientArrows import func_to_vectorize
 
     global_limits = [1e5, 0]
@@ -2513,6 +2518,13 @@ def export_glob_sc_images(img_list, add_arrows=True, arr_size=20, arr_dist=50):
 
             phd = img.amPh.ph[0:height:arr_dist, 0:width:arr_dist]
             yd, xd = np.gradient(phd)
+
+            # arrows along magnetic contours
+            if rot_by_90:
+                xd_yd_comp = xd + 1j * yd
+                xd_yd_comp_rot = xd_yd_comp * np.exp(1j * np.pi / 2.0)
+                xd = xd_yd_comp_rot.real
+                yd = xd_yd_comp_rot.imag
 
             vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
             vectorized_arrow_drawing(xv, yv, xd, yd, arr_size)

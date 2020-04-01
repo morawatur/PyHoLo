@@ -35,7 +35,8 @@ def func_to_vectorize(x, y, dx, dy, sc=1):
 
 if __name__ == "__main__":
 
-    img_dir = 'C:\\example\\directory'
+    # img_dir = 'C:\\example\\directory'
+    img_dir = 'X:\MagnetyzmHolo\Sadowski_Jablonska\A8326_750C_90_and_45deg\Rekonstrukcja\LamC_45st\wyniki\\roznice\\roznice_wyciete\crop2_wydzielenie1\\roznice_wzgledem_pierwszego\strzalki'
     files = [ '{0}/{1}'.format(img_dir, f) for f in listdir(img_dir) if isfile(join(img_dir, f)) and f.endswith('.dm3') ]
     global_limits = [1e5, 0]
 
@@ -78,6 +79,12 @@ if __name__ == "__main__":
         phd = img.amPh.ph[h_min:h_max:def_step, h_min:h_max:def_step]
         ydd, xdd = np.gradient(phd)
 
+        # arrows along magnetic contours (test)
+        xd_yd_comp = xdd + 1j * ydd
+        xd_yd_comp_rot = xd_yd_comp * np.exp(1j * np.pi/2.0)
+        xddd = xd_yd_comp_rot.real
+        yddd = xd_yd_comp_rot.imag
+
         # prevent artifacts
         # avg_ydd = np.average(np.abs(ydd))
         # avg_xdd = np.average(np.abs(xdd))
@@ -116,7 +123,7 @@ if __name__ == "__main__":
 
         plt.imshow(ph_roi, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
         # vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # show/hide arrows (adjacent phases)
-        vectorized_arrow_drawing(xv, yv, xdd, ydd, 15)          # show/hide arrows (phases being 'def_step' apart)
+        vectorized_arrow_drawing(xv, yv, xddd, yddd, 15)          # show/hide arrows (phases being 'def_step' apart)
         # plt.set_cmap(pplt.cm.Greys)
         # plt.set_cmap('jet')
         plt.axis('off')
