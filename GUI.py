@@ -47,6 +47,12 @@ def read_dm3_file(fpath):
 
 # --------------------------------------------------------
 
+def func_to_vectorize(x, y, dx, dy, sc=1):
+    # plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
+    plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+
+# --------------------------------------------------------
+
 class RgbColorTable:
     def __init__(self):
         step = 6
@@ -2491,8 +2497,6 @@ def RunTriangulationWindow():
 # --------------------------------------------------------
 
 def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50):
-    from GradientArrows import func_to_vectorize
-
     global_limits = [1e5, 0]
 
     for img in img_list:
