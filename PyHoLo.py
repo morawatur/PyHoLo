@@ -23,4 +23,4 @@
 
 import GUI as gui
 
-gui.RunTriangulationWindow()
+gui.RunHolographyWindow()

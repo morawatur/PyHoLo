@@ -369,9 +369,9 @@ def create_preview_img(full_img, new_sz):
 
 # --------------------------------------------------------
 
-class TriangulateWidget(QtWidgets.QWidget):
+class HolographyWidget(QtWidgets.QWidget):
     def __init__(self):
-        super(TriangulateWidget, self).__init__()
+        super(HolographyWidget, self).__init__()
         file_dialog = QtWidgets.QFileDialog()
         image_path = file_dialog.getOpenFileName()[0]
         if image_path == '':
@@ -393,6 +393,9 @@ class TriangulateWidget(QtWidgets.QWidget):
 
     def initUI(self):
         self.plot_widget.canvas.setFixedHeight(350)
+
+        self.curr_info_label = QtWidgets.QLabel('', self)
+        self.update_curr_info_label()
 
         # ------------------------------
         # Navigation panel (1)
@@ -939,9 +942,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.tabs.addTab(self.tab_corr, 'Corrections')
 
         vbox_panel = QtWidgets.QVBoxLayout()
+        vbox_panel.addWidget(self.curr_info_label)
         vbox_panel.addWidget(self.tabs)
         vbox_panel.addWidget(self.plot_widget)
-        vbox_panel.addWidget(self.preview_scroll)
+        # vbox_panel.addWidget(self.preview_scroll)
 
         hbox_main = QtWidgets.QHBoxLayout()
         hbox_main.addWidget(self.display)
@@ -954,6 +958,10 @@ class TriangulateWidget(QtWidgets.QWidget):
         self.setWindowIcon(QtGui.QIcon('gui/world.png'))
         self.show()
         self.setFixedSize(self.width(), self.height())  # disable window resizing
+
+    def update_curr_info_label(self):
+        curr_img = self.display.image
+        self.curr_info_label.setText('{0}, dim = {1} px'.format(curr_img.name, curr_img.width))
 
     def enable_manual_panel(self):
         self.left_button.setEnabled(True)
@@ -992,6 +1000,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         for img, idx in zip(img_queue, range(len(img_queue))):
             img.numInSeries = idx + 1
             img.name = 'img0{0}'.format(idx + 1) if idx < 9 else 'img{0}'.format(idx + 1)
+        self.update_curr_info_label()
         self.name_input.setText(curr_img.name)
         self.fname_input.setText(curr_img.name)
 
@@ -1011,6 +1020,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         if len(self.display.pointSets) < self.display.image.numInSeries:
             self.display.pointSets.append([])
         self.display.update_labels()
+        self.update_curr_info_label()
         self.update_display_and_bcg()
 
     def go_to_prev_image(self):
@@ -1843,6 +1853,7 @@ class TriangulateWidget(QtWidgets.QWidget):
             print('Image must be divisible by 4')
             return
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
+        holo_fft.name = 'fft_of_{0}'.format(holo_img.name)
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(holo_fft)
 
@@ -2056,6 +2067,7 @@ class TriangulateWidget(QtWidgets.QWidget):
         rec_holo_corr = rescale_image_buffer_to_window(rec_holo_corr, const.disp_dim)
         rec_holo_corr.name = 'ph_from_{0}'.format(holo_img.name)
         self.insert_img_after_curr(rec_holo_corr)
+        self.log_scale_checkbox.setChecked(False)
 
     def swap_left(self):
         curr_img = self.display.image
@@ -2489,9 +2501,9 @@ def RReplace(text, old, new, occurence):
 
 # --------------------------------------------------------
 
-def RunTriangulationWindow():
+def RunHolographyWindow():
     app = QtWidgets.QApplication(sys.argv)
-    trWindow = TriangulateWidget()
+    holoWindow = HolographyWidget()
     sys.exit(app.exec_())
 
 # --------------------------------------------------------
