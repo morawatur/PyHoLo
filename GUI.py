@@ -992,6 +992,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def set_image_name(self):
         self.display.image.name = self.name_input.text()
         self.fname_input.setText(self.name_input.text())
+        self.update_curr_info_label()
 
     def reset_image_names(self):
         curr_img = self.display.image
@@ -2175,13 +2176,17 @@ class HolographyWidget(QtWidgets.QWidget):
         dx_img = imsup.copy_am_ph_image(curr_img)
         dy_img = imsup.copy_am_ph_image(curr_img)
         grad_img = imsup.copy_am_ph_image(curr_img)
-        dx, dy = np.gradient(curr_img.amPh.ph)
+        print('Calculating gradient for sample distance = {0:.2f} nm'.format(curr_img.px_dim * 1e9))
+        dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
         dr = np.sqrt(dx * dx + dy * dy)
-        dphi = np.arctan2(dy, dx)
+        # dphi = np.arctan2(dy, dx)
         dx_img.amPh.ph = np.copy(dx)
         dy_img.amPh.ph = np.copy(dy)
-        grad_img.amPh.am = np.copy(dr)
-        grad_img.amPh.ph = np.copy(dphi)
+        grad_img.amPh.ph = np.copy(dr)
+        # grad_img.amPh.ph = np.copy(dphi)
+        dx_img.name = 'gradX_of_{0}'.format(curr_img.name)
+        dy_img.name = 'gradY_of_{0}'.format(curr_img.name)
+        grad_img.name = 'gradM_of_{0}'.format(curr_img.name)
         self.insert_img_after_curr(dx_img)
         self.insert_img_after_curr(dy_img)
         self.insert_img_after_curr(grad_img)
