@@ -516,7 +516,8 @@ class HolographyWidget(QtWidgets.QWidget):
         wrap_button = QtWidgets.QPushButton('Wrap', self)
         export_button = QtWidgets.QPushButton('Export', self)
         export_all_button = QtWidgets.QPushButton('Export all', self)
-        norm_phase_button = QtWidgets.QPushButton('Normalize phase', self)
+        blank_area_button = QtWidgets.QPushButton('Blank area', self)
+        norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
 
         self.export_tiff_radio_button = QtWidgets.QRadioButton('TIFF image', self)
         self.export_bin_radio_button = QtWidgets.QRadioButton('Binary', self)
@@ -535,6 +536,7 @@ class HolographyWidget(QtWidgets.QWidget):
         wrap_button.clicked.connect(self.wrap_img_phase)
         export_button.clicked.connect(self.export_image)
         export_all_button.clicked.connect(self.export_all)
+        blank_area_button.clicked.connect(self.blank_area)
         norm_phase_button.clicked.connect(self.norm_phase)
 
         grid_disp = QtWidgets.QGridLayout()
@@ -552,7 +554,8 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_disp.addWidget(wrap_button, 2, 4)
         grid_disp.addWidget(self.gray_radio_button, 1, 3)
         grid_disp.addWidget(self.color_radio_button, 2, 3)
-        grid_disp.addWidget(norm_phase_button, 3, 3, 1, 2)
+        grid_disp.addWidget(blank_area_button, 3, 3)
+        grid_disp.addWidget(norm_phase_button, 3, 4)
 
         grid_exp = QtWidgets.QGridLayout()
         grid_exp.setColumnStretch(0, 1)
@@ -767,8 +770,9 @@ class HolographyWidget(QtWidgets.QWidget):
         # ------------------------------
 
         plot_button = QtWidgets.QPushButton('Plot profile', self)
-        calc_B_button = QtWidgets.QPushButton('Calculate B', self)
+        calc_B_sec_button = QtWidgets.QPushButton('Calc. B value', self)
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
+        calc_B_map_button = QtWidgets.QPushButton('Calculate B map', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
@@ -804,8 +808,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_ang2_input = QtWidgets.QLineEdit('0', self)
 
         plot_button.clicked.connect(self.plot_profile)
-        calc_B_button.clicked.connect(self.calc_magnetic_field)
+        calc_B_sec_button.clicked.connect(self.calc_B_for_section)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
+        calc_B_map_button.clicked.connect(self.calc_B_map)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
@@ -838,11 +843,11 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.setColumnStretch(6, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
         self.tab_calc.layout.setRowStretch(4, 2)
-        self.tab_calc.layout.setRowStretch(7, 1)
+        self.tab_calc.layout.setRowStretch(8, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
-        self.tab_calc.layout.addWidget(calc_B_button, 4, 1)
+        self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
@@ -857,6 +862,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
         self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
         self.tab_calc.layout.addWidget(export_img3d_button, 6, 4, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_map_button, 7, 1)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1280,6 +1286,39 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img.amPh.ph = np.copy(new_phs)
         self.update_display()
 
+    def blank_area(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+        p1, p2 = self.display.pointSets[curr_idx][:2]
+        p1 = CalcRealTLCoords(curr_img.width, p1)
+        p2 = CalcRealTLCoords(curr_img.width, p2)
+
+        blanked_img = imsup.copy_am_ph_image(curr_img)
+        blanked_img.amPh.am[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
+        blanked_img.amPh.ph[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
+
+        blanked_img.name = '{0}_b'.format(curr_img.name)
+        self.insert_img_after_curr(blanked_img)
+
+    def norm_phase(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+        if len(self.display.pointSets[curr_idx]) == 0:
+            print('Mark the reference point on the image')
+            return
+        pt_disp = self.display.pointSets[curr_idx][0]
+        pt_real = CalcRealTLCoords(curr_img.width, pt_disp)
+        print(pt_disp, pt_real)
+
+        first_img = imsup.GetFirstImage(curr_img)
+        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        for img in img_list:
+            new_phs = norm_phase_to_pt(img.amPh.ph, pt_real)
+            img.amPh.ph = np.copy(new_phs)
+            img.update_cos_phase()
+        self.update_display()
+        print('All phases normalized')
+
     def fix_discont_phs(self):
         curr_img = self.display.image
         fixed_img = find_contours(curr_img)
@@ -1304,16 +1343,17 @@ class HolographyWidget(QtWidgets.QWidget):
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
         ax = fig.add_subplot(111, projection='3d')
-        # ax.plot_surface(X, Y, curr_img.amPh.am, cmap=cm.jet, rstride=step, cstride=step)
         ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)
         # plt.show()
-        # plt.savefig('{0}_3d.png'.format(curr_img.name), dpi=300)
 
         ang1 = int(self.ph3d_ang1_input.text())
         ang2 = int(self.ph3d_ang2_input.text())
         ax.view_init(ang1, ang2)
         plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
         print('3D image exported!')
+        plt.clf()
+        plt.cla()
+        plt.close()
 
     def export_glob_sc_phases(self):
         first_img = imsup.GetFirstImage(self.display.image)
@@ -1322,27 +1362,8 @@ class HolographyWidget(QtWidgets.QWidget):
         is_perpendicular_checked = self.perpendicular_arrows_checkbox.isChecked()
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
-        export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist)
+        export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
         print('Phases exported!')
-
-    def norm_phase(self):
-        curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-        if len(self.display.pointSets[curr_idx]) == 0:
-            print('Mark the reference point on the image')
-            return
-        pt_disp = self.display.pointSets[curr_idx][0]
-        pt_real = CalcRealTLCoords(curr_img.width, pt_disp)
-        print(pt_disp, pt_real)
-
-        first_img = imsup.GetFirstImage(curr_img)
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
-        for img in img_list:
-            new_phs = norm_phase_to_pt(img.amPh.ph, pt_real)
-            img.amPh.ph = np.copy(new_phs)
-            img.update_cos_phase()
-        self.update_display()
-        print('All phases normalized')
 
     def zoom_n_fragments(self):
         curr_idx = self.display.image.numInSeries - 1
@@ -2183,7 +2204,6 @@ class HolographyWidget(QtWidgets.QWidget):
         dx_img.amPh.ph = np.copy(dx)
         dy_img.amPh.ph = np.copy(dy)
         grad_img.amPh.ph = np.copy(dr)
-        # grad_img.amPh.ph = np.copy(dphi)
         dx_img.name = 'gradX_of_{0}'.format(curr_img.name)
         dy_img.name = 'gradY_of_{0}'.format(curr_img.name)
         grad_img.name = 'gradM_of_{0}'.format(curr_img.name)
@@ -2191,7 +2211,21 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(dy_img)
         self.insert_img_after_curr(grad_img)
 
-    def calc_magnetic_field(self):
+    def calc_B_map(self):
+        curr_img = self.display.image
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        B_coeff = const.dirac_const / sample_thickness
+
+        dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
+        B_field = np.sqrt(dx * dx + dy * dy) * B_coeff
+
+        B_field_img = imsup.copy_am_ph_image(curr_img)
+        B_field_img.amPh.am *= 0
+        B_field_img.amPh.ph = np.copy(B_field)
+        B_field_img.name = 'B_field_from_{0}'.format(curr_img.name)
+        self.insert_img_after_curr(B_field_img)
+
+    def calc_B_for_section(self):
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
         d_phase = np.abs(pt1[1] - pt2[1])
@@ -2513,7 +2547,7 @@ def RunHolographyWindow():
 
 # --------------------------------------------------------
 
-def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50):
+def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
     global_limits = [1e5, 0]
 
     for img in img_list:
@@ -2528,8 +2562,8 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         plt.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
 
         if idx == len(img_list):
-            cbar = plt.colorbar(label='phase shift [rad]')
-            cbar.set_label('phase shift [rad]')
+            cbar = plt.colorbar(label=cbar_lab)
+            cbar.set_label(cbar_lab)
 
         if add_arrows:
             width, height = img.amPh.ph.shape
