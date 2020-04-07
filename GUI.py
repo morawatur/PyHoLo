@@ -773,6 +773,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_sec_button = QtWidgets.QPushButton('Calc. B value', self)
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_B_map_button = QtWidgets.QPushButton('Calculate B map', self)
+        gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
@@ -807,10 +808,15 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_ang1_input = QtWidgets.QLineEdit('0', self)
         self.ph3d_ang2_input = QtWidgets.QLineEdit('0', self)
 
+        ph3d_mesh_label = QtWidgets.QLabel('Mesh dist.', self)
+        self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
+        self.ph3d_mesh_input.setValidator(self.only_int)
+
         plot_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_for_section)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_B_map_button.clicked.connect(self.calc_B_map)
+        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
@@ -848,6 +854,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
         self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
+        self.tab_calc.layout.addWidget(calc_B_map_button, 5, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
@@ -856,13 +863,15 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
         self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
         self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
-        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 5, 1)
-        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 6, 1)
+        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 6, 1)
+        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 7, 1)
         self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
         self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
         self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
-        self.tab_calc.layout.addWidget(export_img3d_button, 6, 4, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_map_button, 7, 1)
+        self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 4)
+        self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 5)
+        self.tab_calc.layout.addWidget(export_img3d_button, 7, 4, 1, 2)
+        self.tab_calc.layout.addWidget(gen_B_stats_button, 7, 2, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1332,7 +1341,13 @@ class HolographyWidget(QtWidgets.QWidget):
         img_dim = curr_img.width
         px_sz = curr_img.px_dim * 1e9
 
-        step = 10
+        ang1 = int(self.ph3d_ang1_input.text())
+        ang2 = int(self.ph3d_ang2_input.text())
+        step = int(self.ph3d_mesh_input.text())
+
+        # X = np.arange(0, img_dim, step, dtype=np.float32)
+        # Y = np.arange(0, img_dim, step, dtype=np.float32)
+        # phs_to_disp = np.copy(curr_img.amPh.ph[0:img_dim:step, 0:img_dim:step])
 
         X = np.arange(0, img_dim, dtype=np.float32)
         Y = np.arange(0, img_dim, dtype=np.float32)
@@ -1343,11 +1358,10 @@ class HolographyWidget(QtWidgets.QWidget):
         fig = plt.figure()
         # ax = fig.gca(projection='3d')
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)
-        # plt.show()
+        ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)    # mesh step (dist. between rows/cols used)
+        # ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
+        # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
-        ang1 = int(self.ph3d_ang1_input.text())
-        ang2 = int(self.ph3d_ang2_input.text())
         ax.view_init(ang1, ang2)
         plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
         print('3D image exported!')
@@ -2234,6 +2248,13 @@ class HolographyWidget(QtWidgets.QWidget):
         print('{0:.1f} nm'.format(d_dist))
         print('{0:.2f} rad'.format(d_phase))
         print('B = {0:.2f} T'.format(B_in_plane))
+
+    def gen_phase_stats(self):
+        curr_img = self.display.image
+        curr_phs = curr_img.amPh.ph
+        print('STATISTICS for phase of "{0}":'.format(curr_img.name))
+        print('Min. = {0:.2f}\nMax. = {1:.2f}\nAvg. = {2:.2f}'.format(np.min(curr_phs), np.max(curr_phs), np.mean(curr_phs)))
+        print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
     def filter_contours(self):
         curr_img = self.display.image
