@@ -29,8 +29,8 @@ from os.path import isfile, join
 # ---------------------------------------------------------
 
 def func_to_vectorize(x, y, dx, dy, sc=1):
-    # plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
-    plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+    plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
+    # plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
 
 # ---------------------------------------------------------
 
@@ -50,6 +50,7 @@ if __name__ == "__main__":
             global_limits[1] = limits[1]
 
     idx = 1
+    fig = plt.figure()
 
     for f in files:
         print(f)
@@ -59,9 +60,8 @@ if __name__ == "__main__":
         img.LoadAmpData(img_data.astype(np.float32))
         img.amPh.ph = np.copy(img.amPh.am)
 
-        fig = plt.figure()
         width, height = img.amPh.ph.shape
-        def_step = 20
+        def_step = 100
         offset = 0
         h_min = offset
         h_max = width - offset
@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
         plt.imshow(ph_roi, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
         # vectorized_arrow_drawing(xv, yv, xdd, ydd, 4000)      # show/hide arrows (adjacent phases)
-        vectorized_arrow_drawing(xv, yv, xdd, ydd, 20)          # show/hide arrows (phases being 'def_step' apart)
+        vectorized_arrow_drawing(xv, yv, xdd, ydd, 50)         # show/hide arrows (phases being 'def_step' apart)
         # plt.set_cmap(pplt.cm.Greys)
         # plt.set_cmap('jet')
         plt.axis('off')
@@ -142,3 +142,7 @@ if __name__ == "__main__":
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
         plt.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
         # plt.show()
+        # plt.clf()
+        plt.cla()
+
+    plt.close(fig)

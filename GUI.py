@@ -1367,7 +1367,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('3D image exported!')
         plt.clf()
         plt.cla()
-        plt.close()
+        plt.close(fig)
 
     def export_glob_sc_phases(self):
         first_img = imsup.GetFirstImage(self.display.image)
@@ -2578,8 +2578,8 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         if limits[1] > global_limits[1]:
             global_limits[1] = limits[1]
 
+    fig = plt.figure()
     for img, idx in zip(img_list, range(1, len(img_list)+1)):
-        fig = plt.figure()
         plt.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
 
         if idx == len(img_list):
@@ -2611,6 +2611,9 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         plt.gca().xaxis.set_major_locator(plt.NullLocator())
         plt.gca().yaxis.set_major_locator(plt.NullLocator())
         plt.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
+        # plt.clf()
+        plt.cla()
+    plt.close(fig)
 
 # --------------------------------------------------------
 # REMOVING DISCONTINUITIES FROM PHASE IMAGE (in progress...)
