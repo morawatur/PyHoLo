@@ -48,8 +48,8 @@ def read_dm3_file(fpath):
 # --------------------------------------------------------
 
 def func_to_vectorize(x, y, dx, dy, sc=1):
-    # plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
-    plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+    plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
+    # plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
 
 # --------------------------------------------------------
 
@@ -1317,15 +1317,20 @@ class HolographyWidget(QtWidgets.QWidget):
             return
         pt_disp = self.display.pointSets[curr_idx][0]
         pt_real = CalcRealTLCoords(curr_img.width, pt_disp)
-        print(pt_disp, pt_real)
+        x0, y0 = pt_real
 
         first_img = imsup.GetFirstImage(curr_img)
         img_list = imsup.CreateImageListFromFirstImage(first_img)
         for img in img_list:
-            new_phs = norm_phase_to_pt(img.amPh.ph, pt_real)
-            img.amPh.ph = np.copy(new_phs)
+            # new_phs = norm_phase_to_pt(img.amPh.ph, pt_real)
+            value_in_pt = img.amPh.ph[y0, x0]
+            img.amPh.ph -= value_in_pt
             img.update_cos_phase()
+            img.name += '_' if value_in_pt > 0.0 else '_+'
+            img.name += '{0:.2f}rad'.format(-value_in_pt)
+
         self.update_display()
+        self.update_curr_info_label()
         print('All phases normalized')
 
     def fix_discont_phs(self):
