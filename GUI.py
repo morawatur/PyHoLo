@@ -2236,7 +2236,8 @@ class HolographyWidget(QtWidgets.QWidget):
         B_coeff = const.dirac_const / sample_thickness
 
         dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
-        B_field = np.sqrt(dx * dx + dy * dy) * B_coeff
+        B_sign = np.sign(dx)
+        B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
 
         B_field_img = imsup.copy_am_ph_image(curr_img)
         B_field_img.amPh.am *= 0
