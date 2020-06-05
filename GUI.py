@@ -387,7 +387,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.changes_made = []
         self.shift = [0, 0]
         self.rot_angle = 0
-        self.mag_coeff = 1.0
+        self.scale_factor = 1.0
         self.warp_points = []
         self.initUI()
 
@@ -613,21 +613,25 @@ class HolographyWidget(QtWidgets.QWidget):
         auto_shift_button = QtWidgets.QPushButton('Auto-shift', self)
         auto_rot_button = QtWidgets.QPushButton('Auto-rotate', self)
         warpButton = QtWidgets.QPushButton('Warp', self)
-        magnify_button = QtWidgets.QPushButton('Magnify', self)
+        get_scale_ratio_button = QtWidgets.QPushButton('Get scale ratio from image calib.')
+        scale_button = QtWidgets.QPushButton('Scale', self)
         reshift_button = QtWidgets.QPushButton('Re-Shift', self)
         rerot_button = QtWidgets.QPushButton('Re-Rot', self)
-        remag_button = QtWidgets.QPushButton('Re-Mag', self)
+        rescale_button = QtWidgets.QPushButton('Re-Scale', self)
         rewarp_button = QtWidgets.QPushButton('Re-Warp', self)
         cross_corr_w_prev_button = QtWidgets.QPushButton('Cross corr. w. prev.', self)
         cross_corr_all_button = QtWidgets.QPushButton('Cross corr. all', self)
 
+        self.scale_factor_input = QtWidgets.QLineEdit('1.0', self)
+
         auto_shift_button.clicked.connect(self.auto_shift_image)
         auto_rot_button.clicked.connect(self.auto_rot_image)
         warpButton.clicked.connect(partial(self.warp_image, False))
-        magnify_button.clicked.connect(self.magnify)
+        get_scale_ratio_button.clicked.connect(self.get_scale_ratio_from_images)
+        scale_button.clicked.connect(self.scale_image)
         reshift_button.clicked.connect(self.reshift)
         rerot_button.clicked.connect(self.rerotate)
-        remag_button.clicked.connect(self.remagnify)
+        rescale_button.clicked.connect(self.rescale_image)
         rewarp_button.clicked.connect(self.rewarp)
         cross_corr_w_prev_button.clicked.connect(self.cross_corr_with_prev)
         cross_corr_all_button.clicked.connect(self.cross_corr_all)
@@ -669,14 +673,16 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_auto.setRowStretch(5, 1)
         grid_auto.addWidget(auto_shift_button, 1, 1)
         grid_auto.addWidget(auto_rot_button, 2, 1)
-        grid_auto.addWidget(magnify_button, 3, 1)
-        grid_auto.addWidget(warpButton, 4, 1)
+        grid_auto.addWidget(get_scale_ratio_button, 3, 1, 1, 2)
+        grid_auto.addWidget(scale_button, 4, 1)
+        grid_auto.addWidget(warpButton, 5, 1)
         grid_auto.addWidget(reshift_button, 1, 2)
         grid_auto.addWidget(rerot_button, 2, 2)
-        grid_auto.addWidget(remag_button, 3, 2)
-        grid_auto.addWidget(rewarp_button, 4, 2)
+        grid_auto.addWidget(rescale_button, 4, 2)
+        grid_auto.addWidget(rewarp_button, 5, 2)
         grid_auto.addWidget(cross_corr_w_prev_button, 1, 3)
         grid_auto.addWidget(cross_corr_all_button, 2, 3)
+        grid_auto.addWidget(self.scale_factor_input, 4, 3)
 
         self.tab_align = QtWidgets.QWidget()
         self.tab_align.layout = QtWidgets.QVBoxLayout()
@@ -1631,6 +1637,8 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Avg. rot. angle = {0:.2f} deg'.format(rot_angle_avg))
 
         img_rot = tr.RotateImageSki(curr_img, rot_angle_avg)
+
+        img_rot.name = curr_img.name + '_rot'
         self.insert_img_after_curr(img_rot)
 
     def auto_shift_rot_old(self):
@@ -1738,30 +1746,53 @@ class HolographyWidget(QtWidgets.QWidget):
         self.shift = shift_avg
 
         shifted_img2 = imsup.shift_am_ph_image(curr_img, shift_avg)
+
+        shifted_img2.name = curr_img.name + '_sh'
         self.insert_img_after_curr(shifted_img2)
 
     def reshift(self):
         curr_img = self.display.image
         shift = self.shift
         shifted_img = imsup.shift_am_ph_image(curr_img, shift)
+        shifted_img.name = curr_img.name + '_sh'
         self.insert_img_after_curr(shifted_img)
 
     def rerotate(self):
         curr_img = self.display.image
         rot_angle = self.rot_angle
         rotated_img = tr.RotateImageSki(curr_img, rot_angle)
+        rotated_img.name = curr_img.name + '_rot'
         self.insert_img_after_curr(rotated_img)
 
-    def magnify(self):
+    def get_scale_ratio_from_images(self):
+        if self.display.image.prev is None:
+            print('There is no previous image!')
+            return
+        curr_px_dim = self.display.image.px_dim
+        prev_px_dim = self.display.image.prev.px_dim
+        scale_ratio = curr_px_dim / prev_px_dim
+        print('Scale ratio (between current and previous images) = {0:.2f}x'.format(scale_ratio))
+        print('scale factor < 0 -- current image should be scaled')
+        print('scale factor > 0 -- previous image should be scaled')
+        self.scale_factor_input.setText('{0:.2f}'.format(scale_ratio))
+
+    def scale_image(self):
         curr_img = self.display.image
-        ref_img = curr_img.prev
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
 
-        points1 = self.display.pointSets[curr_idx - 1]
         points2 = self.display.pointSets[curr_idx]
-        n_points1 = len(points1)
         n_points2 = len(points2)
+
+        if curr_img.prev is None or n_points2 == 0:
+            print('Using manual magnification...')
+            self.scale_factor = float(self.scale_factor_input.text())
+            self.rescale_image()
+            return
+
+        ref_img = curr_img.prev
+        points1 = self.display.pointSets[curr_idx - 1]
+        n_points1 = len(points1)
 
         if n_points1 != n_points2:
             print('Mark the same number of points on both images!')
@@ -1777,16 +1808,16 @@ class HolographyWidget(QtWidgets.QWidget):
                 poly1_dists.append(CalcDistance(poly1[i], poly1[j]))
                 poly2_dists.append(CalcDistance(poly2[i], poly2[j]))
 
-        mags = [dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists)]
-        mag_avg = np.average(mags)
-        self.mag_coeff = mag_avg
+        scfs = [dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists)]
+        scf_avg = np.average(scfs)
+        self.scale_factor = scf_avg
 
-        print('---- Magnification ----')
-        print(['mag{0} = {1:.2f}x\n'.format(idx + 1, mag) for idx, mag in zip(range(len(mags)), mags)])
+        print('---- Scale factor ----')
+        print(['scf{0} = {1:.2f}x\n'.format(idx + 1, mag) for idx, mag in zip(range(len(scfs)), scfs)])
+        print('Average scale factor = {0:.2f}x'.format(scf_avg))
         print('------------------')
-        print('Average magnification = {0:.2f}x'.format(mag_avg))
 
-        magnified_img = tr.RescaleImageSki(curr_img, mag_avg)
+        magnified_img = tr.RescaleImageSki(curr_img, scf_avg)
 
         pad_sz = (magnified_img.width - curr_img.width) // 2
         if pad_sz > 0:
@@ -1801,16 +1832,16 @@ class HolographyWidget(QtWidgets.QWidget):
             resc_img1.prev, resc_img1.next = None, None
             resc_img2 = imsup.pad_img_from_ref(magnified_img, ref_img.width, 0.0, 'tblr')
 
+        resc_img1.name = ref_img.name + '_resc1'
+        resc_img2.name = curr_img.name + '_resc2'
         self.insert_img_after_curr(resc_img1)
         self.insert_img_after_curr(resc_img2)
 
-        print('Magnification complete!')
+        print('Image(s) rescaled!')
 
-    def remagnify(self):
+    def rescale_image(self):
         curr_img = self.display.image
-        mag_factor = self.mag_coeff
-
-        mag_img = tr.RescaleImageSki(curr_img, mag_factor)
+        mag_img = tr.RescaleImageSki(curr_img, self.scale_factor)
         pad_sz = (mag_img.width - curr_img.width) // 2
 
         if pad_sz > 0:
@@ -1820,7 +1851,9 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             resc_img = imsup.pad_img_from_ref(mag_img, curr_img.width, 0.0, 'tblr')
 
+        resc_img.name = curr_img.name + '_resc'
         self.insert_img_after_curr(resc_img)
+        print('Image rescaled!')
 
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
