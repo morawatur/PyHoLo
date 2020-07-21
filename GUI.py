@@ -776,9 +776,11 @@ class HolographyWidget(QtWidgets.QWidget):
         # ------------------------------
 
         plot_button = QtWidgets.QPushButton('Plot profile', self)
-        calc_B_sec_button = QtWidgets.QPushButton('Calc. B value', self)
+        calc_B_sec_button = QtWidgets.QPushButton('Calc. B from section', self)
+        calc_B_prof_button = QtWidgets.QPushButton('Calb. B from profile')
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
+        calc_B_radial_button = QtWidgets.QPushButton('Calc. B radial', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
@@ -819,9 +821,11 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input.setValidator(self.only_int)
 
         plot_button.clicked.connect(self.plot_profile)
-        calc_B_sec_button.clicked.connect(self.calc_B_for_section)
+        calc_B_sec_button.clicked.connect(self.calc_B_from_section)
+        calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
+        calc_B_radial_button.clicked.connect(self.calc_B_radial)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
@@ -855,12 +859,15 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.setColumnStretch(6, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
         self.tab_calc.layout.setRowStretch(4, 2)
-        self.tab_calc.layout.setRowStretch(8, 1)
+        self.tab_calc.layout.setRowStretch(9, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
         self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
-        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 5, 1)
+        self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1)
+        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1)
+        self.tab_calc.layout.addWidget(calc_B_radial_button, 7, 1)
+        self.tab_calc.layout.addWidget(gen_B_stats_button, 8, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
@@ -869,15 +876,14 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
         self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
         self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
-        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 6, 1)
-        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 7, 1)
         self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
+        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 7, 2, 1, 2)
+        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 8, 2, 1, 2)
         self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
         self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
         self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 4)
         self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 5)
         self.tab_calc.layout.addWidget(export_img3d_button, 7, 4, 1, 2)
-        self.tab_calc.layout.addWidget(gen_B_stats_button, 7, 2, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -2287,13 +2293,62 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(Bx_img)
         self.insert_img_after_curr(By_img)
 
-    def calc_B_for_section(self):
+    def calc_B_radial(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+        px_sz = curr_img.px_dim
+        if len(self.display.pointSets[curr_idx]) < 2:
+            print('You have to mark two points on the image to select area of calculation!')
+            return
+
+        pt1, pt2 = self.display.pointSets[curr_idx][:2]
+        pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
+        disp_crop_coords = pt1 + pt2
+        real_tl_coords = CalcRealTLCoords(curr_img.width, disp_crop_coords)
+        real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
+        frag = zoom_fragment(curr_img, real_sq_coords)
+
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        B_coeff = const.dirac_const / sample_thickness
+
+        B_radial_file = open("B_radial.txt", "w")
+        B_radial_file.write('Angle [deg]\tBx [T]\tBy [T]\n')
+        for ang in range(0, 359, 10):
+            frag_rot = tr.RotateImageSki(frag, ang)
+            dx, dy = np.gradient(frag_rot.amPh.ph, px_sz)
+            Bx = B_coeff * dx
+            By = B_coeff * dy
+            B_radial_file.write('{0}\t{1:.3f}\t{2:.3f}\n'.format(ang, np.mean(Bx), np.mean(By)))
+        B_radial_file.close()
+        print('B radial file was saved!')
+
+    # calculate B from section on image
+    def calc_B_from_section(self):
+        from numpy import linalg as la
+        curr_img = self.display.image
+        curr_phs = curr_img.amPh.ph
+        curr_idx = curr_img.numInSeries - 1
+        px_sz = curr_img.px_dim
+        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
+        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+
+        d_dist = la.norm(pt1-pt2) * px_sz
+        d_phase = np.abs(curr_phs[pt1[1], pt1[0]] - curr_phs[pt2[1], pt2[0]])
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
+        print('{0:.1f} nm'.format(d_dist * 1e9))
+        print('{0:.2f} rad'.format(d_phase))
+        print('B = {0:.2f} T'.format(B_in_plane))
+
+    # calculate B from profile in PlotWidget
+    def calc_B_from_profile(self):
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
         d_phase = np.abs(pt1[1] - pt2[1])
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
-        print('{0:.1f} nm'.format(d_dist))
+        print('{0:.1f} nm'.format(d_dist * 1e9))
         print('{0:.2f} rad'.format(d_phase))
         print('B = {0:.2f} T'.format(B_in_plane))
 
