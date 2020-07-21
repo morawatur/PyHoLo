@@ -778,7 +778,7 @@ class HolographyWidget(QtWidgets.QWidget):
         plot_button = QtWidgets.QPushButton('Plot profile', self)
         calc_B_sec_button = QtWidgets.QPushButton('Calc. B value', self)
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
-        calc_B_map_button = QtWidgets.QPushButton('Calculate B map', self)
+        calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
@@ -821,7 +821,7 @@ class HolographyWidget(QtWidgets.QWidget):
         plot_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_for_section)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
-        calc_B_map_button.clicked.connect(self.calc_B_map)
+        calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
@@ -860,7 +860,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
         self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
-        self.tab_calc.layout.addWidget(calc_B_map_button, 5, 1)
+        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 5, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
@@ -2263,20 +2263,29 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(dy_img)
         self.insert_img_after_curr(grad_img)
 
-    def calc_B_map(self):
+    def calc_Bxy_maps(self):
         curr_img = self.display.image
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         B_coeff = const.dirac_const / sample_thickness
 
         dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
-        B_sign = np.sign(dx)
-        B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
+        # B_sign = np.sign(dx)
+        # B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
+        Bx = B_coeff * dx
+        By = B_coeff * dy
 
-        B_field_img = imsup.copy_am_ph_image(curr_img)
-        B_field_img.amPh.am *= 0
-        B_field_img.amPh.ph = np.copy(B_field)
-        B_field_img.name = 'B_field_from_{0}'.format(curr_img.name)
-        self.insert_img_after_curr(B_field_img)
+        Bx_img = imsup.copy_am_ph_image(curr_img)
+        Bx_img.amPh.am *= 0
+        Bx_img.amPh.ph = np.copy(Bx)
+        Bx_img.name = 'Bx_from_{0}'.format(curr_img.name)
+
+        By_img = imsup.copy_am_ph_image(Bx_img)
+        By_img.amPh.am *= 0
+        By_img.amPh.ph = np.copy(By)
+        By_img.name = 'By_from_{0}'.format(curr_img.name)
+
+        self.insert_img_after_curr(Bx_img)
+        self.insert_img_after_curr(By_img)
 
     def calc_B_for_section(self):
         pt1, pt2 = self.plot_widget.markedPointsData
