@@ -2330,8 +2330,6 @@ class HolographyWidget(QtWidgets.QWidget):
         ax.grid(True)
 
         plt.margins(0, 0)
-        # plt.gca().xaxis.set_major_locator(plt.NullLocator())
-        # plt.gca().yaxis.set_major_locator(plt.NullLocator())
         plt.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
         plt.clf()
         plt.cla()
