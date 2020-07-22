@@ -780,7 +780,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_prof_button = QtWidgets.QPushButton('Calb. B from profile')
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
-        calc_B_radial_button = QtWidgets.QPushButton('Calc. B radial', self)
+        calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
@@ -825,7 +825,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
-        calc_B_radial_button.clicked.connect(self.calc_B_radial)
+        calc_B_polar_button.clicked.connect(self.calc_B_polar)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
@@ -866,7 +866,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
         self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1)
         self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1)
-        self.tab_calc.layout.addWidget(calc_B_radial_button, 7, 1)
+        self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1)
         self.tab_calc.layout.addWidget(gen_B_stats_button, 8, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
@@ -2293,7 +2293,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(Bx_img)
         self.insert_img_after_curr(By_img)
 
-    def calc_B_radial(self):
+    def calc_B_polar(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
@@ -2310,17 +2310,33 @@ class HolographyWidget(QtWidgets.QWidget):
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         B_coeff = const.dirac_const / sample_thickness
+        angles = np.arange(0, 361, 10, dtype=np.float32)
+        B_means = []
 
-        B_radial_file = open("B_radial.txt", "w")
-        B_radial_file.write('Angle [deg]\tBx [T]\tBy [T]\n')
-        for ang in range(0, 359, 10):
-            frag_rot = tr.RotateImageSki(frag, ang)
+        for ang in angles:
+            frag_rot = tr.RotateImageSki(frag, -ang)
             dx, dy = np.gradient(frag_rot.amPh.ph, px_sz)
-            Bx = B_coeff * dx
-            By = B_coeff * dy
-            B_radial_file.write('{0}\t{1:.3f}\t{2:.3f}\n'.format(ang, np.mean(Bx), np.mean(By)))
-        B_radial_file.close()
-        print('B radial file was saved!')
+            B_mat = B_coeff * dx
+            n_el = np.count_nonzero(B_mat)
+            B_mean = np.sum(B_mat) / n_el
+            B_means.append(B_mean)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='polar')
+        rad_angles = imsup.Radians(angles)
+        ax.plot(rad_angles, np.array(B_means))
+        ax.set_rmin(-0.5)
+        ax.set_rmax(0.5)
+        ax.grid(True)
+
+        plt.margins(0, 0)
+        # plt.gca().xaxis.set_major_locator(plt.NullLocator())
+        # plt.gca().yaxis.set_major_locator(plt.NullLocator())
+        plt.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
+        plt.clf()
+        plt.cla()
+        plt.close(fig)
+        print('B_pol_{0}.png exported!'.format(curr_img.name))
 
     # calculate B from section on image
     def calc_B_from_section(self):
