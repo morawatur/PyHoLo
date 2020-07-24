@@ -825,7 +825,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
-        calc_B_polar_button.clicked.connect(self.calc_B_polar)
+        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
@@ -2293,12 +2293,66 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(Bx_img)
         self.insert_img_after_curr(By_img)
 
-    def calc_B_polar(self):
+    def calc_B_polar_from_section(self):
+        from numpy import linalg as la
+        curr_img = self.display.image
+        curr_phs = curr_img.amPh.ph
+        curr_idx = curr_img.numInSeries - 1
+        px_sz = curr_img.px_dim
+        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
+        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+
+        d_dist = la.norm(pt1 - pt2) # * px_sz
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
+        r = int(d_dist // 2)
+        ang0 = np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
+        # angles = np.arange(ang0, ang0 + 2*np.pi, np.pi / 18, dtype=np.float32)
+        angles = np.linspace(ang0, ang0 + 2*np.pi, 80, dtype=np.float32)
+
+        print(pt1)
+        print(pt2)
+        print(orig_xy)
+        print(r)
+        print(int(imsup.Degrees(ang0)))
+
+        B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
+        B_values = []
+
+        for ang in angles:
+            sin_cos = np.array([np.cos(ang), np.sin(ang)])
+            new_pt1 = np.array(orig_xy - r * sin_cos).astype(np.int32)
+            new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
+            x1, y1 = new_pt1
+            x2, y2 = new_pt2
+            # print(new_pt1)
+            # print(new_pt2)
+            d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
+            B_val = B_coeff * d_phase
+            B_values.append(B_val)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='polar')
+        angles *= -1
+        ax.plot(angles, np.array(B_values))
+        ax.plot(angles[0], B_values[0], 'r.')
+        ax.set_ylim(-0.5, 0.5)
+        ax.grid(True)
+
+        plt.margins(0, 0)
+        plt.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
+        # plt.clf()
+        # plt.cla()
+        plt.close(fig)
+        print('B_pol_{0}.png exported!'.format(curr_img.name))
+
+    def calc_B_polar_from_area(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
         if len(self.display.pointSets[curr_idx]) < 2:
-            print('You have to mark two points on the image to select area of calculation!')
+            print('You have to mark two points!')
             return
 
         pt1, pt2 = self.display.pointSets[curr_idx][:2]
