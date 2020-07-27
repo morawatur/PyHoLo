@@ -253,3 +253,17 @@ def RotatePoint(p1, angle):
     phi = np.angle(z1) + imsup.Radians(angle)
     p2 = [r * np.cos(phi), r * np.sin(phi)]
     return p2
+
+#-------------------------------------------------------------------
+
+def LinLeastSquares(x_arr, y_arr):
+    n_pt = len(x_arr)
+    sx = np.sum(x_arr)
+    sy = np.sum(y_arr)
+    sxy = np.sum(np.array(x_arr) * np.array(y_arr))
+    sx2 = np.sum(np.array(x_arr) ** 2)
+    # sxy = np.sum([ x*y for x, y in zip(x_arr, y_arr) ])
+    # sx2 = np.sum([ x*x for x in x_arr ])
+    a_coeff = (sxy - sx * sy / n_pt) / (sx2 - sx * sx / n_pt)
+    b_coeff = (sy - a_coeff * sx) / n_pt
+    return a_coeff, b_coeff

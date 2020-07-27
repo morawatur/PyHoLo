@@ -2311,14 +2311,15 @@ class HolographyWidget(QtWidgets.QWidget):
         # angles = np.arange(ang0, ang0 + 2*np.pi, np.pi / 18, dtype=np.float32)
         angles = np.linspace(ang0, ang0 + 2*np.pi, 80, dtype=np.float32)
 
-        print(pt1)
-        print(pt2)
-        print(orig_xy)
-        print(r)
+        # print(pt1)
+        # print(pt2)
+        # print(orig_xy)
+        # print(r)
         print(int(imsup.Degrees(ang0)))
 
         B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
         B_values = []
+        x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
 
         for ang in angles:
             sin_cos = np.array([np.cos(ang), np.sin(ang)])
@@ -2326,9 +2327,23 @@ class HolographyWidget(QtWidgets.QWidget):
             new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
             x1, y1 = new_pt1
             x2, y2 = new_pt2
-            # print(new_pt1)
-            # print(new_pt2)
-            d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
+            # -----------
+            p1 = curr_phs[y1, x1]
+            p2 = curr_phs[y2, x2]
+            x3 = (x1 + x2) // 2
+            x4 = (x1 + x3) // 2
+            x5 = (x3 + x2) // 2
+            y3 = (y1 + y2) // 2
+            y4 = (y1 + y3) // 2
+            y5 = (y3 + y2) // 2
+            p3 = curr_phs[y3, x3]
+            p4 = curr_phs[y4, x4]
+            p5 = curr_phs[y5, x5]
+            ph_arr_for_ls = [p1, p4, p3, p5, p2]
+            aa, bb = tr.LinLeastSquares(x_arr_for_ls, ph_arr_for_ls)
+            # -----------
+            # d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
+            d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
             B_val = B_coeff * d_phase
             B_values.append(B_val)
 
