@@ -2338,6 +2338,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ax = fig.add_subplot(111, projection='polar')
         angles *= -1
         ax.plot(angles, np.array(B_values))
+        ax.plot(angles, np.zeros(n_ang), 'g--', linewidth=1)
         ax.plot(angles[0], B_values[0], 'r.')
         r_min, r_max = -0.5, 0.5
         for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
