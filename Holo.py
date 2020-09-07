@@ -137,6 +137,7 @@ def rec_holo_no_ref(holo_img, rec_sz=128, ap_sz=32, mask_sz=50, N_hann=100):
 #-------------------------------------------------------------------
 
 def calc_phase_sum(img1, img2):
+    # complex multiplication
     phs_sum = imsup.ImageExp(img1.height, img1.width)
     phs_sum.amPh.am = img1.amPh.am * img2.amPh.am
     phs_sum.amPh.ph = img1.amPh.ph + img2.amPh.ph
@@ -145,7 +146,8 @@ def calc_phase_sum(img1, img2):
 #-------------------------------------------------------------------
 
 def calc_phase_diff(img1, img2):
+    # complex division
     phs_diff = imsup.ImageExp(img1.height, img1.width)
-    phs_diff.amPh.am = img1.amPh.am * img2.amPh.am
+    phs_diff.amPh.am = img2.amPh.am / img1.amPh.am
     phs_diff.amPh.ph = img2.amPh.ph - img1.amPh.ph
     return phs_diff

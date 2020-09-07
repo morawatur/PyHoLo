@@ -180,10 +180,8 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
-        # if image wasn't cropped then update buffer
         if self.image.buffer.am.shape[0] == self.image.height:
             self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
-            # self.image.UpdateBuffer()       # ???
 
         if dispAmp:
             px_arr = np.copy(self.image.buffer.am)
