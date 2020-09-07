@@ -182,7 +182,8 @@ class LabelExt(QtWidgets.QLabel):
     def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
         # if image wasn't cropped then update buffer
         if self.image.buffer.am.shape[0] == self.image.height:
-            self.image.UpdateBuffer()       # ???
+            self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
+            # self.image.UpdateBuffer()       # ???
 
         if dispAmp:
             px_arr = np.copy(self.image.buffer.am)
@@ -1937,13 +1938,12 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def rec_holo_no_ref_1(self):
         holo_img = self.display.image
-        if holo_img.width % 4:
-            print('Image must be divisible by 4')
-            return
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         holo_fft.name = 'fft_of_{0}'.format(holo_img.name)
-        self.log_scale_checkbox.setChecked(True)
+        # self.display.image = rescale_image_buffer_to_window(holo_img, const.disp_dim)
+        # holo_fft = rescale_image_buffer_to_window(holo_fft, const.disp_dim)
         self.insert_img_after_curr(holo_fft)
+        self.log_scale_checkbox.setChecked(True)
 
     def rec_holo_no_ref_2(self):
         holo_fft = self.display.image
@@ -2520,11 +2520,10 @@ def LoadImageSeriesFromFirstFile(imgPath):
         imsup.Image.px_dim_default = pxDims[0]
         img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'],
                              num=imgNum, px_dim_sz=pxDims[0])
-        # img.LoadAmpData(np.sqrt(imgData).astype(np.float32))
-        # img.amPh.ph = np.copy(img.amPh.am)  # !!!
         img_type = imgs_info[img_idx, 2]
         if img_type == 'amp':
-            img.LoadAmpData(imgData.astype(np.float32))
+            amp_data = np.sqrt(np.abs(imgData))
+            img.LoadAmpData(amp_data.astype(np.float32))
         else:
             img.LoadPhsData(imgData.astype(np.float32))
         img = rescale_image_buffer_to_window(img, const.disp_dim)
