@@ -1293,6 +1293,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         new_phs = tr.unwrap_phase(curr_img.amPh.ph)
         curr_img.amPh.ph = np.copy(new_phs)
+        self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)
         self.update_display()
 
     def wrap_img_phase(self):
@@ -1304,6 +1305,7 @@ class HolographyWidget(QtWidgets.QWidget):
         new_phs = (curr_img.amPh.ph - uw_min) % (2 * np.pi) - np.pi
 
         curr_img.amPh.ph = np.copy(new_phs)
+        self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)
         self.update_display()
 
     def blank_area(self):

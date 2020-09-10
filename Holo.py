@@ -148,6 +148,7 @@ def calc_phase_sum(img1, img2):
 def calc_phase_diff(img1, img2):
     # complex division
     phs_diff = imsup.ImageExp(img1.height, img1.width)
+    img1.amPh.am[np.where(img1.amPh.am == 0.0)] = 1.0
     phs_diff.amPh.am = img2.amPh.am / img1.amPh.am
     phs_diff.amPh.ph = img2.amPh.ph - img1.amPh.ph
     return phs_diff
