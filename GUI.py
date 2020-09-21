@@ -781,6 +781,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
+        calc_MIP_button = QtWidgets.QPushButton('Calc. mean inner pot.', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
         # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
@@ -819,6 +820,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
+        acc_voltage_label = QtWidgets.QLabel('Acc. voltage [kV]', self)
+        self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
+
         plot_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_from_section)
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
@@ -826,6 +830,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
         calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
+        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
         # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
@@ -858,7 +863,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.setColumnStretch(6, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
         self.tab_calc.layout.setRowStretch(4, 2)
-        self.tab_calc.layout.setRowStretch(9, 1)
+        self.tab_calc.layout.setRowStretch(10, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
         self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
@@ -867,6 +872,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1)
         self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1)
         self.tab_calc.layout.addWidget(gen_B_stats_button, 8, 1)
+        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
@@ -883,6 +889,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 4)
         self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 5)
         self.tab_calc.layout.addWidget(export_img3d_button, 7, 4, 1, 2)
+        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 4, 1, 2)
+        self.tab_calc.layout.addWidget(self.acc_voltage_input, 9, 4, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1959,6 +1967,17 @@ class HolographyWidget(QtWidgets.QWidget):
 
         sband_xy = [ px + sx for px, sx in zip(rpt1, sband_xy) ]    # konwencja x, y
         print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
+        # ---
+        px_dim = holo_fft.px_dim
+        img_dim = holo_fft.width
+        orig_x = img_dim // 2
+        dx_dim = 1 / (px_dim * img_dim)
+        sbx, sby = sband_xy[0] - orig_x, sband_xy[1] - orig_x
+        sb_xy_comp = np.complex(sbx * dx_dim, sby * dx_dim)
+        R = np.abs(sb_xy_comp)
+        ang = imsup.Degrees(np.angle(sb_xy_comp))
+        print('R = {0:.3f} um-1\nAng = {1:.2f} deg'.format(R * 1e-6, ang))
+        # ---
 
         mid = holo_fft.width // 2
         shift = [ mid - sband_xy[1], mid - sband_xy[0] ]    # konwencja x, y
@@ -2242,14 +2261,14 @@ class HolographyWidget(QtWidgets.QWidget):
         if self.amp_radio_button.isChecked():
             int_matrix = np.copy(img_cropped.amPh.am)
         elif self.phs_radio_button.isChecked():
-            ph_min = np.min(img_cropped.amPh.ph)
-            ph_fix = -ph_min if ph_min < 0 else 0
-            img_cropped.amPh.ph += ph_fix
+            # ph_min = np.min(img_cropped.amPh.ph)
+            # ph_fix = -ph_min if ph_min < 0 else 0
+            # img_cropped.amPh.ph += ph_fix
             int_matrix = np.copy(img_cropped.amPh.ph)
         else:
-            cos_ph_min = np.min(img_cropped.cos_phase)
-            cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
-            img_cropped.cos_phase += cos_ph_fix
+            # cos_ph_min = np.min(img_cropped.cos_phase)
+            # cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
+            # img_cropped.cos_phase += cos_ph_fix
             int_matrix = np.copy(img_cropped.cos_phase)
 
         int_profile = np.sum(int_matrix, proj_dir)  # 0 - horizontal projection, 1 - vertical projection
@@ -2441,6 +2460,29 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Min. = {0:.2f}\nMax. = {1:.2f}\nAvg. = {2:.2f}'.format(np.min(curr_phs), np.max(curr_phs), np.mean(curr_phs)))
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
+    def calc_mean_inner_potential(self):
+        curr_img = self.display.image
+        curr_phs = curr_img.amPh.ph
+
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        Ua = float(self.acc_voltage_input.text()) * 1e3
+
+        h = const.planck_const
+        c = const.light_speed
+        e0 = const.el_charge
+        m0 = const.el_rest_mass
+        eps = e0 / (2 * m0 * c ** 2)
+        ew_lambda = h / np.sqrt(2 * m0 * e0 * Ua * (1 + eps * Ua))
+        U0 = m0 * (c ** 2) / e0
+        C_E = (2 * np.pi / ew_lambda) * (Ua + U0) / (Ua * (Ua + 2 * U0))
+        mip = curr_phs / (C_E * sample_thickness)
+
+        mean_inner_pot_img = imsup.copy_am_ph_image(curr_img)
+        mean_inner_pot_img.amPh.am *= 0
+        mean_inner_pot_img.amPh.ph = np.copy(mip)
+        mean_inner_pot_img.name = 'MIP_from_{0}'.format(curr_img.name)
+        self.insert_img_after_curr(mean_inner_pot_img)
+
     def filter_contours(self):
         curr_img = self.display.image
         conts = np.copy(curr_img.cos_phase)
@@ -2522,7 +2564,8 @@ def LoadImageSeriesFromFirstFile(imgPath):
                              num=imgNum, px_dim_sz=pxDims[0])
         img_type = imgs_info[img_idx, 2]
         if img_type == 'amp':
-            amp_data = np.sqrt(np.abs(imgData))
+            # amp_data = np.sqrt(np.abs(imgData))
+            amp_data = np.copy(imgData)
             img.LoadAmpData(amp_data.astype(np.float32))
         else:
             img.LoadPhsData(imgData.astype(np.float32))
