@@ -722,7 +722,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
-        holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
+        # holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
+        holo_with_ref_2_button.clicked.connect(self.rec_holo_subpix)
         holo_no_ref_3_button.clicked.connect(self.rec_holo_no_ref_3)
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
@@ -2051,6 +2052,39 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def rec_holo_with_ref(self):
         pass
+
+    def rec_holo_subpix(self):
+        holo_fft = self.display.image
+        [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
+        dpts = pt1 + pt2
+        rpts = CalcRealTLCoords(holo_fft.width, dpts)
+        rpt1 = rpts[:2]  # konwencja x, y
+        rpt2 = rpts[2:]
+
+        aperture = int(self.aperture_input.text())
+        hann_window = int(self.hann_win_input.text())
+
+        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
+        sb_xy = holo.find_img_max(sband)       # konwencja y, x
+        ap = min(aperture, min(sband.shape) // 2)
+        print(ap)
+        sb_y1, sb_y2 = sb_xy[0] - ap, sb_xy[0] + ap
+        sb_x1, sb_x2 = sb_xy[1] - ap, sb_xy[1] + ap
+        sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
+        # sband_prec_img = imsup.ImageExp(ap, ap)
+        # sband_prec_img.amPh.am = np.copy(sband_precentered)
+        # self.insert_img_after_curr(sband_prec_img)
+        sband_xy = holo.find_mass_center(sband_precentered)     # konwencja x, y
+        print(sband_xy)
+        # sband_xy.reverse()
+
+        sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
+        mid = holo_fft.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
+
+        sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        self.log_scale_checkbox.setChecked(True)
+        self.insert_img_after_curr(sband_img_ap)
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev

@@ -94,10 +94,15 @@ def rec_holo_no_ref_1(holo_img):
     holo_fft.ReIm2AmPh()
     return holo_fft
 
-#---------------------------------------`----------------------------
+#-------------------------------------------------------------------
 
 def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_win):
-    sband_mid_img = imsup.ShiftImage(holo_fft, shift)
+    subpx_shift, px_shift = np.modf(shift)
+    print(shift)
+    print(px_shift)
+    print(subpx_shift)
+    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))
+    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
     sband_img_ap = insert_aperture(sband_mid_img, ap_sz)
     sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
     return sband_img_ap
@@ -152,3 +157,47 @@ def calc_phase_diff(img1, img2):
     phs_diff.amPh.am = img2.amPh.am / img1.amPh.am
     phs_diff.amPh.ph = img2.amPh.ph - img1.amPh.ph
     return phs_diff
+
+#-------------------------------------------------------------------
+
+def find_mass_center(arr):
+    h, w = arr.shape
+    x = np.linspace(0, w-1, w)
+    y = np.linspace(0, h-1, h)
+    xv, yv = np.meshgrid(x, y)
+    all_sum = np.sum(arr)
+    xm = np.sum(arr * xv) / all_sum
+    ym = np.sum(arr * yv) / all_sum
+    return xm, ym
+
+#-------------------------------------------------------------------
+
+def subpixel_shift(img, subpx_sh):
+    h, w = img.amPh.am.shape
+    # shx, shy = subpx_sh   # !!!
+    shy, shx = subpx_sh     # !!!
+    wx = np.abs(shx)
+    wy = np.abs(shy)
+    img_sh = imsup.copy_am_ph_image(img)
+    arr = np.copy(img.amPh.am)
+
+    arr_shx_1px = np.zeros((h, w), dtype=np.float32)
+    arr_shy_1px = np.zeros((h, w), dtype=np.float32)
+
+    # x dir
+    if shx > 0:
+        arr_shx_1px[:, 1:] = arr[:, :w - 1]
+    else:
+        arr_shx_1px[:, :w - 1] = arr[:, 1:]
+
+    arr_shx = wx * arr_shx_1px + (1.0-wx) * arr
+
+    # y dir
+    if shy > 0:
+        arr_shy_1px[1:, :] = arr_shx[:h - 1, :]
+    else:
+        arr_shy_1px[:h - 1, :] = arr_shx[1:, :]
+
+    arr_shy = wy * arr_shy_1px + (1.0-wy) * arr_shx
+    img_sh.amPh.am = np.copy(arr_shy)
+    return img_sh
