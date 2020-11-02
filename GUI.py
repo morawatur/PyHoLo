@@ -2066,21 +2066,19 @@ class HolographyWidget(QtWidgets.QWidget):
 
         sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
         sb_xy = holo.find_img_max(sband)       # konwencja y, x
-        ap = min(aperture, min(sband.shape) // 2)
-        print(ap)
+        # ap = min(aperture, min(sband.shape) // 2)
+        ap = 10
         sb_y1, sb_y2 = sb_xy[0] - ap, sb_xy[0] + ap
         sb_x1, sb_x2 = sb_xy[1] - ap, sb_xy[1] + ap
         sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
-        # sband_prec_img = imsup.ImageExp(ap, ap)
-        # sband_prec_img.amPh.am = np.copy(sband_precentered)
-        # self.insert_img_after_curr(sband_prec_img)
-        sband_xy = holo.find_mass_center(sband_precentered)     # konwencja x, y
-        print(sband_xy)
-        # sband_xy.reverse()
+        sband_xy = list(holo.find_mass_center(sband_precentered))       # konwencja x, y
 
-        sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
+        sband_xy = list(np.array(sband_xy) + np.array([sb_x1, sb_y1]) + np.array(rpt1))     # konwencja x, y
+        sband_xy = [1292.69, 998.35]    # from HolograFREE
+        print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[0], sband_xy[1]))
+        # sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]        # konwencja x, y
         mid = holo_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja y, x
 
         sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
         self.log_scale_checkbox.setChecked(True)

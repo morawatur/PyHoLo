@@ -98,11 +98,8 @@ def rec_holo_no_ref_1(holo_img):
 
 def rec_holo_no_ref_2(holo_fft, shift, ap_sz=const.aperture, N_hann=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
-    print(shift)
-    print(px_shift)
-    print(subpx_shift)
-    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))
-    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
+    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))     # konwencja y, x
+    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))                # konwencja y, x
     sband_img_ap = insert_aperture(sband_mid_img, ap_sz)
     sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
     return sband_img_ap
@@ -173,31 +170,36 @@ def find_mass_center(arr):
 #-------------------------------------------------------------------
 
 def subpixel_shift(img, subpx_sh):
-    h, w = img.amPh.am.shape
-    # shx, shy = subpx_sh   # !!!
-    shy, shx = subpx_sh     # !!!
-    wx = np.abs(shx)
-    wy = np.abs(shy)
-    img_sh = imsup.copy_am_ph_image(img)
-    arr = np.copy(img.amPh.am)
+    dt = img.cmpRepr
+    img.AmPh2ReIm()
+    h, w = img.reIm.shape
+    img_sh = imsup.ImageExp(h, w, img.cmpRepr)
 
-    arr_shx_1px = np.zeros((h, w), dtype=np.float32)
-    arr_shy_1px = np.zeros((h, w), dtype=np.float32)
+    dy, dx = subpx_sh
+    wx = np.abs(dx)
+    wy = np.abs(dy)
+    arr = np.copy(img.reIm)
+
+    arr_shx_1px = np.zeros((h, w), dtype=np.complex64)
+    arr_shy_1px = np.zeros((h, w), dtype=np.complex64)
 
     # x dir
-    if shx > 0:
-        arr_shx_1px[:, 1:] = arr[:, :w - 1]
+    if dx > 0:
+        arr_shx_1px[:, 1:] = arr[:, :w-1]
     else:
-        arr_shx_1px[:, :w - 1] = arr[:, 1:]
+        arr_shx_1px[:, :w-1] = arr[:, 1:]
 
     arr_shx = wx * arr_shx_1px + (1.0-wx) * arr
 
     # y dir
-    if shy > 0:
-        arr_shy_1px[1:, :] = arr_shx[:h - 1, :]
+    if dy > 0:
+        arr_shy_1px[1:, :] = arr_shx[:h-1, :]
     else:
-        arr_shy_1px[:h - 1, :] = arr_shx[1:, :]
+        arr_shy_1px[:h-1, :] = arr_shx[1:, :]
 
     arr_shy = wy * arr_shy_1px + (1.0-wy) * arr_shx
-    img_sh.amPh.am = np.copy(arr_shy)
+    img_sh.reIm = np.copy(arr_shy)
+
+    img.ChangeComplexRepr(dt)
+    img_sh.ChangeComplexRepr(dt)
     return img_sh
