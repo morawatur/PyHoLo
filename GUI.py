@@ -705,7 +705,7 @@ class HolographyWidget(QtWidgets.QWidget):
         get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
         do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
-        aperture_label = QtWidgets.QLabel('Aperture [px]', self)
+        aperture_label = QtWidgets.QLabel('Aperture rad. [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
 
         hann_win_label = QtWidgets.QLabel('Hann window [px]', self)
@@ -722,8 +722,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
-        # holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
-        holo_with_ref_2_button.clicked.connect(self.rec_holo_subpix)
+        holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
         holo_no_ref_3_button.clicked.connect(self.rec_holo_no_ref_3)
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
@@ -1530,7 +1529,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr.amPh.ph = np.copy(shifted_img.amPh.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.shift = total_shift
-        self.display.setImage()
+        # self.display.setImage()
+        self.update_display_and_bcg()
 
     def rot_left(self):
         ang = float(self.rot_angle_input.text())
@@ -1555,7 +1555,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr.amPh.ph = np.copy(rotated_img.amPh.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         curr.rot = total_rot
-        self.display.setImage()
+        # self.display.setImage()
+        self.update_display_and_bcg()
 
     # def repeat_prev_mods(self):
     #     curr = imsup.copy_am_ph_image(self.backup_image)
@@ -1955,38 +1956,36 @@ class HolographyWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(True)
 
     def rec_holo_no_ref_2(self):
+        # todo: change to general convention: (y, x), i.e. (r, c)
         holo_fft = self.display.image
-        [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries-1][:2]
+        [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = CalcRealTLCoords(holo_fft.width, dpts)
-        rpt1 = rpts[:2]     # konwencja x, y
+        rpt1 = rpts[:2]  # konwencja x, y
         rpt2 = rpts[2:]
 
-        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])     # konwencja y, x
-        sband_xy = holo.find_img_max(sband)     # konwencja y, x
-        sband_xy.reverse()
+        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
-        sband_xy = [ px + sx for px, sx in zip(rpt1, sband_xy) ]    # konwencja x, y
-        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
         # ---
         px_dim = holo_fft.px_dim
         img_dim = holo_fft.width
-        orig_x = img_dim // 2
+        mid_x = img_dim // 2
         dx_dim = 1 / (px_dim * img_dim)
-        sbx, sby = sband_xy[0] - orig_x, sband_xy[1] - orig_x
+        sbx, sby = sband_xy[0] - mid_x, sband_xy[1] - mid_x
         sb_xy_comp = np.complex(sbx * dx_dim, sby * dx_dim)
         R = np.abs(sb_xy_comp)
         ang = imsup.Degrees(np.angle(sb_xy_comp))
         print('R = {0:.3f} um-1\nAng = {1:.2f} deg'.format(R * 1e-6, ang))
         # ---
 
-        mid = holo_fft.width // 2
-        shift = [ mid - sband_xy[1], mid - sband_xy[0] ]    # konwencja x, y
-
-        aperture = int(self.aperture_input.text())
+        ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
-        sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        mid = holo_fft.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+
+        sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
 
@@ -1998,24 +1997,20 @@ class HolographyWidget(QtWidgets.QWidget):
         rpt1 = rpts[:2]  # konwencja x, y
         rpt2 = rpts[2:]
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
-        sband_xy = holo.find_img_max(sband)  # konwencja y, x
-        sband_xy.reverse()
+        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
-        sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
-        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
-
-        mid = ref_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
-
-        aperture = int(self.aperture_input.text())
+        ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
-        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        mid = ref_fft.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+
+        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
         holo_img = self.display.image.next
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
-        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(ref_sband_ap)
@@ -2052,37 +2047,6 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def rec_holo_with_ref(self):
         pass
-
-    def rec_holo_subpix(self):
-        holo_fft = self.display.image
-        [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
-        dpts = pt1 + pt2
-        rpts = CalcRealTLCoords(holo_fft.width, dpts)
-        rpt1 = rpts[:2]  # konwencja x, y
-        rpt2 = rpts[2:]
-
-        aperture = int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
-
-        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
-        sb_xy = holo.find_img_max(sband)       # konwencja y, x
-        # ap = min(aperture, min(sband.shape) // 2)
-        ap = 10
-        sb_y1, sb_y2 = sb_xy[0] - ap, sb_xy[0] + ap
-        sb_x1, sb_x2 = sb_xy[1] - ap, sb_xy[1] + ap
-        sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
-        sband_xy = list(holo.find_mass_center(sband_precentered))       # konwencja x, y
-
-        sband_xy = list(np.array(sband_xy) + np.array([sb_x1, sb_y1]) + np.array(rpt1))     # konwencja x, y
-        sband_xy = [1292.69, 998.35]    # from HolograFREE
-        print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[0], sband_xy[1]))
-        # sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]        # konwencja x, y
-        mid = holo_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja y, x
-
-        sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
-        self.log_scale_checkbox.setChecked(True)
-        self.insert_img_after_curr(sband_img_ap)
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev
@@ -2149,17 +2113,17 @@ class HolographyWidget(QtWidgets.QWidget):
     def get_sideband_from_xy(self):
         curr_img = self.display.image
 
-        sbx = int(self.sideband_x_input.text())
-        sby = int(self.sideband_y_input.text())
+        sbx = self.sideband_x_input.text()
+        sby = self.sideband_y_input.text()
         sband_xy = [sbx, sby]
 
         mid = curr_img.width // 2
         shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
 
-        aperture = int(self.aperture_input.text())
+        ap_radius= int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
-        sband_img_ap = holo.rec_holo_no_ref_2(curr_img, shift, ap_sz=aperture, N_hann=hann_window)
+        sband_img_ap = holo.rec_holo_no_ref_2(curr_img, shift, ap_rad=ap_radius, N_hann=hann_window)
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
 
@@ -2172,24 +2136,20 @@ class HolographyWidget(QtWidgets.QWidget):
         rpt1 = rpts[:2]  # konwencja x, y
         rpt2 = rpts[2:]
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # konwencja y, x
-        sband_xy = holo.find_img_max(sband)  # konwencja y, x
-        sband_xy.reverse()
+        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
-        sband_xy = [px + sx for px, sx in zip(rpt1, sband_xy)]  # konwencja x, y
-        print('Sideband found at:\nx = {0}\ny = {1}'.format(sband_xy[0], sband_xy[1]))
-
-        mid = ref_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
-
-        aperture = int(self.aperture_input.text())
+        ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
-        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        mid = ref_fft.width // 2
+        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+
+        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
         holo_img = ref_fft.next
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
-        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_sz=aperture, N_hann=hann_window)
+        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
         rec_ref = holo.rec_holo_no_ref_3(ref_sband_ap)
         rec_holo = holo.rec_holo_no_ref_3(holo_sband_ap)

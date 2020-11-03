@@ -28,6 +28,7 @@ results_dir = 'results/'
 
 aperture = 32
 hann_win = 100
+min_COM_roi_hlf_edge = 4
 
 ew_lambda = 1.968749e-12            # m (300kV)
 planck_const = 6.626070e-34         # J*s
