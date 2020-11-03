@@ -699,34 +699,34 @@ def GetShift(ccf):
 #-------------------------------------------------------------------
 
 def shift_array(arr, shift, fval=0.0):
-    dx, dy = shift
+    dy, dx = shift
     if dx == 0 and dy == 0:
         return np.copy(arr)
     # arr_shifted = np.zeros(arr.shape, dtype=arr.dtype)
     arr_shifted = np.full(arr.shape, fval, dtype=arr.dtype)
 
-    if dx == 0:
-        if dy > 0:
-            arr_shifted[:, dy:] = arr[:, :-dy]
-        else:
-            arr_shifted[:, :dy] = arr[:, -dy:]
-        return arr_shifted
-
     if dy == 0:
         if dx > 0:
-            arr_shifted[dx:, :] = arr[:-dx, :]
+            arr_shifted[:, dx:] = arr[:, :-dx]
         else:
-            arr_shifted[:dx, :] = arr[-dx:, :]
+            arr_shifted[:, :dx] = arr[:, -dx:]
+        return arr_shifted
+
+    if dx == 0:
+        if dy > 0:
+            arr_shifted[dy:, :] = arr[:-dy, :]
+        else:
+            arr_shifted[:dy, :] = arr[-dy:, :]
         return arr_shifted
 
     if dx > 0 and dy > 0:
-        arr_shifted[dx:, dy:] = arr[:-dx, :-dy]
+        arr_shifted[dy:, dx:] = arr[:-dy, :-dx]
     elif dx > 0 > dy:
-        arr_shifted[dx:, :dy] = arr[:-dx, -dy:]
+        arr_shifted[:dy, dx:] = arr[-dy:, :-dx]
     elif dx < 0 < dy:
-        arr_shifted[:dx, dy:] = arr[-dx:, :-dy]
+        arr_shifted[dy:, :dx] = arr[:-dy, -dx:]
     else:
-        arr_shifted[:dx, :dy] = arr[-dx:, -dy:]
+        arr_shifted[:dy, :dx] = arr[-dy:, -dx:]
 
     return arr_shifted
 

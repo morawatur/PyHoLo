@@ -98,8 +98,8 @@ def rec_holo_no_ref_1(holo_img):
 
 def rec_holo_no_ref_2(holo_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
-    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))     # konwencja y, x
-    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))                # konwencja y, x
+    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))
+    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
     sband_img_ap = insert_aperture(sband_mid_img, ap_rad)
     sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
     return sband_img_ap
@@ -165,23 +165,23 @@ def find_mass_center(arr):
     all_sum = np.sum(arr)
     xm = np.sum(arr * xv) / all_sum
     ym = np.sum(arr * yv) / all_sum
-    return xm, ym
+    return ym, xm
 
 #-------------------------------------------------------------------
 
 def find_sideband_center(sband, orig=(0, 0)):
-    # todo: change to general convention: (y, x), i.e. (r, c)
+    # general convention is (y, x), i.e. (r, c)
 
-    sb_xy = find_img_max(sband)     # konwencja y, x
-    print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[0] + sb_xy[1], orig[1] + sb_xy[0]))
+    sb_xy = find_img_max(sband)
+    print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[1] + sb_xy[1], orig[0] + sb_xy[0]))
     roi_hlf_edge = min([const.min_COM_roi_hlf_edge] + sb_xy + list(np.array(sband.shape) - np.array(sb_xy)))
     print('Edge of center of mass ROI = {0}'.format(2 * roi_hlf_edge))
     sb_y1, sb_y2 = sb_xy[0] - roi_hlf_edge, sb_xy[0] + roi_hlf_edge
     sb_x1, sb_x2 = sb_xy[1] - roi_hlf_edge, sb_xy[1] + roi_hlf_edge
     sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
-    sband_xy = list(find_mass_center(sband_precentered))  # zmiana - konwencja x, y
-    sband_xy = list(np.array(sband_xy) + np.array([sb_x1, sb_y1]) + np.array(orig))
-    print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[0], sband_xy[1]))
+    sband_xy = list(find_mass_center(sband_precentered))
+    sband_xy = list(np.array(sband_xy) + np.array([sb_y1, sb_x1]) + np.array(orig))
+    print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[1], sband_xy[0]))
 
     return sband_xy
 

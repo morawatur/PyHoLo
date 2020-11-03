@@ -1956,15 +1956,17 @@ class HolographyWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(True)
 
     def rec_holo_no_ref_2(self):
-        # todo: change to general convention: (y, x), i.e. (r, c)
+        # general convention is (y, x), i.e. (r, c)
         holo_fft = self.display.image
         [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = CalcRealTLCoords(holo_fft.width, dpts)
-        rpt1 = rpts[:2]  # konwencja x, y
-        rpt2 = rpts[2:]
+        rpt1 = rpts[:2] # x, y
+        rpt2 = rpts[2:] # x, y
+        rpt1.reverse()  # r, c
+        rpt2.reverse()  # r, c
 
-        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband = np.copy(holo_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
         sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
         # ---
@@ -1983,7 +1985,7 @@ class HolographyWidget(QtWidgets.QWidget):
         hann_window = int(self.hann_win_input.text())
 
         mid = holo_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+        shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
         sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
         self.log_scale_checkbox.setChecked(True)
@@ -1994,17 +1996,19 @@ class HolographyWidget(QtWidgets.QWidget):
         [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = CalcRealTLCoords(ref_fft.width, dpts)
-        rpt1 = rpts[:2]  # konwencja x, y
-        rpt2 = rpts[2:]
+        rpt1 = rpts[:2] # x, y
+        rpt2 = rpts[2:] # x, y
+        rpt1.reverse()  # r, c
+        rpt2.reverse()  # r, c
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
         sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
         ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
         mid = ref_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+        shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
         ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
@@ -2133,17 +2137,19 @@ class HolographyWidget(QtWidgets.QWidget):
         [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = CalcRealTLCoords(ref_fft.width, dpts)
-        rpt1 = rpts[:2]  # konwencja x, y
-        rpt2 = rpts[2:]
+        rpt1 = rpts[:2] # x, y
+        rpt2 = rpts[2:] # x, y
+        rpt1.reverse()  # r, c
+        rpt2.reverse()  # r, c
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])  # zmiana - konwencja y, x
+        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
         sband_xy = holo.find_sideband_center(sband, orig=rpt1)
 
         ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
 
         mid = ref_fft.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # zmiana - konwencja y, x
+        shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
         ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
