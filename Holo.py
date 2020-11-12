@@ -169,18 +169,22 @@ def find_mass_center(arr):
 
 #-------------------------------------------------------------------
 
-def find_sideband_center(sband, orig=(0, 0)):
+def find_sideband_center(sband, orig=(0, 0), subpx=False):
     # general convention is (y, x), i.e. (r, c)
 
     sb_xy = find_img_max(sband)
-    print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[1] + sb_xy[1], orig[0] + sb_xy[0]))
-    roi_hlf_edge = min([const.min_COM_roi_hlf_edge] + sb_xy + list(np.array(sband.shape) - np.array(sb_xy)))
-    print('Edge of center of mass ROI = {0}'.format(2 * roi_hlf_edge))
-    sb_y1, sb_y2 = sb_xy[0] - roi_hlf_edge, sb_xy[0] + roi_hlf_edge
-    sb_x1, sb_x2 = sb_xy[1] - roi_hlf_edge, sb_xy[1] + roi_hlf_edge
-    sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
-    sband_xy = list(find_mass_center(sband_precentered))
-    sband_xy = list(np.array(sband_xy) + np.array([sb_y1, sb_x1]) + np.array(orig))
+    sband_xy = list(np.array(sb_xy) + np.array(orig))
+
+    if subpx:
+        print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[1] + sb_xy[1], orig[0] + sb_xy[0]))
+        roi_hlf_edge = min([const.min_COM_roi_hlf_edge] + sb_xy + list(np.array(sband.shape) - np.array(sb_xy)))
+        print('Edge of center of mass ROI = {0}'.format(2 * roi_hlf_edge))
+        sb_y1, sb_y2 = sb_xy[0] - roi_hlf_edge, sb_xy[0] + roi_hlf_edge
+        sb_x1, sb_x2 = sb_xy[1] - roi_hlf_edge, sb_xy[1] + roi_hlf_edge
+        sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
+        sband_xy = list(find_mass_center(sband_precentered))
+        sband_xy = list(np.array(sband_xy) + np.array([sb_y1, sb_x1]) + np.array(orig))
+
     print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[1], sband_xy[0]))
 
     return sband_xy
@@ -221,3 +225,52 @@ def subpixel_shift(img, subpx_sh):
     img.ChangeComplexRepr(dt)
     img_sh.ChangeComplexRepr(dt)
     return img_sh
+
+#-------------------------------------------------------------------
+
+# def subpixel_shift(img, subpx_sh):
+#     dt = img.cmpRepr
+#     img.ReIm2AmPh()
+#     h, w = img.amPh.am.shape
+#     img_sh = imsup.ImageExp(h, w, img.cmpRepr)
+#
+#     dy, dx = subpx_sh
+#     wx = np.abs(dx)
+#     wy = np.abs(dy)
+#     amp = np.copy(img.amPh.am)
+#     phs = np.copy(img.amPh.ph)
+#
+#     amp_shx_1px = np.zeros((h, w), dtype=np.float32)
+#     amp_shy_1px = np.zeros((h, w), dtype=np.float32)
+#     phs_shx_1px = np.zeros((h, w), dtype=np.float32)
+#     phs_shy_1px = np.zeros((h, w), dtype=np.float32)
+#
+#     # x dir
+#     if dx > 0:
+#         amp_shx_1px[:, 1:] = amp[:, :w-1]
+#         phs_shx_1px[:, 1:] = phs[:, :w-1]
+#     else:
+#         amp_shx_1px[:, :w-1] = amp[:, 1:]
+#         phs_shx_1px[:, :w-1] = phs[:, 1:]
+#
+#     amp_shx = wx * amp_shx_1px + (1.0-wx) * amp
+#     phs_shx = wx * phs_shx_1px + (1.0-wx) * phs
+#
+#     # y dir
+#     if dy > 0:
+#         amp_shy_1px[1:, :] = amp_shx[:h-1, :]
+#         phs_shy_1px[1:, :] = phs_shx[:h-1, :]
+#     else:
+#         amp_shy_1px[:h-1, :] = amp_shx[1:, :]
+#         phs_shy_1px[:h-1, :] = phs_shx[1:, :]
+#
+#     amp_shy = wy * amp_shy_1px + (1.0-wy) * amp_shx
+#     phs_shy = wy * phs_shy_1px + (1.0-wy) * phs_shx
+#
+#     img_sh.amPh.am = np.copy(amp_shy)
+#     img_sh.amPh.ph = np.copy(phs)
+#     img_sh.amPh.ph = np.copy(phs_shy)
+#
+#     img.ChangeComplexRepr(dt)
+#     img_sh.ChangeComplexRepr(dt)
+#     return img_sh

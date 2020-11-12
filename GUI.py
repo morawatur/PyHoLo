@@ -720,6 +720,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
         self.sideband_y_input = QtWidgets.QLineEdit('0', self)
 
+        self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift', self)
+        self.subpixel_shift_checkbox.setChecked(False)
+
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
         holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
@@ -747,7 +750,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.setColumnStretch(6, 1)
         self.tab_holo.layout.setColumnStretch(7, 1)
         self.tab_holo.layout.setRowStretch(0, 1)
-        self.tab_holo.layout.setRowStretch(7, 1)
+        self.tab_holo.layout.setRowStretch(8, 1)
         self.tab_holo.layout.addWidget(aperture_label, 1, 1, 1, 2)
         self.tab_holo.layout.addWidget(self.aperture_input, 2, 1, 1, 2)
         self.tab_holo.layout.addWidget(hann_win_label, 1, 3, 1, 2)
@@ -768,6 +771,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 5, 1, 2)
         self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 3, 1, 2)
         self.tab_holo.layout.addWidget(do_all_button, 6, 1, 1, 2)
+        self.tab_holo.layout.addWidget(self.subpixel_shift_checkbox, 7, 1, 1, 2)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -1967,7 +1971,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpt2.reverse()  # r, c
 
         sband = np.copy(holo_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
-        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
+        apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
         # ---
         px_dim = holo_fft.px_dim
@@ -2002,7 +2007,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpt2.reverse()  # r, c
 
         sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
-        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
+        apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
         ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
@@ -2117,12 +2123,37 @@ class HolographyWidget(QtWidgets.QWidget):
     def get_sideband_from_xy(self):
         curr_img = self.display.image
 
-        sbx = self.sideband_x_input.text()
-        sby = self.sideband_y_input.text()
-        sband_xy = [sbx, sby]
+        # temporary test for subpixel shifting (#1)
+        # test_img = imsup.ImageExp(768, 768)
+        # test_list = []
+        # val = 0
+        # for i in range(768):
+        #     if not i % 16:
+        #         val = not val
+        #     test_list.append([float(val)] * 768)
+        # test_arr = np.array(test_list, dtype=np.float32)
+        # test_img.amPh.am = np.copy(test_arr)
+        # test_img.amPh.ph = np.copy(test_arr)
+        # subpx_shx = float(self.sideband_x_input.text())
+        # subpx_shy = float(self.sideband_y_input.text())
+        # if subpx_shx == 0 and subpx_shy == 0:
+        #     self.insert_img_after_curr(test_img)
+        # else:
+        #     subpx_shifted_img = holo.subpixel_shift(test_img, [subpx_shy, subpx_shx])
+        #     self.insert_img_after_curr(subpx_shifted_img)
+
+        # temporary test for subpixel shifting (#2)
+        # subpx_shx = float(self.sideband_x_input.text())
+        # subpx_shy = float(self.sideband_y_input.text())
+        # subpx_shifted_img = holo.subpixel_shift(curr_img, [subpx_shy, subpx_shx])
+        # self.insert_img_after_curr(subpx_shifted_img)
+
+        sbx = float(self.sideband_x_input.text())
+        sby = float(self.sideband_y_input.text())
+        sband_xy = [sby, sbx]
 
         mid = curr_img.width // 2
-        shift = [mid - sband_xy[1], mid - sband_xy[0]]  # konwencja x, y
+        shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
         ap_radius= int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())
@@ -2143,7 +2174,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpt2.reverse()  # r, c
 
         sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
-        sband_xy = holo.find_sideband_center(sband, orig=rpt1)
+        apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
         ap_radius = int(self.aperture_input.text())
         hann_window = int(self.hann_win_input.text())

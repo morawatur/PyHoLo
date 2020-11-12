@@ -26,9 +26,9 @@ n_div_for_warp = 8
 input_dir = 'input/'
 results_dir = 'results/'
 
-aperture = 32
-hann_win = 100
-min_COM_roi_hlf_edge = 4
+aperture = 32                       # radius of aperture
+hann_win = 100                      # edge of Hann. window
+min_COM_roi_hlf_edge = 5
 
 ew_lambda = 1.968749e-12            # m (300kV)
 planck_const = 6.626070e-34         # J*s
