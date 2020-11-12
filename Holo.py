@@ -99,7 +99,8 @@ def rec_holo_no_ref_1(holo_img):
 def rec_holo_no_ref_2(holo_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
     sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))
-    sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
+    if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
+        sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
     sband_img_ap = insert_aperture(sband_mid_img, ap_rad)
     sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
     return sband_img_ap
