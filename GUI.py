@@ -701,7 +701,7 @@ class HolographyWidget(QtWidgets.QWidget):
         diff_button = QtWidgets.QPushButton('Diff', self)
         amplify_button = QtWidgets.QPushButton('Amplify', self)
         add_radians_button = QtWidgets.QPushButton('Add radians', self)
-        # rm_gradient_button = QtWidgets.QPushButton('Remove gradient', self)
+        remove_phase_tilt_button = QtWidgets.QPushButton('Remove phase tilt', self)
         get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
         do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
@@ -731,7 +731,7 @@ class HolographyWidget(QtWidgets.QWidget):
         diff_button.clicked.connect(self.calc_phs_diff)
         amplify_button.clicked.connect(self.amplify_phase)
         add_radians_button.clicked.connect(self.add_radians)
-        # rm_gradient_button.clicked.connect(self.remove_gradient)
+        remove_phase_tilt_button.clicked.connect(self.remove_phase_tilt)
         get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
         do_all_button.clicked.connect(self.do_all)
 
@@ -765,13 +765,13 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(amplify_button, 3, 5, 1, 2)
         self.tab_holo.layout.addWidget(add_radians_button, 5, 1, 1, 1)
         self.tab_holo.layout.addWidget(self.radians2add_input, 5, 2, 1, 1)
-        # self.tab_holo.layout.addWidget(rm_gradient_button, 5, 1)
         self.tab_holo.layout.addWidget(sideband_xy_label, 5, 3, 1, 2)
         self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 5, 1, 2)
         self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 5, 1, 2)
         self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 3, 1, 2)
         self.tab_holo.layout.addWidget(do_all_button, 6, 1, 1, 2)
         self.tab_holo.layout.addWidget(self.subpixel_shift_checkbox, 7, 1, 1, 2)
+        self.tab_holo.layout.addWidget(remove_phase_tilt_button, 7, 3, 1, 2)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -2101,24 +2101,75 @@ class HolographyWidget(QtWidgets.QWidget):
         self.cos_phs_radio_button.setChecked(True)
         print('Added {0:.2f} rad to "{1}"'.format(radians, curr_name))
 
-    def remove_gradient(self):
+    # def remove_phase_gradient(self):
+    #     curr_img = self.display.image
+    #     curr_idx = curr_img.numInSeries - 1
+    #     p1, p2, p3 = self.display.pointSets[curr_idx][:3]
+    #     p1.append(curr_img.amPh.ph[p1[1], p1[0]])
+    #     p2.append(curr_img.amPh.ph[p2[1], p2[0]])
+    #     p3.append(curr_img.amPh.ph[p3[1], p3[0]])
+    #     grad_plane = tr.Plane(0, 0, 0)
+    #     grad_plane.getFromThreePoints(p1, p2, p3)
+    #     # print(grad_plane.a, grad_plane.b, grad_plane.c)
+    #     grad_arr = grad_plane.fillPlane(curr_img.height, curr_img.width)
+    #     grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
+    #     grad_img.amPh.ph = np.copy(grad_arr)
+    #     # print(grad_arr[p1[1], p1[0]])
+    #     # print(grad_arr[p2[1], p2[0]])
+    #     # print(grad_arr[p3[1], p3[0]])
+    #     # print(p1[2], p2[2], p3[2])
+    #     self.insert_img_after_curr(grad_img)
+
+    def remove_phase_tilt(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
-        p1, p2, p3 = self.display.pointSets[curr_idx][:3]
-        p1.append(curr_img.amPh.ph[p1[1], p1[0]])
-        p2.append(curr_img.amPh.ph[p2[1], p2[0]])
-        p3.append(curr_img.amPh.ph[p3[1], p3[0]])
-        grad_plane = tr.Plane(0, 0, 0)
-        grad_plane.getFromThreePoints(p1, p2, p3)
-        # print(grad_plane.a, grad_plane.b, grad_plane.c)
-        grad_arr = grad_plane.fillPlane(curr_img.height, curr_img.width)
-        grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        grad_img.amPh.ph = np.copy(grad_arr)
-        # print(grad_arr[p1[1], p1[0]])
-        # print(grad_arr[p2[1], p2[0]])
-        # print(grad_arr[p3[1], p3[0]])
-        # print(p1[2], p2[2], p3[2])
-        self.insert_img_after_curr(grad_img)
+        h, w = curr_img.amPh.am.shape
+        phs = np.copy(curr_img.amPh.ph)
+
+        xy1 = [0, h//2]
+        xy2 = [w-1, h//2]
+        xy3 = [w//2, 0]
+        xy4 = [w//2, h-1]
+
+        if len(self.display.pointSets[curr_idx]) != 4:
+            print('Using default coordinates... [To change them mark (exactly) 4 points and repeat procedure]')
+        else:
+            dpts = self.display.pointSets[curr_idx][:4]
+            # dpts_f = [c for dpt in dpts for c in dpt]     # unpacking list of lists
+            rpts = [CalcRealTLCoords(w, dpt) for dpt in dpts]
+            xy1[0] = rpts[0][0]
+            xy2[0] = rpts[1][0]
+            xy3[1] = rpts[2][1]
+            xy4[1] = rpts[3][1]
+
+        n_neigh = 10
+        px1 = [xy1[0], tr.calc_avg_neigh(phs, x=xy1[0], y=xy1[1], nn=n_neigh)]
+        px2 = [xy2[0], tr.calc_avg_neigh(phs, x=xy2[0], y=xy2[1], nn=n_neigh)]
+        py1 = [xy3[1], tr.calc_avg_neigh(phs, x=xy3[0], y=xy3[1], nn=n_neigh)]
+        py2 = [xy4[1], tr.calc_avg_neigh(phs, x=xy4[0], y=xy4[1], nn=n_neigh)]
+
+        x_line = tr.Line(0, 0)
+        y_line = tr.Line(0, 0)
+        x_line.getFromPoints(px1, px2)
+        y_line.getFromPoints(py1, py2)
+
+        X = np.arange(0, w, dtype=np.float32)
+        Y = np.arange(0, h, dtype=np.float32)
+        X, Y = np.meshgrid(X, Y)
+        phs_grad_x = x_line.a * X + x_line.b
+        phs_grad_y = y_line.a * Y + y_line.b
+        phs_grad_xy = phs_grad_x + phs_grad_y
+
+        phs_grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        phs_grad_img.LoadPhsData(phs_grad_xy)
+        phs_grad_img.name = '{0}_tilt'.format(curr_img.name)
+
+        new_phs_img = imsup.copy_am_ph_image(curr_img)
+        new_phs_img.amPh.ph -= phs_grad_xy
+        new_phs_img.name = '{0}_minus_tilt'.format(curr_img.name)
+
+        self.insert_img_after_curr(phs_grad_img)
+        self.insert_img_after_curr(new_phs_img)
 
     def get_sideband_from_xy(self):
         curr_img = self.display.image

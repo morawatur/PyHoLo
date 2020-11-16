@@ -198,6 +198,7 @@ class Plane:
         self.b = b_coeff
         self.c = c_coeff
 
+    # does not work properly
     def getFromThreePoints(self, p1, p2, p3):
         dx1, dy1, dz1 = list(np.array(p1) - np.array(p2))
         dx2, dy2, dz2 = list(np.array(p3) - np.array(p2))
@@ -265,3 +266,14 @@ def LinLeastSquares(x_arr, y_arr):
     a_coeff = (sxy - sx * sy / n_pt) / (sx2 - sx * sx / n_pt)
     b_coeff = (sy - a_coeff * sx) / n_pt
     return a_coeff, b_coeff
+
+#-------------------------------------------------------------------
+
+def calc_avg_neigh(arr, x, y, nn=1):
+    h, w = arr.shape
+    x1, x2 = x - nn, x + nn + 1
+    y1, y2 = y - nn, y + nn + 1
+    arr_2_avg = arr[max(0, y1):min(y2, h), max(0, x1):min(x2, w)]
+    n_el = arr_2_avg.size
+    avg_val = np.sum(arr_2_avg) / n_el
+    return avg_val
