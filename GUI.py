@@ -2126,14 +2126,27 @@ class HolographyWidget(QtWidgets.QWidget):
         h, w = curr_img.amPh.am.shape
         phs = np.copy(curr_img.amPh.ph)
 
+        # default points
         xy1 = [0, h//2]
         xy2 = [w-1, h//2]
         xy3 = [w//2, 0]
         xy4 = [w//2, h-1]
 
-        if len(self.display.pointSets[curr_idx]) != 4:
-            print('Using default coordinates... [To change them mark (exactly) 4 points and repeat procedure]')
-        else:
+        n_usr_pts = len(self.display.pointSets[curr_idx])
+
+        if n_usr_pts == 2:
+            print('Removing local phase tilt...')
+            dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+            rpt1 = CalcRealTLCoords(w, dpt1)
+            rpt2 = CalcRealTLCoords(w, dpt2)
+            mid_x = (rpt1[0]+rpt2[0]) // 2
+            mid_y = (rpt1[1]+rpt2[1]) // 2
+            xy1 = [rpt1[0], mid_y]
+            xy2 = [rpt2[0], mid_y]
+            xy3 = [mid_x, rpt1[1]]
+            xy4 = [mid_x, rpt2[1]]
+        elif n_usr_pts == 4:
+            print('Removing global phase tilt...')
             dpts = self.display.pointSets[curr_idx][:4]
             # dpts_f = [c for dpt in dpts for c in dpt]     # unpacking list of lists
             rpts = [CalcRealTLCoords(w, dpt) for dpt in dpts]
@@ -2141,6 +2154,8 @@ class HolographyWidget(QtWidgets.QWidget):
             xy2[0] = rpts[1][0]
             xy3[1] = rpts[2][1]
             xy4[1] = rpts[3][1]
+        else:
+            print('Using default configuration... [To change it mark 2 points (local phase tilt) or 4 points (global phase tilt) and repeat procedure]')
 
         n_neigh = 10
         px1 = [xy1[0], tr.calc_avg_neigh(phs, x=xy1[0], y=xy1[1], nn=n_neigh)]
