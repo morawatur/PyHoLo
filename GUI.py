@@ -2610,6 +2610,21 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Min. = {0:.2f}\nMax. = {1:.2f}\nAvg. = {2:.2f}'.format(np.min(curr_phs), np.max(curr_phs), np.mean(curr_phs)))
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
+        if curr_img.prev is not None:
+            prev_img = curr_img.prev
+            prev_phs = prev_img.amPh.ph
+            p1 = prev_phs - np.mean(prev_phs)
+            p2 = curr_phs - np.mean(curr_phs)
+            corr_coef = np.sum(p1 * p2) / np.sqrt(np.sum(p1 * p1) * np.sum(p1 * p2))
+            print('Corr. coef. between *curr* and *prev* = {0:.4f}'.format(corr_coef))
+
+            # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
+            # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
+            # corr_coef_img.amPh.ph = np.copy(corr_coef_arr)
+            # corr_coef_img = rescale_image_buffer_to_window(corr_coef_img, const.disp_dim)
+            # corr_coef_img.name = 'corr_coef_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
+            # self.insert_img_after_curr(corr_coef_img)
+
     def calc_mean_inner_potential(self):
         curr_img = self.display.image
         curr_phs = curr_img.amPh.ph
