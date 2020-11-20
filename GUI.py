@@ -34,17 +34,6 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 
-#-------------------------------------------------------------------
-
-def read_dm3_file(fpath):
-    img_data, px_dims = dm3.ReadDm3File(fpath)
-    imsup.Image.px_dim_default = px_dims[0]
-
-    holo_img = imsup.ImageExp(img_data.shape[0], img_data.shape[1])
-    holo_img.LoadAmpData(np.sqrt(img_data).astype(np.float32))
-
-    return holo_img
-
 # --------------------------------------------------------
 
 def func_to_vectorize(x, y, dx, dy, sc=1):
@@ -368,6 +357,74 @@ def create_preview_img(full_img, new_sz):
 
 # --------------------------------------------------------
 
+class HolographyWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        super(HolographyWindow, self).__init__()
+        self.holo_widget = HolographyWidget()
+
+        # ------------------------------
+        # Menu bar
+        # ------------------------------
+
+        open_act = QtWidgets.QAction('Open dm3 or npy...', self)
+        open_act.setShortcut('Ctrl+O')
+        open_act.triggered.connect(self.open_file)
+
+        menubar = self.menuBar()
+        file_menu = menubar.addMenu('File')
+        file_menu.addAction(open_act)
+
+        # ------------------------------
+
+        self.setCentralWidget(self.holo_widget)
+
+        self.move(250, 50)
+        self.setWindowTitle('Holo window')
+        self.setWindowIcon(QtGui.QIcon('gui/world.png'))
+        self.show()
+        self.setFixedSize(self.width(), self.height())  # disable window resizing
+
+    def open_file(self):
+        file_dialog = QtWidgets.QFileDialog()
+        img_path = file_dialog.getOpenFileName()[0]
+        if img_path == '':
+            print('No images to read. Exiting...')
+            exit()
+
+        print('Reading file "{0}"'.format(img_path))
+        img_type = 'amp' if self.holo_widget.amp_radio_button.isChecked() else 'phs'
+
+        # dm3 file
+        if img_path.endswith('.dm3'):
+            img_name_match = re.search('(.+)/(.+).dm3$', img_path)
+            img_name_text = img_name_match.group(2)
+
+            new_img = open_dm3_file(img_path, img_type)
+        # npy file
+        elif img_path.endswith('.npy'):
+            img_name_match = re.search('(.+)/(.+).npy$', img_path)
+            img_name_text = img_name_match.group(2)
+
+            new_img_arr = np.load(img_path)
+            h, w = new_img_arr.shape
+
+            new_img = imsup.ImageExp(h, w, imsup.Image.cmp['CAP'])
+            if img_type == 'amp':
+                new_img.LoadAmpData(new_img_arr)
+            else:
+                new_img.LoadPhsData(new_img_arr)
+        else:
+            print('Could not load the image. It must be in dm3 or npy format...')
+            return
+
+        # in the case of npy file the px_dim will be the same as for the last dm3 file opened
+        new_img.name = img_name_text
+        new_img = rescale_image_buffer_to_window(new_img, const.disp_dim)
+
+        self.holo_widget.insert_img_after_curr(new_img)
+
+# --------------------------------------------------------
+
 class HolographyWidget(QtWidgets.QWidget):
     def __init__(self):
         super(HolographyWidget, self).__init__()
@@ -519,7 +576,7 @@ class HolographyWidget(QtWidgets.QWidget):
         norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
 
         self.export_tiff_radio_button = QtWidgets.QRadioButton('TIFF image', self)
-        self.export_bin_radio_button = QtWidgets.QRadioButton('Binary', self)
+        self.export_bin_radio_button = QtWidgets.QRadioButton('Numpy array file', self)
         self.export_tiff_radio_button.setChecked(True)
 
         export_group = QtWidgets.QButtonGroup(self)
@@ -787,7 +844,6 @@ class HolographyWidget(QtWidgets.QWidget):
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         calc_MIP_button = QtWidgets.QPushButton('Calc. mean inner pot.', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
-        # fix_discont_phs_button = QtWidgets.QPushButton('Fix discont. phase', self)
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
         export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
 
@@ -836,7 +892,6 @@ class HolographyWidget(QtWidgets.QWidget):
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
-        # fix_discont_phs_button.clicked.connect(self.fix_discont_phs)
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_img3d_button.clicked.connect(self.export_3d_image)
 
@@ -991,12 +1046,6 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.setLayout(hbox_main)
 
-        self.move(250, 50)
-        self.setWindowTitle('Holo window')
-        self.setWindowIcon(QtGui.QIcon('gui/world.png'))
-        self.show()
-        self.setFixedSize(self.width(), self.height())  # disable window resizing
-
     def update_curr_info_label(self):
         curr_img = self.display.image
         self.curr_info_label.setText('{0}, dim = {1} px'.format(curr_img.name, curr_img.width))
@@ -1130,35 +1179,43 @@ class HolographyWidget(QtWidgets.QWidget):
             else:
                 fname = 'cos_phs{0}'.format(curr_num)
 
+        # binary file (deprecated)
+        # if self.export_bin_radio_button.isChecked():
+        #     fname_ext = ''
+        #     if is_amp_checked:
+        #         curr_img.amPh.am.tofile(fname)
+        #     elif is_phs_checked:
+        #         curr_img.amPh.ph.tofile(fname)
+        #     else:
+        #         cos_phs = np.cos(curr_img.amPh.ph)
+        #         cos_phs.tofile(fname)
+        #     print('Saved image to binary file: "{0}"'.format(fname))
+
+        # numpy array file (new)
         if self.export_bin_radio_button.isChecked():
-            fname_ext = ''
+            fname_ext = '.npy'
+
             if is_amp_checked:
-                # np.save(fname, curr_img.amPh.am)
-                curr_img.amPh.am.tofile(fname)
+                np.save(fname, curr_img.amPh.am)
             elif is_phs_checked:
-                # np.save(fname, curr_img.amPh.ph)
-                curr_img.amPh.ph.tofile(fname)
+                np.save(fname, curr_img.amPh.ph)
             else:
                 cos_phs = np.cos(curr_img.amPh.ph)
-                cos_phs.tofile(fname)
-                # np.save(fname, cos_phs)
-            print('Saved image to binary file: "{0}"'.format(fname))
+                np.save(fname, cos_phs)
+            print('Saved image to numpy array file: "{0}.npy"'.format(fname))
+        # TIF file
         else:
             fname_ext = '.tif'
-            # img_fname = '{0}{1}'.format(fname, fname_ext)
             log = True if self.log_scale_checkbox.isChecked() else False
             color = True if self.color_radio_button.isChecked() else False
 
             if is_amp_checked:
-                # imsup.SaveAmpImage(curr_img, '{0}.png'.format(fname), True, log, color)
                 self.save_amp_as_tiff(fname, log, color)
             elif is_phs_checked:
-                # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True, log, color)
                 self.save_phs_as_tiff(fname, log, color)
             else:
                 phs_tmp = np.copy(curr_img.amPh.ph)
                 curr_img.amPh.ph = np.cos(phs_tmp)
-                # imsup.SavePhaseImage(curr_img, '{0}.png'.format(fname), True log, color)
                 self.save_phs_as_tiff(fname, log, color)
                 curr_img.amPh.ph = np.copy(phs_tmp)
             print('Saved image as "{0}.tif"'.format(fname))
@@ -1169,8 +1226,10 @@ class HolographyWidget(QtWidgets.QWidget):
             log_file.write('File name:\t{0}{1}\n'
                            'Image name:\t{2}\n'
                            'Image size:\t{3}x{4}\n'
-                           'Calibration:\t{5} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
-                                                           curr_img.height, curr_img.px_dim * 1e9))
+                           'Data type:\t{5}\n'
+                           'Calibration:\t{6} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
+                                                           curr_img.height, curr_img.amPh.am.dtype,
+                                                           curr_img.px_dim * 1e9))
         print('Saved log file: "{0}"'.format(log_fname))
 
     def export_all(self):
@@ -1365,11 +1424,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.update_display()
         self.update_curr_info_label()
         print('All phases normalized')
-
-    def fix_discont_phs(self):
-        curr_img = self.display.image
-        fixed_img = find_contours(curr_img)
-        self.insert_img_after_curr(fixed_img)
 
     def export_3d_image(self):
         from matplotlib import cm
@@ -2629,11 +2683,27 @@ class HolographyWidget(QtWidgets.QWidget):
 
 # --------------------------------------------------------
 
-def LoadImageSeriesFromFirstFile(imgPath):
-    imgList = imsup.ImageList()
-    imgNumMatch = re.search('([0-9]+).dm3', imgPath)
-    imgNumText = imgNumMatch.group(1)
-    imgNum = int(imgNumText)
+def open_dm3_file(file_path, img_type='amp'):
+    img_data, px_dims = dm3.ReadDm3File(file_path)
+    imsup.Image.px_dim_default = px_dims[0]
+    new_img = imsup.ImageExp(img_data.shape[0], img_data.shape[1], imsup.Image.cmp['CAP'], px_dim_sz=px_dims[0])
+
+    if img_type == 'amp':
+        # amp_data = np.sqrt(np.abs(img_data))
+        amp_data = np.copy(img_data)
+        new_img.LoadAmpData(amp_data.astype(np.float32))
+    else:
+        new_img.LoadPhsData(img_data.astype(np.float32))
+
+    return new_img
+
+# --------------------------------------------------------
+
+def LoadImageSeriesFromFirstFile(img_path):
+    img_list = imsup.ImageList()
+    img_num_match = re.search('([0-9]+).dm3', img_path)
+    img_num_text = img_num_match.group(1)
+    img_num = int(img_num_text)
 
     img_idx = 0
     is_there_info = False
@@ -2641,7 +2711,7 @@ def LoadImageSeriesFromFirstFile(imgPath):
 
     if img_idx == 0:
         import pandas as pd
-        first_img_name_match = re.search('(.+)/(.+).dm3$', imgPath)
+        first_img_name_match = re.search('(.+)/(.+).dm3$', img_path)
         dir_path = first_img_name_match.group(1)
         info_file_path = '{0}/info.txt'.format(dir_path)
         if path.isfile(info_file_path):
@@ -2649,41 +2719,34 @@ def LoadImageSeriesFromFirstFile(imgPath):
             imgs_info = pd.read_csv(info_file_path, sep='\t', header=None)
             imgs_info = imgs_info.values
 
-    while path.isfile(imgPath):
-        print('Reading file "' + imgPath + '"')
-        img_name_match = re.search('(.+)/(.+).dm3$', imgPath)
+    while path.isfile(img_path):
+        print('Reading file "' + img_path + '"')
+        img_name_match = re.search('(.+)/(.+).dm3$', img_path)
         img_name_text = img_name_match.group(2)
-
-        imgData, pxDims = dm3.ReadDm3File(imgPath)
-        imsup.Image.px_dim_default = pxDims[0]
-        img = imsup.ImageExp(imgData.shape[0], imgData.shape[1], imsup.Image.cmp['CAP'],
-                             num=imgNum, px_dim_sz=pxDims[0])
         img_type = imgs_info[img_idx, 2]
-        if img_type == 'amp':
-            # amp_data = np.sqrt(np.abs(imgData))
-            amp_data = np.copy(imgData)
-            img.LoadAmpData(amp_data.astype(np.float32))
-        else:
-            img.LoadPhsData(imgData.astype(np.float32))
-        img = rescale_image_buffer_to_window(img, const.disp_dim)
+
+        img = open_dm3_file(img_path, img_type)
+        img.numInSeries = img_num
         img.name = img_name_text if not is_there_info else imgs_info[img_idx, 1]
+        img = rescale_image_buffer_to_window(img, const.disp_dim)
+
         # ---
         # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
         # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
         # img.UpdateBuffer()
         # ---
-        imgList.append(img)
+        img_list.append(img)
 
         img_idx += 1
-        imgNum += 1
-        imgNumTextNew = imgNumText.replace(str(imgNum-1), str(imgNum))
-        if imgNum == 10:
-            imgNumTextNew = imgNumTextNew[1:]
-        imgPath = RReplace(imgPath, imgNumText, imgNumTextNew, 1)
-        imgNumText = imgNumTextNew
+        img_num += 1
+        img_num_text_new = img_num_text.replace(str(img_num-1), str(img_num))
+        if img_num == 10:
+            img_num_text_new = img_num_text_new[1:]
+        img_path = rreplace(img_path, img_num_text, img_num_text_new, 1)
+        img_num_text = img_num_text_new
 
-    imgList.UpdateLinks()
-    return imgList[0]
+    img_list.UpdateLinks()
+    return img_list[0]
 
 # --------------------------------------------------------
 
@@ -2883,21 +2946,14 @@ def det_Imin_Imax_from_contrast(dI, def_max=256.0):
 
 # --------------------------------------------------------
 
-def SwitchXY(xy):
+def switch_xy(xy):
     return [xy[1], xy[0]]
 
 # --------------------------------------------------------
 
-def RReplace(text, old, new, occurence):
+def rreplace(text, old, new, occurence):
     rest = text.rsplit(old, occurence)
     return new.join(rest)
-
-# --------------------------------------------------------
-
-def RunHolographyWindow():
-    app = QtWidgets.QApplication(sys.argv)
-    holoWindow = HolographyWidget()
-    sys.exit(app.exec_())
 
 # --------------------------------------------------------
 
@@ -2949,105 +3005,8 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
     plt.close(fig)
 
 # --------------------------------------------------------
-# REMOVING DISCONTINUITIES FROM PHASE IMAGE (in progress...)
 
-def trace_contour(arr, xy):
-    contour = [xy]
-    x, y = xy
-    adj_sum = 1
-    mid = np.ones(2)
-    last_xy = [1, 1]
-
-    while adj_sum > 0:
-        adj_arr = arr[x-1:x+2, y-1:y+2]
-        adj_arr[last_xy[0], last_xy[1]] = 0
-        adj_arr[1, 1] = 0
-        adj_sum = np.sum(np.array(adj_arr))
-        if adj_sum > 0:
-            next_xy = [ idx[0] for idx in np.where(adj_arr == 1) ]
-            last_xy = list(2 * mid - np.array(next_xy))
-            next_xy = list(np.array(next_xy)-1 + np.array(xy))
-            contour.append(next_xy)
-            x, y = next_xy
-            xy = [x, y]
-
-    # cont_arr = np.zeros(arr.shape)
-    # for idxs in contour:
-    #     cont_arr[idxs[0], idxs[1]] = 1
-
-    # cont_img = imsup.ImageExp(cont_arr.shape[0], cont_arr.shape[1])
-    # cont_img.LoadAmpData(cont_arr)
-    # imsup.DisplayAmpImage(cont_img)
-
-    return contour
-
-# --------------------------------------------------------
-
-def find_contours(img):
-    phs1 = np.copy(img.amPh.ph)
-    phs2 = np.zeros(phs1.shape, dtype=np.int32)
-
-    global_phs_min = np.min(phs1)
-
-    for y in range(10, phs1.shape[0] - 10):
-        for x in range(10, phs1.shape[1] - 10):
-            diff = phs1[y, x-1] - phs1[y, x]
-            if np.abs(diff) > np.pi:
-                phs2[y, x] = 1
-
-    for x in range(10, phs1.shape[1] - 10):
-        for y in range(10, phs1.shape[0] - 10):
-            diff = phs1[y-1, x] - phs1[y, x]
-            if np.abs(diff) > np.pi:
-                phs2[y, x] = 1
-
-    contours = []
-
-    for y in range(10, phs1.shape[0] - 10):
-        for x in range(10, phs1.shape[1] - 10):
-            if phs2[y, x]:
-                # print('Found one!')
-                # print(y, x)
-                contour = trace_contour(phs2, [y, x])
-                contours.append(contour)
-
-    ble = 0
-    print(len(contours))
-    for cont in contours:
-        py1, px1 = cont[0]
-        py2, px2 = cont[len(cont)-1]
-
-        if px1 == px2 or py1 == py2:
-            continue
-
-        a_coeff = (py2 - py1) / (px2 - px1)
-        b_coeff = py1 - a_coeff * px1
-
-        x_idxs = [ i[1] for i in cont ]
-        y_idxs = [ j[0] for j in cont ]
-
-        x_min, x_max = min(x_idxs), max(x_idxs)
-        y_min, y_max = min(y_idxs), max(y_idxs)
-
-        phs1[y_min:y_max, x_min:x_max] = global_phs_min-1
-
-        # for y in range(y_min, y_max+1):
-        #     for x in range(x_min, x_max+1):
-        #         if px1 == px2:
-        #             line_x = px1
-        #         else:
-        #             line_x = (y - b_coeff) / a_coeff
-        #
-        #         cont_x = [ yx[1] for yx in cont if yx[0] == y ][0]
-        #         if line_x < x < cont_x or cont_x < x < line_x:
-        #             ble += 1
-        #             phs1[y, x] = global_phs_min-1
-        #             print(phs1[y, x])
-
-    fixed_img = imsup.ImageExp(img.height, img.width, img.cmpRepr)
-    fixed_img.amPh.am = np.copy(img.amPh.am)
-    fixed_img.amPh.ph = np.copy(phs1)
-    print(ble)
-
-    return fixed_img
-
+def RunHolographyWindow():
+    app = QtWidgets.QApplication(sys.argv)
+    holo_window = HolographyWindow()
+    sys.exit(app.exec_())
