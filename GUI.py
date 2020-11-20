@@ -389,7 +389,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
         img_path = file_dialog.getOpenFileName()[0]
         if img_path == '':
             print('No images to read. Exiting...')
-            exit()
+            return
 
         print('Reading file "{0}"'.format(img_path))
         img_type = 'amp' if self.holo_widget.amp_radio_button.isChecked() else 'phs'
