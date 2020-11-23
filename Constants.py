@@ -22,12 +22,13 @@ disp_dim = 768
 min_px_threshold = 0.2
 max_px_threshold = 1.8
 n_div_for_warp = 8
+disp_name_max_len = 60
 
 input_dir = 'input/'
 results_dir = 'results/'
 
 aperture = 32                       # radius of aperture
-hann_win = 100                      # edge of Hann. window
+hann_win = 72                       # edge of Hann. window
 min_COM_roi_hlf_edge = 5
 
 ew_lambda = 1.968749e-12            # m (300kV)
@@ -37,3 +38,5 @@ light_speed = 2.997925e8            # m/s
 
 el_rest_mass = 9.109382e-31         # kg
 el_charge = 1.602177e-19            # C
+
+corr_arr_max_shift = 20

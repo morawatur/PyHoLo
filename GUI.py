@@ -1048,7 +1048,10 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def update_curr_info_label(self):
         curr_img = self.display.image
-        self.curr_info_label.setText('{0}, dim = {1} px'.format(curr_img.name, curr_img.width))
+        disp_name = curr_img.name[:const.disp_name_max_len]
+        if len(curr_img.name) > const.disp_name_max_len:
+            disp_name = disp_name[:-3] + '...'
+        self.curr_info_label.setText('{0}, dim = {1} px'.format(disp_name, curr_img.width))
 
     def enable_manual_panel(self):
         self.left_button.setEnabled(True)
@@ -2611,15 +2614,16 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
         if curr_img.prev is not None:
-            print('Calculating correlation array between *curr* and *prev* phases...')
+            max_shift = const.corr_arr_max_shift
+            print('Calculating ({0}x{0}) correlation array between *curr* and *prev* phases...'.format(2 * max_shift))
             prev_img = curr_img.prev
             prev_phs = prev_img.amPh.ph
-            max_shift = 20
             corr_arr = tr.calc_corr_array(prev_phs, curr_phs, max_shift)
             ch, cw = corr_arr.shape
             corr_img = imsup.ImageExp(ch, cw)
             corr_img.LoadAmpData(corr_arr)
             corr_img.LoadPhsData(corr_arr)
+            corr_img = rescale_image_buffer_to_window(corr_img, const.disp_dim)
             corr_img.name = 'corr_arr_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
             self.insert_img_after_curr(corr_img)
 
