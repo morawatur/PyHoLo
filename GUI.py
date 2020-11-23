@@ -2611,13 +2611,25 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
         if curr_img.prev is not None:
+            print('Calculating correlation array between *curr* and *prev* phases...')
             prev_img = curr_img.prev
             prev_phs = prev_img.amPh.ph
-            p1 = prev_phs - np.mean(prev_phs)
-            p2 = curr_phs - np.mean(curr_phs)
-            corr_coef = np.sum(p1 * p2) / np.sqrt(np.sum(p1 * p1) * np.sum(p1 * p2))
-            print('Corr. coef. between *curr* and *prev* = {0:.4f}'.format(corr_coef))
+            max_shift = 20
+            corr_arr = tr.calc_corr_array(prev_phs, curr_phs, max_shift)
+            ch, cw = corr_arr.shape
+            corr_img = imsup.ImageExp(ch, cw)
+            corr_img.LoadAmpData(corr_arr)
+            corr_img.LoadPhsData(corr_arr)
+            corr_img.name = 'corr_arr_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
+            self.insert_img_after_curr(corr_img)
 
+            # single-value correlation coefficient
+            # p1 = prev_phs - np.mean(prev_phs)
+            # p2 = curr_phs - np.mean(curr_phs)
+            # corr_coef = np.sum(p1 * p2) / np.sqrt(np.sum(p1 * p1) * np.sum(p2 * p2))
+            # print('Corr. coef. between *curr* and *prev* phases = {0:.4f}'.format(corr_coef))
+
+            # Pearson correlation matrix
             # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
             # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
             # corr_coef_img.amPh.ph = np.copy(corr_coef_arr)

@@ -277,3 +277,39 @@ def calc_avg_neigh(arr, x, y, nn=1):
     n_el = arr_2_avg.size
     avg_val = np.sum(arr_2_avg) / n_el
     return avg_val
+
+#-------------------------------------------------------------------
+
+def calc_corr_coef(arr1, arr2):
+    a1 = arr1 - np.mean(arr1)
+    a2 = arr2 - np.mean(arr2)
+    corr_coef = np.sum(a1 * a2) / np.sqrt(np.sum(a1 * a1) * np.sum(a2 * a2))
+    return corr_coef
+
+#-------------------------------------------------------------------
+
+def calc_corr_array(arr1, arr2, max_shift=20):
+    h, w = arr1.shape
+    x1 = y1 = -max_shift
+    x2 = y2 = max_shift
+
+    roi1 = np.copy(arr1[y2:h-y2, x2:w-x2])
+    corr_arr = np.zeros((2*max_shift, 2*max_shift), dtype=np.float32)
+
+    it = 0
+    n_el = corr_arr.size
+
+    for y in range(y1, y2):
+        for x in range(x1, x2):
+            shift = [y, x]
+            arr2_sh = imsup.shift_array(arr2, shift)
+            roi2 = np.copy(arr2_sh[y2:h-y2, x2:w-x2])
+            corr_coef = calc_corr_coef(roi1, roi2)
+            corr_arr[y2+y, x2+x] = corr_coef
+
+            it += 1
+            print('\r{0:.0f}%'.format(it*100.0/n_el), end='')
+
+    print('\rDone!')
+    return corr_arr
+
