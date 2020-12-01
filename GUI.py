@@ -2487,18 +2487,17 @@ class HolographyWidget(QtWidgets.QWidget):
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
         r = int(d_dist // 2)
-        ang0 = np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
-        n_ang = 80
-        # angles = np.arange(ang0, ang0 + 2*np.pi, np.pi / 18, dtype=np.float32)
-        angles = np.linspace(ang0, ang0 + 2*np.pi, n_ang, dtype=np.float32)
-        print(int(imsup.Degrees(ang0)))
+        ang0 = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
+        ang1, ang2 = ang0 - np.pi/2.0, ang0 + np.pi/2.0
+        n_ang = 40
+        angles = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
 
         B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
         B_values = []
         x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
 
-        for ang in angles:
-            sin_cos = np.array([np.cos(ang), np.sin(ang)])
+        for ang, idx in zip(angles, range(len(angles))):
+            sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
             new_pt1 = np.array(orig_xy - r * sin_cos).astype(np.int32)
             new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
             x1, y1 = new_pt1
@@ -2512,17 +2511,19 @@ class HolographyWidget(QtWidgets.QWidget):
             # d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
             d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
             B_val = B_coeff * d_phase
-            B_values.append(B_val)
+            if B_val < 0: angles[idx] += np.pi
+            B_values.append(np.abs(B_val))
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='polar')
-        angles *= -1
-        ax.plot(angles, np.array(B_values))
-        ax.plot(angles, np.zeros(n_ang), 'g--', linewidth=1)
-        ax.plot(angles[0], B_values[0], 'r.')
-        r_min, r_max = -0.5, 0.5
-        for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
-            ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
+
+        r_min, r_max = 0.0, np.max(B_values) + 0.1
+        ax.plot(angles, np.array(B_values), 'b.')
+        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([r_max, r_max]), 'r', linewidth=1)         # mark selected direction
+        ax.plot(np.array([ang1, ang2]), np.array([r_max, r_max]), 'g--', linewidth=1)               # boundary between positive and negative values of B
+        # ax.plot(angles, np.zeros(n_ang), 'g--', linewidth=1)
+        # for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
+        #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
         ax.set_ylim(r_min, r_max)
         ax.grid(True)
 
@@ -2588,7 +2589,13 @@ class HolographyWidget(QtWidgets.QWidget):
         pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
 
         d_dist = la.norm(pt1-pt2) * px_sz
-        d_phase = np.abs(curr_phs[pt1[1], pt1[0]] - curr_phs[pt2[1], pt2[0]])
+        # d_phase = np.abs(curr_phs[pt1[1], pt1[0]] - curr_phs[pt2[1], pt2[0]])
+        # ---
+        ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
+        ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
+        d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
+        # d_phase = np.abs(ph1_avg - ph2_avg)
+        # ---
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
         print('{0:.1f} nm'.format(d_dist * 1e9))
