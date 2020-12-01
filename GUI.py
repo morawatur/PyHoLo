@@ -2505,7 +2505,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
             xx = np.linspace(x1, x2, 5, dtype=np.int32)
             yy = np.linspace(y1, y2, 5, dtype=np.int32)
-            ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
+            # ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
+            ph_arr_for_ls = [ tr.calc_avg_neigh(curr_phs, x, y, nn=5) for x, y in zip(xx, yy) ]
             aa, bb = tr.LinLeastSquares(x_arr_for_ls, ph_arr_for_ls)
 
             # d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
