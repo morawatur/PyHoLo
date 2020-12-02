@@ -457,9 +457,6 @@ class HolographyWidget(QtWidgets.QWidget):
         # Navigation panel (1)
         # ------------------------------
 
-        self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
-        self.clear_prev_checkbox.setChecked(False)
-
         prev_button = QtWidgets.QPushButton('Prev', self)
         next_button = QtWidgets.QPushButton('Next', self)
         lswap_button = QtWidgets.QPushButton('L-Swap', self)
@@ -473,18 +470,8 @@ class HolographyWidget(QtWidgets.QWidget):
         undo_button = QtWidgets.QPushButton('Undo', self)
         add_marker_at_xy_button = QtWidgets.QPushButton('Add marker', self)
 
-        prev_button.clicked.connect(self.go_to_prev_image)
-        next_button.clicked.connect(self.go_to_next_image)
-        lswap_button.clicked.connect(self.swap_left)
-        rswap_button.clicked.connect(self.swap_right)
-        flip_button.clicked.connect(self.flip_image_h)
-        set_name_button.clicked.connect(self.set_image_name)
-        reset_names_button.clicked.connect(self.reset_image_names)
-        zoom_button.clicked.connect(self.zoom_n_fragments)
-        delete_button.clicked.connect(self.delete_image)
-        clear_button.clicked.connect(self.clear_image)
-        undo_button.clicked.connect(self.remove_last_point)
-        add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
+        self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
+        self.clear_prev_checkbox.setChecked(False)
 
         self.name_input = QtWidgets.QLineEdit(self.display.image.name, self)
         self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
@@ -500,6 +487,19 @@ class HolographyWidget(QtWidgets.QWidget):
         hbox_zoom = QtWidgets.QHBoxLayout()
         hbox_zoom.addWidget(zoom_button)
         hbox_zoom.addWidget(self.n_to_zoom_input)
+
+        prev_button.clicked.connect(self.go_to_prev_image)
+        next_button.clicked.connect(self.go_to_next_image)
+        lswap_button.clicked.connect(self.swap_left)
+        rswap_button.clicked.connect(self.swap_right)
+        flip_button.clicked.connect(self.flip_image_h)
+        set_name_button.clicked.connect(self.set_image_name)
+        reset_names_button.clicked.connect(self.reset_image_names)
+        zoom_button.clicked.connect(self.zoom_n_fragments)
+        delete_button.clicked.connect(self.delete_image)
+        clear_button.clicked.connect(self.clear_image)
+        undo_button.clicked.connect(self.remove_last_point)
+        add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
 
         self.tab_nav = QtWidgets.QWidget()
         self.tab_nav.layout = QtWidgets.QGridLayout()
@@ -535,6 +535,13 @@ class HolographyWidget(QtWidgets.QWidget):
         # Display panel (2)
         # ------------------------------
 
+        unwrap_button = QtWidgets.QPushButton('Unwrap', self)
+        wrap_button = QtWidgets.QPushButton('Wrap', self)
+        export_button = QtWidgets.QPushButton('Export', self)
+        export_all_button = QtWidgets.QPushButton('Export all', self)
+        blank_area_button = QtWidgets.QPushButton('Blank area', self)
+        norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
+
         self.show_lines_checkbox = QtWidgets.QCheckBox('Show lines', self)
         self.show_lines_checkbox.setChecked(True)
         self.show_lines_checkbox.toggled.connect(self.toggle_lines)
@@ -565,16 +572,6 @@ class HolographyWidget(QtWidgets.QWidget):
         color_group.addButton(self.gray_radio_button)
         color_group.addButton(self.color_radio_button)
 
-        fname_label = QtWidgets.QLabel('File name', self)
-        self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
-
-        unwrap_button = QtWidgets.QPushButton('Unwrap', self)
-        wrap_button = QtWidgets.QPushButton('Wrap', self)
-        export_button = QtWidgets.QPushButton('Export', self)
-        export_all_button = QtWidgets.QPushButton('Export all', self)
-        blank_area_button = QtWidgets.QPushButton('Blank area', self)
-        norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
-
         self.export_tiff_radio_button = QtWidgets.QRadioButton('TIFF image', self)
         self.export_bin_radio_button = QtWidgets.QRadioButton('Numpy array file', self)
         self.export_tiff_radio_button.setChecked(True)
@@ -583,17 +580,20 @@ class HolographyWidget(QtWidgets.QWidget):
         export_group.addButton(self.export_tiff_radio_button)
         export_group.addButton(self.export_bin_radio_button)
 
-        self.amp_radio_button.toggled.connect(self.update_display)
-        self.phs_radio_button.toggled.connect(self.update_display)
-        self.cos_phs_radio_button.toggled.connect(self.update_display)
-        self.gray_radio_button.toggled.connect(self.update_display)
-        self.color_radio_button.toggled.connect(self.update_display)
+        fname_label = QtWidgets.QLabel('File name', self)
+        self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
+
         unwrap_button.clicked.connect(self.unwrap_img_phase)
         wrap_button.clicked.connect(self.wrap_img_phase)
         export_button.clicked.connect(self.export_image)
         export_all_button.clicked.connect(self.export_all)
         blank_area_button.clicked.connect(self.blank_area)
         norm_phase_button.clicked.connect(self.norm_phase)
+        self.amp_radio_button.toggled.connect(self.update_display)
+        self.phs_radio_button.toggled.connect(self.update_display)
+        self.cos_phs_radio_button.toggled.connect(self.update_display)
+        self.gray_radio_button.toggled.connect(self.update_display)
+        self.color_radio_button.toggled.connect(self.update_display)
 
         grid_disp = QtWidgets.QGridLayout()
         grid_disp.setColumnStretch(0, 1)
@@ -644,12 +644,12 @@ class HolographyWidget(QtWidgets.QWidget):
         self.apply_button = QtWidgets.QPushButton('Apply changes', self)
         self.reset_button = QtWidgets.QPushButton('Reset', self)
 
-        self.px_shift_input = QtWidgets.QLineEdit('0', self)
-        self.rot_angle_input = QtWidgets.QLineEdit('0.0', self)
-
         self.manual_mode_checkbox = QtWidgets.QCheckBox('Manual mode', self)
         self.manual_mode_checkbox.setChecked(False)
         self.manual_mode_checkbox.clicked.connect(self.create_backup_image)
+
+        self.px_shift_input = QtWidgets.QLineEdit('0', self)
+        self.rot_angle_input = QtWidgets.QLineEdit('0.0', self)
 
         self.left_button.clicked.connect(self.move_left)
         self.right_button.clicked.connect(self.move_right)
@@ -762,6 +762,9 @@ class HolographyWidget(QtWidgets.QWidget):
         get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
         do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
+        self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift', self)
+        self.subpixel_shift_checkbox.setChecked(False)
+
         aperture_label = QtWidgets.QLabel('Aperture rad. [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
 
@@ -777,8 +780,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
         self.sideband_y_input = QtWidgets.QLineEdit('0', self)
 
-        self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift', self)
-        self.subpixel_shift_checkbox.setChecked(False)
+        hbox_holo = QtWidgets.QHBoxLayout()
+        hbox_holo.addWidget(holo_no_ref_2_button)
+        hbox_holo.addWidget(holo_with_ref_2_button)
 
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
@@ -791,10 +795,6 @@ class HolographyWidget(QtWidgets.QWidget):
         remove_phase_tilt_button.clicked.connect(self.remove_phase_tilt)
         get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
         do_all_button.clicked.connect(self.do_all)
-
-        hbox_holo = QtWidgets.QHBoxLayout()
-        hbox_holo.addWidget(holo_no_ref_2_button)
-        hbox_holo.addWidget(holo_with_ref_2_button)
 
         self.tab_holo = QtWidgets.QWidget()
         self.tab_holo.layout = QtWidgets.QGridLayout()
@@ -842,9 +842,9 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
-        calc_MIP_button = QtWidgets.QPushButton('Calc. mean inner pot.', self)
+        calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
-        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export glob. sc. phases', self)
+        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colmaps', self)
         export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
 
         self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
@@ -852,6 +852,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
         self.perpendicular_arrows_checkbox.setChecked(False)
+
+        self.orig_in_pt1_radio_button = QtWidgets.QRadioButton('Orig in pt1', self)
+        self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig in middle', self)
+        self.orig_in_pt1_radio_button.setChecked(True)
+
+        orig_B_polar_group = QtWidgets.QButtonGroup(self)
+        orig_B_polar_group.addButton(self.orig_in_pt1_radio_button)
+        orig_B_polar_group.addButton(self.orig_in_mid_radio_button)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
@@ -880,20 +888,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
-        acc_voltage_label = QtWidgets.QLabel('Acc. voltage [kV]', self)
+        acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
         self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
-
-        plot_button.clicked.connect(self.plot_profile)
-        calc_B_sec_button.clicked.connect(self.calc_B_from_section)
-        calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
-        calc_grad_button.clicked.connect(self.calc_phase_gradient)
-        calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
-        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
-        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
-        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
-        filter_contours_button.clicked.connect(self.filter_contours)
-        export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
-        export_img3d_button.clicked.connect(self.export_3d_image)
 
         arr_size_vbox = QtWidgets.QVBoxLayout()
         arr_size_vbox.addWidget(arr_size_label)
@@ -911,6 +907,18 @@ class HolographyWidget(QtWidgets.QWidget):
         ph3d_ang2_vbox.addWidget(ph3d_ang2_label)
         ph3d_ang2_vbox.addWidget(self.ph3d_ang2_input)
 
+        plot_button.clicked.connect(self.plot_profile)
+        calc_B_sec_button.clicked.connect(self.calc_B_from_section)
+        calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
+        calc_grad_button.clicked.connect(self.calc_phase_gradient)
+        calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
+        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
+        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
+        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
+        filter_contours_button.clicked.connect(self.filter_contours)
+        export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
+        export_img3d_button.clicked.connect(self.export_3d_image)
+
         self.tab_calc = QtWidgets.QWidget()
         self.tab_calc.layout = QtWidgets.QGridLayout()
         self.tab_calc.layout.setColumnStretch(0, 1)
@@ -921,7 +929,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.setColumnStretch(5, 1)
         self.tab_calc.layout.setColumnStretch(6, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
-        self.tab_calc.layout.setRowStretch(4, 2)
         self.tab_calc.layout.setRowStretch(10, 1)
         self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
         self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
@@ -930,35 +937,45 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1)
         self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1)
         self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1)
-        self.tab_calc.layout.addWidget(gen_B_stats_button, 8, 1)
-        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 1)
+        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 8, 1)
+        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 9, 1)
         self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
-        self.tab_calc.layout.addWidget(threshold_label, 1, 4, 1, 2)
-        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4, 1, 2)
-        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
         self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
         self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
         self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 7, 2, 1, 2)
         self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 8, 2, 1, 2)
+        self.tab_calc.layout.addWidget(gen_B_stats_button, 9, 2, 1, 2)
+        self.tab_calc.layout.addWidget(threshold_label, 1, 4, 1, 2)
+        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4, 1, 2)
+        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
         self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
         self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
         self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 4)
         self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 5)
         self.tab_calc.layout.addWidget(export_img3d_button, 7, 4, 1, 2)
-        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 4, 1, 2)
-        self.tab_calc.layout.addWidget(self.acc_voltage_input, 9, 4, 1, 2)
+        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 4)
+        self.tab_calc.layout.addWidget(self.acc_voltage_input, 8, 5)
+        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 4, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
         # Bright/Gamma/Contrast panel (7)
         # ------------------------------
 
+        reset_bright_button = QtWidgets.QPushButton('Reset B', self)
+        reset_cont_button = QtWidgets.QPushButton('Reset C', self)
+        reset_gamma_button = QtWidgets.QPushButton('Reset G', self)
+
         bright_label = QtWidgets.QLabel('Brightness', self)
         cont_label = QtWidgets.QLabel('Contrast', self)
         gamma_label = QtWidgets.QLabel('Gamma', self)
+
+        self.bright_input = QtWidgets.QLineEdit('0', self)
+        self.cont_input = QtWidgets.QLineEdit('255', self)
+        self.gamma_input = QtWidgets.QLineEdit('1.0', self)
 
         self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.bright_slider.setFixedHeight(14)
@@ -975,13 +992,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.gamma_slider.setRange(10, 190)
         self.gamma_slider.setValue(100)
 
-        self.bright_input = QtWidgets.QLineEdit('0', self)
-        self.cont_input = QtWidgets.QLineEdit('255', self)
-        self.gamma_input = QtWidgets.QLineEdit('1.0', self)
-
-        reset_bright_button = QtWidgets.QPushButton('Reset B', self)
-        reset_cont_button = QtWidgets.QPushButton('Reset C', self)
-        reset_gamma_button = QtWidgets.QPushButton('Reset G', self)
+        reset_bright_button.clicked.connect(self.reset_bright)
+        reset_cont_button.clicked.connect(self.reset_cont)
+        reset_gamma_button.clicked.connect(self.reset_gamma)
 
         self.bright_slider.valueChanged.connect(self.disp_bright_value)
         self.cont_slider.valueChanged.connect(self.disp_cont_value)
@@ -994,10 +1007,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.bright_input.returnPressed.connect(self.update_display_and_bcg)
         self.cont_input.returnPressed.connect(self.update_display_and_bcg)
         self.gamma_input.returnPressed.connect(self.update_display_and_bcg)
-
-        reset_bright_button.clicked.connect(self.reset_bright)
-        reset_cont_button.clicked.connect(self.reset_cont)
-        reset_gamma_button.clicked.connect(self.reset_gamma)
 
         self.tab_corr = QtWidgets.QWidget()
         self.tab_corr.layout = QtWidgets.QGridLayout()
@@ -2485,10 +2494,11 @@ class HolographyWidget(QtWidgets.QWidget):
 
         d_dist = la.norm(pt1 - pt2) # * px_sz
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
-        r = int(d_dist // 2)
+        pt1_is_orig = self.orig_in_pt1_radio_button.isChecked()
+
         ang0 = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
-        ang1, ang2 = ang0 - np.pi/2.0, ang0 + np.pi/2.0
+        ang1 = ang0 - np.pi/2.0
+        ang2 = ang0 + np.pi/2.0
         n_ang = 40
         angles = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
 
@@ -2496,9 +2506,16 @@ class HolographyWidget(QtWidgets.QWidget):
         B_values = []
         x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
 
+        if pt1_is_orig:
+            orig_xy = pt1
+            r = int(d_dist)
+        else:
+            orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
+            r = int(d_dist // 2)
+
         for ang, idx in zip(angles, range(len(angles))):
             sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
-            new_pt1 = np.array(orig_xy - r * sin_cos).astype(np.int32)
+            new_pt1 = pt1 if pt1_is_orig else np.array(orig_xy - r * sin_cos).astype(np.int32)
             new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
             x1, y1 = new_pt1
             x2, y2 = new_pt2
