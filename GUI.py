@@ -2499,7 +2499,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ang0 = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
         ang1 = ang0 - np.pi/2.0
         ang2 = ang0 + np.pi/2.0
-        n_ang = 40
+        n_ang = 60
         angles = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
 
         B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
@@ -2536,9 +2536,10 @@ class HolographyWidget(QtWidgets.QWidget):
         ax = fig.add_subplot(111, projection='polar')
 
         r_min, r_max = 0.0, np.max(B_values) + 0.1
-        ax.plot(angles, np.array(B_values), 'b.')
-        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([r_max, r_max]), 'r', linewidth=1)         # mark selected direction
-        ax.plot(np.array([ang1, ang2]), np.array([r_max, r_max]), 'g--', linewidth=1)               # boundary between positive and negative values of B
+        # r_min, r_max = 0.0, 0.5
+        ax.plot(angles, np.array(B_values), 'b.-')
+        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([r_max, r_max]), 'r', linewidth=1)     # mark selected direction
+        ax.plot(np.array([ang1, ang2]), np.array([r_max, r_max]), 'g--', linewidth=1)           # boundary between positive and negative values of B
         # ax.plot(angles, np.zeros(n_ang), 'g--', linewidth=1)
         # for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
         #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
