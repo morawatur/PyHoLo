@@ -726,7 +726,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_auto.setColumnStretch(3, 2)
         grid_auto.setColumnStretch(4, 1)
         grid_auto.setRowStretch(0, 1)
-        grid_auto.setRowStretch(5, 1)
+        grid_auto.setRowStretch(6, 1)
         grid_auto.addWidget(auto_shift_button, 1, 1)
         grid_auto.addWidget(auto_rot_button, 2, 1)
         grid_auto.addWidget(get_scale_ratio_button, 3, 1, 1, 2)
@@ -837,7 +837,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         plot_button = QtWidgets.QPushButton('Plot profile', self)
         calc_B_sec_button = QtWidgets.QPushButton('Calc. B from section', self)
-        calc_B_prof_button = QtWidgets.QPushButton('Calb. B from profile')
+        calc_B_prof_button = QtWidgets.QPushButton('Calc. B from profile')
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
@@ -869,6 +869,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
+
+        num_of_r_iters_label = QtWidgets.QLabel('# R iters', self)
+        self.num_of_r_iters_input = QtWidgets.QLineEdit('1', self)
 
         arr_size_label = QtWidgets.QLabel('Arrow size', self)
         arr_dist_label = QtWidgets.QLabel('Arrow dist.', self)
@@ -922,43 +925,46 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc = QtWidgets.QWidget()
         self.tab_calc.layout = QtWidgets.QGridLayout()
         self.tab_calc.layout.setColumnStretch(0, 1)
-        self.tab_calc.layout.setColumnStretch(1, 2)
+        self.tab_calc.layout.setColumnStretch(1, 1)
         self.tab_calc.layout.setColumnStretch(2, 1)
         self.tab_calc.layout.setColumnStretch(3, 1)
         self.tab_calc.layout.setColumnStretch(4, 1)
         self.tab_calc.layout.setColumnStretch(5, 1)
         self.tab_calc.layout.setColumnStretch(6, 1)
+        self.tab_calc.layout.setColumnStretch(7, 1)
         self.tab_calc.layout.setRowStretch(0, 1)
-        self.tab_calc.layout.setRowStretch(10, 1)
-        self.tab_calc.layout.addWidget(sample_thick_label, 1, 1)
-        self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1)
-        self.tab_calc.layout.addWidget(calc_grad_button, 3, 1)
-        self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1)
-        self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1)
-        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1)
-        self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1)
-        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 8, 1)
-        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 9, 1)
-        self.tab_calc.layout.addWidget(int_width_label, 1, 2, 1, 2)
-        self.tab_calc.layout.addWidget(self.int_width_input, 2, 2, 1, 2)
-        self.tab_calc.layout.addWidget(plot_button, 3, 2, 1, 2)
-        self.tab_calc.layout.addLayout(arr_size_vbox, 4, 2, 2, 1)
-        self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 3, 2, 1)
-        self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 2, 1, 2)
-        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 7, 2, 1, 2)
-        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 8, 2, 1, 2)
-        self.tab_calc.layout.addWidget(gen_B_stats_button, 9, 2, 1, 2)
-        self.tab_calc.layout.addWidget(threshold_label, 1, 4, 1, 2)
-        self.tab_calc.layout.addWidget(self.threshold_input, 2, 4, 1, 2)
-        self.tab_calc.layout.addWidget(filter_contours_button, 3, 4, 1, 2)
-        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 4, 2, 1)
-        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 5, 2, 1)
-        self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 4)
-        self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 5)
-        self.tab_calc.layout.addWidget(export_img3d_button, 7, 4, 1, 2)
-        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 4)
-        self.tab_calc.layout.addWidget(self.acc_voltage_input, 8, 5)
-        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 4, 1, 2)
+        self.tab_calc.layout.setRowStretch(11, 1)
+        self.tab_calc.layout.addWidget(sample_thick_label, 1, 1, 1, 2)
+        self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_grad_button, 3, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1, 1, 2)
+        self.tab_calc.layout.addWidget(num_of_r_iters_label, 8, 1, 1, 1)
+        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 8, 2, 1, 1)
+        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 9, 1, 1, 2)
+        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 10, 1, 1, 2)
+        self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
+        self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
+        self.tab_calc.layout.addLayout(arr_size_vbox, 4, 3, 2, 1)
+        self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 4, 2, 1)
+        self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 7, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 8, 3, 1, 2)
+        self.tab_calc.layout.addWidget(gen_B_stats_button, 9, 3, 1, 2)
+        self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
+        self.tab_calc.layout.addWidget(self.threshold_input, 2, 5, 1, 2)
+        self.tab_calc.layout.addWidget(filter_contours_button, 3, 5, 1, 2)
+        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 5, 2, 1)
+        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 6, 2, 1)
+        self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 5)
+        self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 6)
+        self.tab_calc.layout.addWidget(export_img3d_button, 7, 5, 1, 2)
+        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 5)
+        self.tab_calc.layout.addWidget(self.acc_voltage_input, 8, 6)
+        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 5, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1546,7 +1552,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
-            self.display.pointSets[curr_idx].append(curr_pos)
+            # --- to be removed later ---
+            # for idx in range(len(self.display.pointSets)):
+            #     self.display.pointSets[idx].append(curr_pos)
+            # -----------------------
+            self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_last_label()
@@ -2496,54 +2506,70 @@ class HolographyWidget(QtWidgets.QWidget):
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         pt1_is_orig = self.orig_in_pt1_radio_button.isChecked()
 
+        if pt1_is_orig:
+            orig_xy = pt1
+            r1 = int(d_dist)
+        else:
+            orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
+            r1 = int(d_dist // 2)
+
+        n_r = int(self.num_of_r_iters_input.text())
+        min_xy = [ x - n_r * r1 for x in orig_xy ]
+        max_xy = [ x + n_r * r1 for x in orig_xy ]
+        if min_xy[0] < 0 or min_xy[1] < 0 or max_xy[0] > curr_img.width or max_xy[1] > curr_img.height:
+            print('One of the circular areas will go beyond edges of the image. Select new area or lower the number of radius iterations.')
+            return
+
+        r_values = [ (n + 1) * r1 for n in range(n_r) ]
+        print('r = {0}'.format(r_values))
+
         ang0 = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
         ang1 = ang0 - np.pi/2.0
         ang2 = ang0 + np.pi/2.0
         n_ang = 60
-        angles = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
+        ang_arr = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
+        angles = [ np.copy(ang_arr) for _ in range(n_r) ]
 
         B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
-        B_values = []
+        B_values = [ [] for _ in range(n_r) ]
         x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
 
-        if pt1_is_orig:
-            orig_xy = pt1
-            r = int(d_dist)
-        else:
-            orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
-            r = int(d_dist // 2)
+        for r, r_idx in zip(r_values, range(n_r)):
+            nn_for_ls = 4 if r >= 16 else r // 4
 
-        for ang, idx in zip(angles, range(len(angles))):
-            sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
-            new_pt1 = pt1 if pt1_is_orig else np.array(orig_xy - r * sin_cos).astype(np.int32)
-            new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
-            x1, y1 = new_pt1
-            x2, y2 = new_pt2
+            for ang, a_idx in zip(angles[r_idx], range(n_ang)):
+                sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
+                new_pt1 = pt1 if pt1_is_orig else np.array(orig_xy - r * sin_cos).astype(np.int32)
+                new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
+                x1, y1 = new_pt1
+                x2, y2 = new_pt2
 
-            xx = np.linspace(x1, x2, 5, dtype=np.int32)
-            yy = np.linspace(y1, y2, 5, dtype=np.int32)
-            # ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
-            ph_arr_for_ls = [ tr.calc_avg_neigh(curr_phs, x, y, nn=5) for x, y in zip(xx, yy) ]
-            aa, bb = tr.LinLeastSquares(x_arr_for_ls, ph_arr_for_ls)
+                xx = np.linspace(x1, x2, 5, dtype=np.int32)
+                yy = np.linspace(y1, y2, 5, dtype=np.int32)
+                # ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
+                ph_arr_for_ls = [ tr.calc_avg_neigh(curr_phs, x, y, nn=nn_for_ls) for x, y in zip(xx, yy) ]
+                aa, bb = tr.LinLeastSquares(x_arr_for_ls, ph_arr_for_ls)
 
-            # d_phase = curr_phs[y1, x1] - curr_phs[y2, x2]
-            d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
-            B_val = B_coeff * d_phase
-            if B_val < 0: angles[idx] += np.pi
-            B_values.append(np.abs(B_val))
+                # d_phase = tr.calc_avg_neigh(curr_phs, x1, y1, nn=4) - tr.calc_avg_neigh(curr_phs, x2, y2, nn=4)
+                d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
+                B_val = B_coeff * d_phase
+                if B_val < 0: angles[r_idx][a_idx] += np.pi
+                B_values[r_idx].append(np.abs(B_val))
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='polar')
 
-        r_min, r_max = 0.0, np.max(B_values) + 0.1
-        # r_min, r_max = 0.0, 0.5
-        ax.plot(angles, np.array(B_values), 'b.-')
-        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([r_max, r_max]), 'r', linewidth=1)     # mark selected direction
-        ax.plot(np.array([ang1, ang2]), np.array([r_max, r_max]), 'g--', linewidth=1)           # boundary between positive and negative values of B
-        # ax.plot(angles, np.zeros(n_ang), 'g--', linewidth=1)
+        B_min, B_max = 0.0, np.max(B_values) + 0.1
+        # B_min, B_max = 0.0, const.temp_B_max_for_polar_plot
+        for p_idx in range(n_r):
+            ax.plot(angles[p_idx], np.array(B_values[p_idx]), '.-', lw=1.0, ms=3.5, label='r={0}px'.format(r_values[p_idx]))
+        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_max, B_max]), 'k--', lw=0.8)    # mark selected direction
+        ax.plot(np.array([ang1, ang2]), np.array([B_max, B_max]), 'g--', lw=0.8)            # boundary between positive and negative values of B
+        ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
+        # ax.plot(angles, np.zeros(n_ang), 'g--', lw=1)
         # for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
         #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
-        ax.set_ylim(r_min, r_max)
+        ax.set_ylim(B_min, B_max)
         ax.grid(True)
 
         plt.margins(0, 0)

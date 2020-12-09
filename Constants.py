@@ -40,3 +40,5 @@ el_rest_mass = 9.109382e-31         # kg
 el_charge = 1.602177e-19            # C
 
 corr_arr_max_shift = 20
+# n_radius_iters_for_polar_plot = 3
+temp_B_max_for_polar_plot = 2.0
