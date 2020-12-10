@@ -841,17 +841,10 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
+        calc_B_polar_2_button = QtWidgets.QPushButton('Calc. B polar (2 imgs)', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
-        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colmaps', self)
-        export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
-
-        self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
-        self.add_arrows_checkbox.setChecked(False)
-
-        self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
-        self.perpendicular_arrows_checkbox.setChecked(False)
 
         self.orig_in_pt1_radio_button = QtWidgets.QRadioButton('Orig in pt1', self)
         self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig in middle', self)
@@ -870,8 +863,71 @@ class HolographyWidget(QtWidgets.QWidget):
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
 
-        num_of_r_iters_label = QtWidgets.QLabel('# R iters', self)
+        num_of_r_iters_label = QtWidgets.QLabel('# Radius iterations', self)
         self.num_of_r_iters_input = QtWidgets.QLineEdit('1', self)
+
+        acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
+        self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
+
+        plot_button.clicked.connect(self.plot_profile)
+        calc_B_sec_button.clicked.connect(self.calc_B_from_section)
+        calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
+        calc_grad_button.clicked.connect(self.calc_phase_gradient)
+        calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
+        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
+        calc_B_polar_2_button.clicked.connect(self.calc_B_polar_from_section_2)
+        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
+        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
+        filter_contours_button.clicked.connect(self.filter_contours)
+
+        self.tab_calc = QtWidgets.QWidget()
+        self.tab_calc.layout = QtWidgets.QGridLayout()
+        self.tab_calc.layout.setColumnStretch(0, 1)
+        self.tab_calc.layout.setColumnStretch(1, 1)
+        self.tab_calc.layout.setColumnStretch(2, 1)
+        self.tab_calc.layout.setColumnStretch(3, 1)
+        self.tab_calc.layout.setColumnStretch(4, 1)
+        self.tab_calc.layout.setColumnStretch(5, 1)
+        self.tab_calc.layout.setColumnStretch(6, 1)
+        self.tab_calc.layout.setColumnStretch(7, 1)
+        self.tab_calc.layout.setRowStretch(0, 1)
+        self.tab_calc.layout.setRowStretch(8, 1)
+        self.tab_calc.layout.addWidget(sample_thick_label, 1, 1, 1, 2)
+        self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_grad_button, 3, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1, 1, 2)
+        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1, 1, 2)
+        self.tab_calc.layout.addWidget(gen_B_stats_button, 7, 1, 1, 2)
+        self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
+        self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_polar_button, 4, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_polar_2_button, 5, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 6, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 7, 3, 1, 2)
+        self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
+        self.tab_calc.layout.addWidget(self.threshold_input, 2, 5, 1, 2)
+        self.tab_calc.layout.addWidget(filter_contours_button, 3, 5, 1, 2)
+        self.tab_calc.layout.addWidget(num_of_r_iters_label, 4, 5, 1, 2)
+        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 5, 5, 1, 2)
+        self.tab_calc.layout.addWidget(acc_voltage_label, 6, 5)
+        self.tab_calc.layout.addWidget(self.acc_voltage_input, 6, 6)
+        self.tab_calc.layout.addWidget(calc_MIP_button, 7, 5, 1, 2)
+        self.tab_calc.setLayout(self.tab_calc.layout)
+
+        # ------------------------------
+        # Magnetic calculations panel #2 (7)
+        # ------------------------------
+
+        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colmaps', self)
+        export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
+
+        self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
+        self.add_arrows_checkbox.setChecked(False)
+
+        self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
+        self.perpendicular_arrows_checkbox.setChecked(False)
 
         arr_size_label = QtWidgets.QLabel('Arrow size', self)
         arr_dist_label = QtWidgets.QLabel('Arrow dist.', self)
@@ -891,9 +947,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
-        acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
-        self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
-
         arr_size_vbox = QtWidgets.QVBoxLayout()
         arr_size_vbox.addWidget(arr_size_label)
         arr_size_vbox.addWidget(self.arr_size_input)
@@ -910,65 +963,33 @@ class HolographyWidget(QtWidgets.QWidget):
         ph3d_ang2_vbox.addWidget(ph3d_ang2_label)
         ph3d_ang2_vbox.addWidget(self.ph3d_ang2_input)
 
-        plot_button.clicked.connect(self.plot_profile)
-        calc_B_sec_button.clicked.connect(self.calc_B_from_section)
-        calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
-        calc_grad_button.clicked.connect(self.calc_phase_gradient)
-        calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
-        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
-        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
-        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
-        filter_contours_button.clicked.connect(self.filter_contours)
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_img3d_button.clicked.connect(self.export_3d_image)
 
-        self.tab_calc = QtWidgets.QWidget()
-        self.tab_calc.layout = QtWidgets.QGridLayout()
-        self.tab_calc.layout.setColumnStretch(0, 1)
-        self.tab_calc.layout.setColumnStretch(1, 1)
-        self.tab_calc.layout.setColumnStretch(2, 1)
-        self.tab_calc.layout.setColumnStretch(3, 1)
-        self.tab_calc.layout.setColumnStretch(4, 1)
-        self.tab_calc.layout.setColumnStretch(5, 1)
-        self.tab_calc.layout.setColumnStretch(6, 1)
-        self.tab_calc.layout.setColumnStretch(7, 1)
-        self.tab_calc.layout.setRowStretch(0, 1)
-        self.tab_calc.layout.setRowStretch(11, 1)
-        self.tab_calc.layout.addWidget(sample_thick_label, 1, 1, 1, 2)
-        self.tab_calc.layout.addWidget(self.sample_thick_input, 2, 1, 1, 2)
-        self.tab_calc.layout.addWidget(calc_grad_button, 3, 1, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1, 1, 2)
-        self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_polar_button, 7, 1, 1, 2)
-        self.tab_calc.layout.addWidget(num_of_r_iters_label, 8, 1, 1, 1)
-        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 8, 2, 1, 1)
-        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 9, 1, 1, 2)
-        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 10, 1, 1, 2)
-        self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
-        self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
-        self.tab_calc.layout.addLayout(arr_size_vbox, 4, 3, 2, 1)
-        self.tab_calc.layout.addLayout(arr_dist_vbox, 4, 4, 2, 1)
-        self.tab_calc.layout.addWidget(export_glob_scaled_phases_button, 6, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.add_arrows_checkbox, 7, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.perpendicular_arrows_checkbox, 8, 3, 1, 2)
-        self.tab_calc.layout.addWidget(gen_B_stats_button, 9, 3, 1, 2)
-        self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
-        self.tab_calc.layout.addWidget(self.threshold_input, 2, 5, 1, 2)
-        self.tab_calc.layout.addWidget(filter_contours_button, 3, 5, 1, 2)
-        self.tab_calc.layout.addLayout(ph3d_ang1_vbox, 4, 5, 2, 1)
-        self.tab_calc.layout.addLayout(ph3d_ang2_vbox, 4, 6, 2, 1)
-        self.tab_calc.layout.addWidget(ph3d_mesh_label, 6, 5)
-        self.tab_calc.layout.addWidget(self.ph3d_mesh_input, 6, 6)
-        self.tab_calc.layout.addWidget(export_img3d_button, 7, 5, 1, 2)
-        self.tab_calc.layout.addWidget(acc_voltage_label, 8, 5)
-        self.tab_calc.layout.addWidget(self.acc_voltage_input, 8, 6)
-        self.tab_calc.layout.addWidget(calc_MIP_button, 9, 5, 1, 2)
-        self.tab_calc.setLayout(self.tab_calc.layout)
+        self.tab_calc_2 = QtWidgets.QWidget()
+        self.tab_calc_2.layout = QtWidgets.QGridLayout()
+        self.tab_calc_2.layout.setColumnStretch(0, 1)
+        self.tab_calc_2.layout.setColumnStretch(1, 1)
+        self.tab_calc_2.layout.setColumnStretch(2, 1)
+        self.tab_calc_2.layout.setColumnStretch(3, 1)
+        self.tab_calc_2.layout.setColumnStretch(4, 1)
+        self.tab_calc_2.layout.setColumnStretch(5, 1)
+        self.tab_calc_2.layout.setRowStretch(0, 1)
+        self.tab_calc_2.layout.setRowStretch(6, 1)
+        self.tab_calc_2.layout.addLayout(arr_size_vbox, 1, 1, 2, 1)
+        self.tab_calc_2.layout.addLayout(arr_dist_vbox, 1, 2, 2, 1)
+        self.tab_calc_2.layout.addWidget(export_glob_scaled_phases_button, 3, 1, 1, 2)
+        self.tab_calc_2.layout.addWidget(self.add_arrows_checkbox, 4, 1, 1, 2)
+        self.tab_calc_2.layout.addWidget(self.perpendicular_arrows_checkbox, 5, 1, 1, 2)
+        self.tab_calc_2.layout.addLayout(ph3d_ang1_vbox, 1, 3, 2, 1)
+        self.tab_calc_2.layout.addLayout(ph3d_ang2_vbox, 1, 4, 2, 1)
+        self.tab_calc_2.layout.addWidget(ph3d_mesh_label, 3, 3)
+        self.tab_calc_2.layout.addWidget(self.ph3d_mesh_input, 3, 4)
+        self.tab_calc_2.layout.addWidget(export_img3d_button, 4, 3, 1, 2)
+        self.tab_calc_2.setLayout(self.tab_calc_2.layout)
 
         # ------------------------------
-        # Bright/Gamma/Contrast panel (7)
+        # Bright/Gamma/Contrast panel (8)
         # ------------------------------
 
         reset_bright_button = QtWidgets.QPushButton('Reset B', self)
@@ -1046,7 +1067,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tabs.addTab(self.tab_disp, 'Display')
         self.tabs.addTab(self.tab_align, 'Alignment')
         self.tabs.addTab(self.tab_holo, 'Holography')
-        self.tabs.addTab(self.tab_calc, 'Magnetic field')
+        self.tabs.addTab(self.tab_calc, 'Mag. field #1')
+        self.tabs.addTab(self.tab_calc_2, 'Mag. field #2')
         self.tabs.addTab(self.tab_corr, 'Corrections')
 
         vbox_panel = QtWidgets.QVBoxLayout()
@@ -1555,7 +1577,7 @@ class HolographyWidget(QtWidgets.QWidget):
             # --- to be removed later ---
             # for idx in range(len(self.display.pointSets)):
             #     self.display.pointSets[idx].append(curr_pos)
-            # -----------------------
+            # ---------------------------
             self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
             self.display.repaint()
             if self.display.show_labs:
@@ -2498,6 +2520,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_phs = curr_img.amPh.ph
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
+
+        if len(self.display.pointSets[curr_idx]) < 2:
+            print('You must select two point on the image!')
+            return
+
         dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
         pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
         pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
@@ -2578,6 +2605,30 @@ class HolographyWidget(QtWidgets.QWidget):
         # plt.cla()
         plt.close(fig)
         print('B_pol_{0}.png exported!'.format(curr_img.name))
+
+    def calc_B_polar_from_section_2(self):
+        import MagCalc as mc
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
+        prev_img = curr_img.prev
+        if prev_img is None:
+            print('There is no previous image! Try again...')
+            return
+
+        if len(self.display.pointSets[curr_idx]) < 2:
+            print('You must select two point on the image!')
+            return
+
+        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
+        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        is_orig_in_pt1 = self.orig_in_pt1_radio_button.isChecked()
+        n_r_iters = int(self.num_of_r_iters_input.text())
+
+        mc.calc_B_polar_from_2_tot_phs(prev_img, curr_img, pt1, pt2, sample_thickness, pt1_is_orig=is_orig_in_pt1,
+                                       n_r=n_r_iters, px_sz=curr_img.px_dim)
 
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
