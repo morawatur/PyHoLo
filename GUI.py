@@ -29,6 +29,7 @@ import Constants as const
 import ImageSupport as imsup
 import Transform as tr
 import Holo as holo
+import MagCalc as mc
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
@@ -840,8 +841,8 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_prof_button = QtWidgets.QPushButton('Calc. B from profile')
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
-        calc_B_polar_button = QtWidgets.QPushButton('Calc. B polar', self)
-        calc_B_polar_2_button = QtWidgets.QPushButton('Calc. B polar (2 imgs)', self)
+        calc_B_pol_button = QtWidgets.QPushButton('Calc. B polar', self)
+        calc_B_pol_sectors_button = QtWidgets.QPushButton('Calc. B polar (sectors)', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
@@ -850,9 +851,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig in middle', self)
         self.orig_in_pt1_radio_button.setChecked(True)
 
-        orig_B_polar_group = QtWidgets.QButtonGroup(self)
-        orig_B_polar_group.addButton(self.orig_in_pt1_radio_button)
-        orig_B_polar_group.addButton(self.orig_in_mid_radio_button)
+        orig_B_pol_group = QtWidgets.QButtonGroup(self)
+        orig_B_pol_group.addButton(self.orig_in_pt1_radio_button)
+        orig_B_pol_group.addButton(self.orig_in_mid_radio_button)
 
         int_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.int_width_input = QtWidgets.QLineEdit('1', self)
@@ -874,8 +875,8 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
-        calc_B_polar_button.clicked.connect(self.calc_B_polar_from_section)
-        calc_B_polar_2_button.clicked.connect(self.calc_B_polar_from_section_2)
+        calc_B_pol_button.clicked.connect(self.calc_B_polar_from_section)
+        calc_B_pol_sectors_button.clicked.connect(self.calc_B_polar_sectors)
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
@@ -902,8 +903,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_polar_button, 4, 3, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_polar_2_button, 5, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_pol_button, 4, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_pol_sectors_button, 5, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 6, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 7, 3, 1, 2)
         self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
@@ -1575,10 +1576,10 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
             # --- to be removed later ---
-            # for idx in range(len(self.display.pointSets)):
-            #     self.display.pointSets[idx].append(curr_pos)
+            for idx in range(len(self.display.pointSets)):
+                self.display.pointSets[idx].append(curr_pos)
             # ---------------------------
-            self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
+            # self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_last_label()
@@ -2516,10 +2517,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def calc_B_polar_from_section(self):
         from numpy import linalg as la
+
         curr_img = self.display.image
-        curr_phs = curr_img.amPh.ph
         curr_idx = curr_img.numInSeries - 1
-        px_sz = curr_img.px_dim
 
         if len(self.display.pointSets[curr_idx]) < 2:
             print('You must select two point on the image!')
@@ -2528,10 +2528,11 @@ class HolographyWidget(QtWidgets.QWidget):
         dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
         pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
         pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+        d_dist = la.norm(pt1 - pt2)
 
-        d_dist = la.norm(pt1 - pt2) # * px_sz
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         pt1_is_orig = self.orig_in_pt1_radio_button.isChecked()
+        n_r_iters = int(self.num_of_r_iters_input.text())
 
         if pt1_is_orig:
             orig_xy = pt1
@@ -2540,95 +2541,14 @@ class HolographyWidget(QtWidgets.QWidget):
             orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
             r1 = int(d_dist // 2)
 
-        n_r = int(self.num_of_r_iters_input.text())
-        min_xy = [ x - n_r * r1 for x in orig_xy ]
-        max_xy = [ x + n_r * r1 for x in orig_xy ]
-        if min_xy[0] < 0 or min_xy[1] < 0 or max_xy[0] > curr_img.width or max_xy[1] > curr_img.height:
-            print('One of the circular areas will go beyond edges of the image. Select new area or lower the number of radius iterations.')
-            return
+        dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
+        mc.calc_B_polar_from_orig_r(curr_img, orig_xy, r1, sample_thickness, p1_orig=pt1_is_orig, ang0=dir_ang, n_r=n_r_iters)
 
-        r_values = [ (n + 1) * r1 for n in range(n_r) ]
-        print('r = {0}'.format(r_values))
-
-        ang0 = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
-        ang1 = ang0 - np.pi/2.0
-        ang2 = ang0 + np.pi/2.0
-        n_ang = 60
-        ang_arr = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
-        angles = [ np.copy(ang_arr) for _ in range(n_r) ]
-
-        B_coeff = const.dirac_const / (sample_thickness * d_dist * px_sz)
-        B_values = [ [] for _ in range(n_r) ]
-        x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
-
-        for r, r_idx in zip(r_values, range(n_r)):
-            nn_for_ls = 4 if r >= 16 else r // 4
-
-            for ang, a_idx in zip(angles[r_idx], range(n_ang)):
-                sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
-                new_pt1 = pt1 if pt1_is_orig else np.array(orig_xy - r * sin_cos).astype(np.int32)
-                new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
-                x1, y1 = new_pt1
-                x2, y2 = new_pt2
-
-                xx = np.linspace(x1, x2, 5, dtype=np.int32)
-                yy = np.linspace(y1, y2, 5, dtype=np.int32)
-                # ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
-                ph_arr_for_ls = [ tr.calc_avg_neigh(curr_phs, x, y, nn=nn_for_ls) for x, y in zip(xx, yy) ]
-                aa, bb = tr.LinLeastSquares(x_arr_for_ls, ph_arr_for_ls)
-
-                # d_phase = tr.calc_avg_neigh(curr_phs, x1, y1, nn=4) - tr.calc_avg_neigh(curr_phs, x2, y2, nn=4)
-                d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
-                B_val = B_coeff * d_phase
-                if B_val < 0: angles[r_idx][a_idx] += np.pi
-                B_values[r_idx].append(np.abs(B_val))
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='polar')
-
-        B_min, B_max = 0.0, np.max(B_values) + 0.1
-        # B_min, B_max = 0.0, const.temp_B_max_for_polar_plot
-        for p_idx in range(n_r):
-            ax.plot(angles[p_idx], np.array(B_values[p_idx]), '.-', lw=1.0, ms=3.5, label='r={0}px'.format(r_values[p_idx]))
-        ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_max, B_max]), 'k--', lw=0.8)    # mark selected direction
-        ax.plot(np.array([ang1, ang2]), np.array([B_max, B_max]), 'g--', lw=0.8)            # boundary between positive and negative values of B
-        ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
-        # ax.plot(angles, np.zeros(n_ang), 'g--', lw=1)
-        # for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
-        #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
-        ax.set_ylim(B_min, B_max)
-        ax.grid(True)
-
-        plt.margins(0, 0)
-        plt.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
-        # plt.clf()
-        # plt.cla()
-        plt.close(fig)
-        print('B_pol_{0}.png exported!'.format(curr_img.name))
-
-    def calc_B_polar_from_section_2(self):
-        import MagCalc as mc
-        curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-        prev_img = curr_img.prev
-        if prev_img is None:
-            print('There is no previous image! Try again...')
-            return
-
-        if len(self.display.pointSets[curr_idx]) < 2:
-            print('You must select two point on the image!')
-            return
-
-        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
-        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
-        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
-
-        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        is_orig_in_pt1 = self.orig_in_pt1_radio_button.isChecked()
-        n_r_iters = int(self.num_of_r_iters_input.text())
-
-        mc.calc_B_polar_from_2_tot_phs(prev_img, curr_img, pt1, pt2, sample_thickness, pt1_is_orig=is_orig_in_pt1,
-                                       n_r=n_r_iters, px_sz=curr_img.px_dim)
+    def calc_B_polar_sectors(self):
+        # curr_img = self.display.image
+        # curr_idx = curr_img.numInSeries - 1
+        # mc.calc_B_polar_sectors(curr_img, start_xy, r1, n_rows, n_cols, smpl_thck, n_r=3)
+        pass
 
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
