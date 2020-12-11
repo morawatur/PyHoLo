@@ -7,16 +7,15 @@ import matplotlib.pyplot as plt
 
 #-------------------------------------------------------------------
 
-def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, p1_orig=True, ang0=0.0, n_r=3):
+def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang0=0.0, n_r=3, addn_str=''):
     phs = img.amPh.ph
     px_sz = img.px_dim
 
     min_xy = [x - n_r * r1 for x in orig_xy]
     max_xy = [x + n_r * r1 for x in orig_xy]
     if min_xy[0] < 0 or min_xy[1] < 0 or max_xy[0] > img.width or max_xy[1] > img.height:
-        print(
-            'One of the circular areas will go beyond edges of the image. Select new area or lower the number of radius iterations.')
-        return
+        print('One of the circular areas will go beyond edges of the image. Select new area or lower the number of radius iterations.')
+        return -1
 
     r_values = [ (n + 1) * r1 for n in range(n_r) ]
     print('r = {0}'.format(r_values))
@@ -29,20 +28,20 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, p1_orig=True, ang0=0.0
     B_values = [ [] for _ in range(n_r) ]
 
     for r, r_idx in zip(r_values, range(n_r)):
-        d_dist = 2 * r
-        nn_for_ls = 4 if r >= 16 else r // 4
+        d_dist = r if orig_is_pt1 else 2 * r
+        nn_for_ls = 4 if d_dist >= 32 else int(d_dist // 8)
         B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)
         x_arr_for_ls = np.linspace(0, d_dist * px_sz, 5, dtype=np.float32)
 
         for ang, a_idx in zip(angles[r_idx], range(n_ang)):
             sin_cos = np.array([np.cos(ang), -np.sin(ang)])  # -sin(ang), because y increases from top to bottom of an image
-            new_pt1 = orig_xy if p1_orig else np.array(orig_xy - r * sin_cos).astype(np.int32)
-            new_pt2 = np.array(orig_xy + r * sin_cos).astype(np.int32)
+            new_pt1 = orig_xy if orig_is_pt1 else np.round(orig_xy - r * sin_cos).astype(np.int32)
+            new_pt2 = np.round(orig_xy + r * sin_cos).astype(np.int32)
             x1, y1 = new_pt1
             x2, y2 = new_pt2
 
-            xx = np.linspace(x1, x2, 5, dtype=np.int32)
-            yy = np.linspace(y1, y2, 5, dtype=np.int32)
+            xx = np.round(np.linspace(x1, x2, 5)).astype(np.int32)
+            yy = np.round(np.linspace(y1, y2, 5)).astype(np.int32)
 
             # ph_arr_for_ls = [ curr_phs[y, x] for y, x in zip(yy, xx) ]
             ph_arr_for_ls = [ tr.calc_avg_neigh(phs, x, y, nn=nn_for_ls) for x, y in zip(xx, yy) ]
@@ -72,16 +71,28 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, p1_orig=True, ang0=0.0
     ax.grid(True)
 
     plt.margins(0, 0)
-    plt.savefig('B_pol_{0}.png'.format(img.name), dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.savefig('B_pol_{0}{1}.png'.format(img.name, addn_str), dpi=300, bbox_inches='tight', pad_inches=0)
     # plt.clf()
     # plt.cla()
     plt.close(fig)
-    print('B_pol_{0}.png exported!'.format(img.name))
+    print('B_pol_{0}{1}.png exported!'.format(img.name, addn_str))
+    return 0
 
 #-------------------------------------------------------------------
 
-def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, n_r=3):
-    pass
+def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt1=False, n_r=3):
+    orig_pts = []
+
+    for row in range(n_rows):
+        for col in range(n_cols):
+            new_orig_xy = np.round([ x + j*2*r1 for x, j in zip(orig_xy, [col, row]) ]).astype(np.int32)
+            rc_str = '_{0}{1}'.format(row+1, col+1)
+            state = calc_B_polar_from_orig_r(img, new_orig_xy, r1, smpl_thck, orig_is_pt1, ang0=0.0, n_r=n_r, addn_str=rc_str)
+            if state == -1:
+                return orig_pts
+            orig_pts.append(list(new_orig_xy))
+
+    return orig_pts
 
 #-------------------------------------------------------------------
 

@@ -158,7 +158,7 @@ class LabelExt(QtWidgets.QLabel):
         self.repaint()
 
         pt_idx = len(self.pointSets[self.image.numInSeries - 1])
-        real_x, real_y = CalcRealTLCoords(self.image.width, curr_pos)
+        real_x, real_y = disp_pt_to_real_tl_pt(self.image.width, curr_pos)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
         print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(self.image.amPh.am[real_y, real_x], self.image.amPh.ph[real_y, real_x]))
@@ -842,7 +842,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_pol_button = QtWidgets.QPushButton('Calc. B polar', self)
-        calc_B_pol_sectors_button = QtWidgets.QPushButton('Calc. B polar (sectors)', self)
+        calc_B_pol_sectors_button = QtWidgets.QPushButton('Calc. B polar (n x m)', self)
         gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
         calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
@@ -864,8 +864,11 @@ class HolographyWidget(QtWidgets.QWidget):
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
 
-        num_of_r_iters_label = QtWidgets.QLabel('# Radius iterations', self)
+        num_of_r_iters_label = QtWidgets.QLabel('# R iters', self)
         self.num_of_r_iters_input = QtWidgets.QLineEdit('1', self)
+
+        self.B_pol_n_rows_input = QtWidgets.QLineEdit('1', self)
+        self.B_pol_n_cols_input = QtWidgets.QLineEdit('1', self)
 
         acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
         self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
@@ -876,7 +879,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
         calc_B_pol_button.clicked.connect(self.calc_B_polar_from_section)
-        calc_B_pol_sectors_button.clicked.connect(self.calc_B_polar_sectors)
+        calc_B_pol_sectors_button.clicked.connect(partial(self.calc_B_polar_from_section, True))
         gen_B_stats_button.clicked.connect(self.gen_phase_stats)
         calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
@@ -910,8 +913,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
         self.tab_calc.layout.addWidget(self.threshold_input, 2, 5, 1, 2)
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 5, 1, 2)
-        self.tab_calc.layout.addWidget(num_of_r_iters_label, 4, 5, 1, 2)
-        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 5, 5, 1, 2)
+        self.tab_calc.layout.addWidget(num_of_r_iters_label, 4, 5)
+        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 4, 6)
+        self.tab_calc.layout.addWidget(self.B_pol_n_rows_input, 5, 5)
+        self.tab_calc.layout.addWidget(self.B_pol_n_cols_input, 5, 6)
         self.tab_calc.layout.addWidget(acc_voltage_label, 6, 5)
         self.tab_calc.layout.addWidget(self.acc_voltage_input, 6, 6)
         self.tab_calc.layout.addWidget(calc_MIP_button, 7, 5, 1, 2)
@@ -1424,8 +1429,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         p1, p2 = self.display.pointSets[curr_idx][:2]
-        p1 = CalcRealTLCoords(curr_img.width, p1)
-        p2 = CalcRealTLCoords(curr_img.width, p2)
+        p1 = disp_pt_to_real_tl_pt(curr_img.width, p1)
+        p2 = disp_pt_to_real_tl_pt(curr_img.width, p2)
 
         blanked_img = imsup.copy_am_ph_image(curr_img)
         blanked_img.amPh.am[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
@@ -1443,7 +1448,7 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         pt_disp = self.display.pointSets[curr_idx][:n_points]
-        pt_real = CalcRealTLCoordsForSetOfPoints(curr_img.width, pt_disp)
+        pt_real = disp_pts_to_real_tl_pts(curr_img.width, pt_disp)
 
         x1, y1 = pt_real[0]
         x2, y2 = 0, 0
@@ -1522,7 +1527,7 @@ class HolographyWidget(QtWidgets.QWidget):
         pt1, pt2 = self.display.pointSets[curr_idx][:2]
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
-        real_tl_coords = CalcRealTLCoords(curr_img.width, disp_crop_coords)
+        real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
         if np.abs(real_sq_coords[2] - real_sq_coords[0]) % 2:
             real_sq_coords[2] += 1
@@ -1576,17 +1581,17 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
             # --- to be removed later ---
-            for idx in range(len(self.display.pointSets)):
-                self.display.pointSets[idx].append(curr_pos)
+            # for idx in range(len(self.display.pointSets)):
+            #     self.display.pointSets[idx].append(curr_pos)
             # ---------------------------
-            # self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
+            self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_last_label()
 
             pt_idx = len(self.display.pointSets[curr_idx])
             disp_x, disp_y = curr_pos
-            real_x, real_y = CalcRealTLCoords(curr_img.width, curr_pos)
+            real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
             print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
             print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
             print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amPh.am[real_y, real_x], curr_img.amPh.ph[real_y, real_x]))
@@ -1783,8 +1788,8 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the same number of points on both images!')
             return
 
-        poly1 = [ CalcRealCoords(img_width, pt1) for pt1 in points1 ]
-        poly2 = [ CalcRealCoords(img_width, pt2) for pt2 in points2 ]
+        poly1 = disp_pts_to_real_cnt_pts(img_width, points1)
+        poly2 = disp_pts_to_real_cnt_pts(img_width, points2)
 
         rcSum = [0, 0]
         rotCenters = []
@@ -1861,8 +1866,8 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the same number of points on both images!')
             return
 
-        set1 = [CalcRealCoords(img_width, pt1) for pt1 in points1]
-        set2 = [CalcRealCoords(img_width, pt2) for pt2 in points2]
+        set1 = disp_pts_to_real_cnt_pts(img_width, points1)
+        set2 = disp_pts_to_real_cnt_pts(img_width, points2)
 
         shift_sum = np.zeros(2, dtype=np.int32)
         for pt1, pt2 in zip(set1, set2):
@@ -1926,8 +1931,8 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the same number of points on both images!')
             return
 
-        poly1 = [CalcRealCoords(img_width, pt1) for pt1 in points1]
-        poly2 = [CalcRealCoords(img_width, pt2) for pt2 in points2]
+        poly1 = disp_pts_to_real_cnt_pts(img_width, points1)
+        poly2 = disp_pts_to_real_cnt_pts(img_width, points2)
 
         poly1_dists = []
         poly2_dists = []
@@ -1986,10 +1991,10 @@ class HolographyWidget(QtWidgets.QWidget):
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
         curr_idx = self.display.image.numInSeries - 1
-        real_points1 = CalcRealCoordsForSetOfPoints(curr_img.width, self.display.pointSets[curr_idx-1])
-        real_points2 = CalcRealCoordsForSetOfPoints(curr_img.width, self.display.pointSets[curr_idx])
-        user_points1 = CalcTopLeftCoordsForSetOfPoints(curr_img.width, real_points1)
-        user_points2 = CalcTopLeftCoordsForSetOfPoints(curr_img.width, real_points2)
+        real_points1 = disp_pts_to_real_cnt_pts(curr_img.width, self.display.pointSets[curr_idx-1])
+        real_points2 = disp_pts_to_real_cnt_pts(curr_img.width, self.display.pointSets[curr_idx])
+        user_points1 = real_cnt_pts_to_tl_pts(curr_img.width, real_points1)
+        user_points2 = real_cnt_pts_to_tl_pts(curr_img.width, real_points2)
 
         self.warp_points = [ user_points1, user_points2 ]
 
@@ -2063,7 +2068,7 @@ class HolographyWidget(QtWidgets.QWidget):
         holo_fft = self.display.image
         [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
-        rpts = CalcRealTLCoords(holo_fft.width, dpts)
+        rpts = disp_pt_to_real_tl_pt(holo_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
         rpt1.reverse()  # r, c
@@ -2099,7 +2104,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ref_fft = self.display.image
         [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
-        rpts = CalcRealTLCoords(ref_fft.width, dpts)
+        rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
         rpt1.reverse()  # r, c
@@ -2236,8 +2241,8 @@ class HolographyWidget(QtWidgets.QWidget):
         if n_usr_pts == 2:
             print('Removing local phase tilt...')
             dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
-            rpt1 = CalcRealTLCoords(w, dpt1)
-            rpt2 = CalcRealTLCoords(w, dpt2)
+            rpt1 = disp_pt_to_real_tl_pt(w, dpt1)
+            rpt2 = disp_pt_to_real_tl_pt(w, dpt2)
             mid_x = (rpt1[0]+rpt2[0]) // 2
             mid_y = (rpt1[1]+rpt2[1]) // 2
             xy1 = [rpt1[0], mid_y]
@@ -2248,7 +2253,7 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Removing global phase tilt...')
             dpts = self.display.pointSets[curr_idx][:4]
             # dpts_f = [c for dpt in dpts for c in dpt]     # unpacking list of lists
-            rpts = [CalcRealTLCoords(w, dpt) for dpt in dpts]
+            rpts = [disp_pt_to_real_tl_pt(w, dpt) for dpt in dpts]
             xy1[0] = rpts[0][0]
             xy2[0] = rpts[1][0]
             xy3[1] = rpts[2][1]
@@ -2332,7 +2337,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ref_fft = self.display.image
         [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
-        rpts = CalcRealTLCoords(ref_fft.width, dpts)
+        rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
         rpt1.reverse()  # r, c
@@ -2417,7 +2422,7 @@ class HolographyWidget(QtWidgets.QWidget):
         px_sz = curr_img.px_dim
         print(px_sz)
         points = self.display.pointSets[curr_idx][:2]
-        points = np.array([ CalcRealCoords(curr_img.width, pt) for pt in points ])
+        points = np.array(disp_pts_to_real_cnt_pts(curr_img.width, points))
 
         # find rotation center (center of the line)
         rot_center = np.average(points, 0).astype(np.int32)
@@ -2515,7 +2520,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(Bx_img)
         self.insert_img_after_curr(By_img)
 
-    def calc_B_polar_from_section(self):
+    def calc_B_polar_from_section(self, gen_multiple_plots=False):
         from numpy import linalg as la
 
         curr_img = self.display.image
@@ -2526,29 +2531,34 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
-        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
-        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+        pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
+        pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
         d_dist = la.norm(pt1 - pt2)
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        pt1_is_orig = self.orig_in_pt1_radio_button.isChecked()
+        orig_is_pt1 = self.orig_in_pt1_radio_button.isChecked()
         n_r_iters = int(self.num_of_r_iters_input.text())
+        n_rows = int(self.B_pol_n_rows_input.text())
+        n_cols = int(self.B_pol_n_cols_input.text())
 
-        if pt1_is_orig:
+        if orig_is_pt1:
             orig_xy = pt1
-            r1 = int(d_dist)
+            r1 = round(d_dist)
         else:
-            orig_xy = np.array([int(np.mean((pt1[0], pt2[0]))), int(np.mean((pt1[1], pt2[1])))])
-            r1 = int(d_dist // 2)
+            orig_xy = np.round(np.mean([pt1, pt2], axis=0)).astype(np.int32)
+            r1 = round(d_dist / 2)
 
-        dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
-        mc.calc_B_polar_from_orig_r(curr_img, orig_xy, r1, sample_thickness, p1_orig=pt1_is_orig, ang0=dir_ang, n_r=n_r_iters)
-
-    def calc_B_polar_sectors(self):
-        # curr_img = self.display.image
-        # curr_idx = curr_img.numInSeries - 1
-        # mc.calc_B_polar_sectors(curr_img, start_xy, r1, n_rows, n_cols, smpl_thck, n_r=3)
-        pass
+        if gen_multiple_plots is False or n_rows * n_cols == 1:
+            dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
+            mc.calc_B_polar_from_orig_r(curr_img, orig_xy, r1, sample_thickness, orig_is_pt1, dir_ang, n_r_iters)
+        else:
+            orig_pts = mc.calc_B_polar_sectors(curr_img, orig_xy, r1, n_rows, n_cols, sample_thickness, orig_is_pt1, n_r_iters)
+            d_orig_pts = real_tl_pts_to_disp_pts(curr_img.width, orig_pts)
+            self.display.pointSets[curr_idx].extend(d_orig_pts)
+            self.display.repaint()
+            if self.display.show_labs:
+                self.display.show_labels()
+            print('Orig. points were added to the display')
 
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
@@ -2561,7 +2571,7 @@ class HolographyWidget(QtWidgets.QWidget):
         pt1, pt2 = self.display.pointSets[curr_idx][:2]
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
-        real_tl_coords = CalcRealTLCoords(curr_img.width, disp_crop_coords)
+        real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
         frag = zoom_fragment(curr_img, real_sq_coords)
 
@@ -2601,8 +2611,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
         dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
-        pt1 = np.array(CalcRealTLCoords(curr_img.width, dpt1))
-        pt2 = np.array(CalcRealTLCoords(curr_img.width, dpt2))
+        pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
+        pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
 
         d_dist = la.norm(pt1-pt2) * px_sz
         # d_phase = np.abs(curr_phs[pt1[1], pt1[0]] - curr_phs[pt2[1], pt2[0]])
@@ -2696,7 +2706,6 @@ class HolographyWidget(QtWidgets.QWidget):
         img_filtered = imsup.copy_am_ph_image(curr_img)
         img_filtered.amPh.ph = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
-        # find_contours(self.display.image)
 
     # def draw_image_with_arrows(self):
     #     import GradientArrows as grad_arr
@@ -2710,8 +2719,8 @@ class HolographyWidget(QtWidgets.QWidget):
     #     curr_idx = curr_img.numInSeries - 1
     #     px_sz = curr_img.px_dim
     #     p1, p2 = self.display.pointSets[curr_idx][:2]
-    #     p1 = CalcRealCoords(curr_img.width, p1)
-    #     p2 = CalcRealCoords(curr_img.width, p2)
+    #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
+    #     p2 = disp_pt_to_real_cnt_pt(curr_img.width, p2)
     #
     #     x1, x2 = min(p1[0], p2[0]), max(p1[0], p2[0])
     #     y1, y2 = min(p1[1], p2[1]), max(p1[1], p2[1])
@@ -2867,6 +2876,74 @@ def norm_phase_to_area(phase, pt1, pt2):
 
 # --------------------------------------------------------
 
+def real_cnt_pt_to_tl_pt(img_width, center_pt):
+    top_left_pt = [ cc + img_width // 2 for cc in center_pt ]
+    return top_left_pt
+
+# --------------------------------------------------------
+
+def real_cnt_pts_to_tl_pts(img_width, center_pts):
+    top_left_pts = [ real_cnt_pt_to_tl_pt(img_width, cpt) for cpt in center_pts ]
+    return top_left_pts
+
+# --------------------------------------------------------
+
+def disp_pt_to_real_tl_pt(img_width, disp_pt):
+    disp_width = const.disp_dim
+    factor = img_width / disp_width
+    real_pt = [ int(round(dc * factor)) for dc in disp_pt ]
+    return real_pt
+
+# --------------------------------------------------------
+
+def disp_pts_to_real_tl_pts(img_width, disp_pts):
+    real_pts = [ disp_pt_to_real_tl_pt(img_width, dpt) for dpt in disp_pts ]
+    return real_pts
+
+# --------------------------------------------------------
+
+def disp_pt_to_real_cnt_pt(img_width, disp_pt):
+    disp_width = const.disp_dim
+    factor = img_width / disp_width
+    real_pt = [ int(round((dc - disp_width // 2) * factor)) for dc in disp_pt ]
+    return real_pt
+
+# --------------------------------------------------------
+
+def disp_pts_to_real_cnt_pts(img_width, disp_pts):
+    real_pts = [ disp_pt_to_real_cnt_pt(img_width, dpt) for dpt in disp_pts ]
+    return real_pts
+
+# --------------------------------------------------------
+
+def real_tl_pt_to_disp_pt(img_width, real_pt):
+    disp_width = const.disp_dim
+    factor = disp_width / img_width
+    disp_pt = [ int(round(rc * factor)) for rc in real_pt ]
+    return disp_pt
+
+# --------------------------------------------------------
+
+def real_tl_pts_to_disp_pts(img_width, real_pts):
+    disp_pts = [ real_tl_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
+    return disp_pts
+
+# --------------------------------------------------------
+
+def real_cnt_pt_to_disp_pt(img_width, real_pt):
+    disp_width = const.disp_dim
+    factor = disp_width / img_width
+    disp_pt = [ int(round(rc * factor)) + disp_width // 2 for rc in real_pt ]
+    return disp_pt
+
+# --------------------------------------------------------
+
+def real_cnt_pts_to_disp_pts(img_width, real_pts):
+    disp_pts = [ real_cnt_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
+    return disp_pts
+
+# --------------------------------------------------------
+
 def FindDirectionAngles(p1, p2):
     lpt = p1[:] if p1[0] < p2[0] else p2[:]     # left point
     rpt = p1[:] if p1[0] > p2[0] else p2[:]     # right point
@@ -2884,65 +2961,6 @@ def FindDirectionAngles(p1, p2):
     ang1 *= sign
     ang2 *= (-sign)
     return ang1, ang2, projDir
-
-# --------------------------------------------------------
-
-def CalcTopLeftCoords(imgWidth, midCoords):
-    topLeftCoords = [ mc + imgWidth // 2 for mc in midCoords ]
-    return topLeftCoords
-
-# --------------------------------------------------------
-
-def CalcTopLeftCoordsForSetOfPoints(imgWidth, points):
-    topLeftPoints = [ CalcTopLeftCoords(imgWidth, pt) for pt in points ]
-    return topLeftPoints
-
-# --------------------------------------------------------
-
-def CalcRealTLCoords(imgWidth, dispCoords):
-    dispWidth = const.disp_dim
-    factor = imgWidth / dispWidth
-    realCoords = [ int(dc * factor) for dc in dispCoords ]
-    return realCoords
-
-# --------------------------------------------------------
-
-def CalcRealTLCoordsForSetOfPoints(imgWidth, points):
-    realCoords = [ CalcRealTLCoords(imgWidth, pt) for pt in points ]
-    return realCoords
-
-# --------------------------------------------------------
-
-def CalcRealCoords(imgWidth, dispCoords):
-    dispWidth = const.disp_dim
-    factor = imgWidth / dispWidth
-    realCoords = [ int((dc - dispWidth // 2) * factor) for dc in dispCoords ]
-    return realCoords
-
-# --------------------------------------------------------
-
-def CalcRealCoordsForSetOfPoints(imgWidth, points):
-    realPoints = [ CalcRealCoords(imgWidth, pt) for pt in points ]
-    return realPoints
-
-# --------------------------------------------------------
-
-def CalcRealTLCoordsForPaddedImage(imgWidth, dispCoords):
-    dispWidth = const.disp_dim
-    padImgWidthReal = np.ceil(imgWidth / 512.0) * 512.0
-    pad = (padImgWidthReal - imgWidth) / 2.0
-    factor = padImgWidthReal / dispWidth
-    # dispPad = pad / factor
-    # realCoords = [ (dc - dispPad) * factor for dc in dispCoords ]
-    realCoords = [ int(dc * factor - pad) for dc in dispCoords ]
-    return realCoords
-
-# --------------------------------------------------------
-
-def CalcDispCoords(dispWidth, imgWidth, realCoords):
-    factor = dispWidth / imgWidth
-    dispCoords = [ (rc * factor) + const.disp_dim // 2 for rc in realCoords ]
-    return dispCoords
 
 # --------------------------------------------------------
 
