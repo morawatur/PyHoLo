@@ -2543,10 +2543,10 @@ class HolographyWidget(QtWidgets.QWidget):
 
         if orig_is_pt1:
             orig_xy = pt1
-            r1 = round(d_dist)
+            r1 = d_dist
         else:
             orig_xy = np.round(np.mean([pt1, pt2], axis=0)).astype(np.int32)
-            r1 = round(d_dist / 2)
+            r1 = d_dist / 2
 
         if gen_multiple_plots is False or n_rows * n_cols == 1:
             dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])

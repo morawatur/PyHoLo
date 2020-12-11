@@ -60,7 +60,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     # B_min, B_max = 0.0, const.temp_B_max_for_polar_plot
     for p_idx in range(n_r):
         ax.plot(angles[p_idx], np.array(B_values[p_idx]), '.-', lw=1.0, ms=3.5,
-                label='r={0}px'.format(r_values[p_idx]))
+                label='r={0:.0f}px'.format(round(r_values[p_idx])))
     ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_max, B_max]), 'k--', lw=0.8)    # mark selected direction
     ax.plot(np.array([ang1, ang2]), np.array([B_max, B_max]), 'g--', lw=0.8)            # boundary between positive and negative values of B
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
