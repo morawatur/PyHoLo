@@ -263,8 +263,21 @@ def LinLeastSquares(x_arr, y_arr):
     sy = np.sum(y_arr)
     sxy = np.sum(np.array(x_arr) * np.array(y_arr))
     sx2 = np.sum(np.array(x_arr) ** 2)
-    a_coeff = (sxy - sx * sy / n_pt) / (sx2 - sx * sx / n_pt)
+    a_coeff = (n_pt * sxy - sx * sy) / (n_pt * sx2 - sx * sx)
     b_coeff = (sy - a_coeff * sx) / n_pt
+    return a_coeff, b_coeff
+
+#-------------------------------------------------------------------
+
+# x_arr and y_arr must be numpy.arrays
+def LinLeastSquaresAlt(x_arr, y_arr):
+    xm, ym = np.mean(x_arr), np.mean(y_arr)
+    xm_arr = x_arr - xm
+    ym_arr = y_arr - ym
+    sxy = np.sum(xm_arr * ym_arr)
+    sx2 = np.sum(xm_arr * xm_arr)
+    a_coeff = sxy / sx2
+    b_coeff = ym - a_coeff * xm
     return a_coeff, b_coeff
 
 #-------------------------------------------------------------------
