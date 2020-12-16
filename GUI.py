@@ -37,12 +37,6 @@ import matplotlib.pyplot as plt
 
 # --------------------------------------------------------
 
-def func_to_vectorize(x, y, dx, dy, sc=1):
-    plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=10, head_length=14)
-    # plt.arrow(x, y, dx * sc, dy * sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
-
-# --------------------------------------------------------
-
 class RgbColorTable:
     def __init__(self):
         step = 6
@@ -1494,17 +1488,16 @@ class HolographyWidget(QtWidgets.QWidget):
         Y *= px_sz
 
         fig = plt.figure()
-        # ax = fig.gca(projection='3d')
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)    # mesh step (dist. between rows/cols used)
         # ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
         ax.view_init(ang1, ang2)
-        plt.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
+        fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
         print('3D image exported!')
-        plt.clf()
         plt.cla()
+        plt.clf()
         plt.close(fig)
 
     def export_glob_sc_phases(self):
@@ -2426,13 +2419,13 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # find rotation center (center of the line)
         rot_center = np.average(points, 0).astype(np.int32)
-        print('rotCenter = {0}'.format(rot_center))
+        print('rot. center = {0}'.format(rot_center))
 
         # find direction (angle) of the line
         dir_info = FindDirectionAngles(points[0], points[1])
         dir_angle = imsup.Degrees(dir_info[0])
         proj_dir = dir_info[2]
-        print('dir angle = {0:.2f} deg'.format(dir_angle))
+        print('dir. angle = {0:.2f} deg'.format(dir_angle))
 
         # shift image by -center
         shift_to_rot_center = list(-rot_center)
@@ -2453,8 +2446,8 @@ class HolographyWidget(QtWidgets.QWidget):
             frag_width, frag_height = frag_dim2, frag_dim1
 
         frag_coords = imsup.DetermineCropCoordsForNewDims(img_rot.width, img_rot.height, frag_width, frag_height)
-        print('Frag dims = {0}, {1}'.format(frag_width, frag_height))
-        print('Frag coords = {0}'.format(frag_coords))
+        print('Frag. dims = {0}, {1}'.format(frag_width, frag_height))
+        print('Frag. coords = {0}'.format(frag_coords))
         img_cropped = imsup.crop_am_ph_roi(img_rot, frag_coords)
 
         # calculate projection of intensity
@@ -3029,6 +3022,17 @@ def rreplace(text, old, new, occurence):
 
 # --------------------------------------------------------
 
+# def plot_arrow_fun(x, y, dx, dy, sc=1):
+#     plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
+
+# --------------------------------------------------------
+
+def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
+    ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
+    # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+
+# --------------------------------------------------------
+
 def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
     global_limits = [1e5, 0]
 
@@ -3039,12 +3043,12 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         if limits[1] > global_limits[1]:
             global_limits[1] = limits[1]
 
-    fig = plt.figure()
+    fig, ax = plt.subplots()
     for img, idx in zip(img_list, range(1, len(img_list)+1)):
-        plt.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
+        im = ax.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
 
         if idx == len(img_list):
-            cbar = plt.colorbar(label=cbar_lab)
+            cbar = fig.colorbar(im)
             cbar.set_label(cbar_lab)
 
         if add_arrows:
@@ -3063,17 +3067,18 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
                 xd = xd_yd_comp_rot.real
                 yd = xd_yd_comp_rot.imag
 
-            vectorized_arrow_drawing = np.vectorize(func_to_vectorize)
-            vectorized_arrow_drawing(xv, yv, xd, yd, arr_size)
+            vectorized_arrow_drawing = np.vectorize(plot_arrow_fun)
+            vectorized_arrow_drawing(ax, xv, yv, xd, yd, arr_size)
 
         out_f = '{0}.png'.format(img.name)
-        plt.axis('off')
-        plt.margins(0, 0)
-        plt.gca().xaxis.set_major_locator(plt.NullLocator())
-        plt.gca().yaxis.set_major_locator(plt.NullLocator())
-        plt.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
-        # plt.clf()
+        ax.axis('off')
+        ax.margins(0, 0)
+        ax.xaxis.set_major_locator(plt.NullLocator())
+        ax.yaxis.set_major_locator(plt.NullLocator())
+        fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
         plt.cla()
+
+    plt.clf()
     plt.close(fig)
 
 # --------------------------------------------------------

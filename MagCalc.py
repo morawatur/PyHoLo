@@ -4,6 +4,7 @@ import Constants as const
 import Transform as tr
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Circle
 
 #-------------------------------------------------------------------
 
@@ -15,7 +16,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     max_xy = [x + n_r * r1 for x in orig_xy]
     if min_xy[0] < 0 or min_xy[1] < 0 or max_xy[0] > img.width or max_xy[1] > img.height:
         print('One of the circular areas will go beyond edges of the image. Select new area or lower the number of radius iterations.')
-        return -1
+        return 'f'
 
     r_values = [ (n + 1) * r1 for n in range(n_r) ]
     print('r = {0}'.format(r_values))
@@ -34,7 +35,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
         x_arr_for_ls = np.linspace(0, d_dist, 5, dtype=np.float32)      # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
 
         for ang, a_idx in zip(angles[r_idx], range(n_ang)):
-            sin_cos = np.array([np.cos(ang), -np.sin(ang)])     # -sin(ang), because y increases from top to bottom of an image
+            sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
             new_pt1 = orig_xy if orig_is_pt1 else np.round(orig_xy - r * sin_cos).astype(np.int32)
             new_pt2 = np.round(orig_xy + r * sin_cos).astype(np.int32)
             x1, y1 = new_pt1
@@ -72,25 +73,55 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
 
     plt.margins(0, 0)
     plt.savefig('B_pol_{0}{1}.png'.format(img.name, addn_str), dpi=300, bbox_inches='tight', pad_inches=0)
-    # plt.clf()
-    # plt.cla()
+    plt.cla()
+    plt.clf()
     plt.close(fig)
     print('B_pol_{0}{1}.png exported!'.format(img.name, addn_str))
-    return 0
+
+    max_B_angle = angles[0][np.argmax(B_values[0])] - np.pi / 2.0
+    return max_B_angle
 
 #-------------------------------------------------------------------
 
 def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt1=False, n_r=3):
     orig_pts = []
+    max_B_angles = []
 
     for row in range(n_rows):
         for col in range(n_cols):
             new_orig_xy = np.round([ x + j*2*r1 for x, j in zip(orig_xy, [col, row]) ]).astype(np.int32)
             rc_str = '_{0}{1}'.format(row+1, col+1)
-            state = calc_B_polar_from_orig_r(img, new_orig_xy, r1, smpl_thck, orig_is_pt1, ang0=0.0, n_r=n_r, addn_str=rc_str)
-            if state == -1:
+            max_B_ang = calc_B_polar_from_orig_r(img, new_orig_xy, r1, smpl_thck, orig_is_pt1, ang0=0.0, n_r=n_r, addn_str=rc_str)
+            state = max_B_ang
+            if state == 'f':
                 return orig_pts
+            else:
+                max_B_angles.append(max_B_ang)
             orig_pts.append(list(new_orig_xy))
+
+    # export phase image with max. B vectors
+    fig, ax = plt.subplots()
+    im = ax.imshow(img.amPh.ph, cmap=plt.cm.get_cmap('jet'))
+    cbar = fig.colorbar(im)
+    cbar.set_label('phase shift [rad]')
+
+    for [x, y], dir_ang in zip(orig_pts, max_B_angles):
+        dx, dy = r1 * np.cos(dir_ang), -r1 * np.sin(dir_ang)
+        ax.arrow(x, y, dx, dy, fc='k', ec='k', lw=0.6, head_width=3, head_length=6, length_includes_head=True)
+        circ = Circle((x, y), r1, fill=False, ec='orange', ls='--', lw=0.6)
+        ax.add_patch(circ)
+
+    out_f = '{0}_+max_B_vec.png'.format(img.name)
+    ax.axis('off')
+    ax.margins(0, 0)
+    ax.xaxis.set_major_locator(plt.NullLocator())
+    ax.yaxis.set_major_locator(plt.NullLocator())
+    fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
+    plt.cla()
+    plt.clf()
+    plt.close(fig)
+    print('Phase image with max. B vectors exported: {0}'.format(out_f))
+    # ---
 
     return orig_pts
 
