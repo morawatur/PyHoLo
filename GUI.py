@@ -271,14 +271,14 @@ class PlotWidget(QtWidgets.QWidget):
         self.setLayout(layout)
 
     def plot(self, dataX, dataY, xlab='x', ylab='y'):
-        self.figure.clear()
+        self.figure.clf()
         self.markedPoints = []
         self.markedPointsData = []
-        plt.xlabel(xlab)
-        plt.ylabel(ylab)
-        plt.axis([ min(dataX)-0.5, max(dataX)+0.5, min(dataY)-0.5, max(dataY)+0.5 ])
         ax = self.figure.add_subplot(111)
         ax.plot(dataX, dataY, '.-')
+        ax.set_xlabel(xlab)
+        ax.set_ylabel(ylab)
+        ax.axis([min(dataX) - 0.5, max(dataX) + 0.5, min(dataY) - 0.5, max(dataY) + 0.5])
         self.canvas.draw()
 
     def getXYDataOnClick(self, event):
@@ -1496,8 +1496,8 @@ class HolographyWidget(QtWidgets.QWidget):
         ax.view_init(ang1, ang2)
         fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
         print('3D image exported!')
-        plt.cla()
-        plt.clf()
+        ax.cla()
+        fig.clf()
         plt.close(fig)
 
     def export_glob_sc_phases(self):
@@ -2413,7 +2413,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
-        print(px_sz)
+
         points = self.display.pointSets[curr_idx][:2]
         points = np.array(disp_pts_to_real_cnt_pts(curr_img.width, points))
 
@@ -2589,10 +2589,10 @@ class HolographyWidget(QtWidgets.QWidget):
         ax.set_rmax(0.5)
         ax.grid(True)
 
-        plt.margins(0, 0)
-        plt.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.clf()
-        plt.cla()
+        ax.margins(0, 0)
+        fig.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
+        ax.cla()
+        fig.clf()
         plt.close(fig)
         print('B_pol_{0}.png exported!'.format(curr_img.name))
 
@@ -3028,8 +3028,8 @@ def rreplace(text, old, new, occurence):
 # --------------------------------------------------------
 
 def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
-    ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
-    # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+    # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
+    ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
 
 # --------------------------------------------------------
 
@@ -3076,9 +3076,9 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         ax.xaxis.set_major_locator(plt.NullLocator())
         ax.yaxis.set_major_locator(plt.NullLocator())
         fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
-        plt.cla()
+        ax.cla()
 
-    plt.clf()
+    fig.clf()
     plt.close(fig)
 
 # --------------------------------------------------------
