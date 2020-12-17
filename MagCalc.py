@@ -28,9 +28,14 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     angles = [ np.copy(ang_arr) for _ in range(n_r) ]
     B_values = [ [] for _ in range(n_r) ]
 
+    n_pts_for_ls = 5
+    nn_def = 4
+    n_neigh_areas = 2 * (n_pts_for_ls - 1)
+
     for r, r_idx in zip(r_values, range(n_r)):
         d_dist = r if orig_is_pt1 else 2 * r
-        nn_for_ls = 4 if d_dist >= 32 else int(d_dist // 8)
+        n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
+
         B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)      # the only place where pixel size is significant
         x_arr_for_ls = np.linspace(0, d_dist, 5, dtype=np.float32)      # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
 
@@ -41,14 +46,14 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
             x1, y1 = new_pt1
             x2, y2 = new_pt2
 
-            xx = np.round(np.linspace(x1, x2, 5)).astype(np.int32)
-            yy = np.round(np.linspace(y1, y2, 5)).astype(np.int32)
+            xx = np.round(np.linspace(x1, x2, n_pts_for_ls)).astype(np.int32)
+            yy = np.round(np.linspace(y1, y2, n_pts_for_ls)).astype(np.int32)
 
             # ph_arr_for_ls = np.array([ curr_phs[y, x] for y, x in zip(yy, xx) ])
-            ph_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x, y, nn=nn_for_ls) for x, y in zip(xx, yy) ])
+            ph_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
             aa, bb = tr.LinLeastSquaresAlt(x_arr_for_ls, ph_arr_for_ls)
 
-            # d_phase = tr.calc_avg_neigh(phs, x2, y2, nn=4) - tr.calc_avg_neigh(phs, x1, y1, nn=4)
+            # d_phase = tr.calc_avg_neigh(phs, x2, y2, nn=n_neigh) - tr.calc_avg_neigh(phs, x1, y1, nn=n_neigh)
             d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
             B_val = B_coeff * d_phase
             if B_val < 0: angles[r_idx][a_idx] += np.pi

@@ -2246,7 +2246,7 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Removing global phase tilt...')
             dpts = self.display.pointSets[curr_idx][:4]
             # dpts_f = [c for dpt in dpts for c in dpt]     # unpacking list of lists
-            rpts = [disp_pt_to_real_tl_pt(w, dpt) for dpt in dpts]
+            rpts = [ disp_pt_to_real_tl_pt(w, dpt) for dpt in dpts ]
             xy1[0] = rpts[0][0]
             xy2[0] = rpts[1][0]
             xy3[1] = rpts[2][1]
@@ -2254,22 +2254,47 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             print('Using default configuration... [To change it mark 2 points (local phase tilt) or 4 points (global phase tilt) and repeat procedure]')
 
-        n_neigh = 10
-        px1 = [xy1[0], tr.calc_avg_neigh(phs, x=xy1[0], y=xy1[1], nn=n_neigh)]
-        px2 = [xy2[0], tr.calc_avg_neigh(phs, x=xy2[0], y=xy2[1], nn=n_neigh)]
-        py1 = [xy3[1], tr.calc_avg_neigh(phs, x=xy3[0], y=xy3[1], nn=n_neigh)]
-        py2 = [xy4[1], tr.calc_avg_neigh(phs, x=xy4[0], y=xy4[1], nn=n_neigh)]
+        nn_def = 10
 
-        x_line = tr.Line(0, 0)
-        y_line = tr.Line(0, 0)
-        x_line.getFromPoints(px1, px2)
-        y_line.getFromPoints(py1, py2)
+        # -- linear least squares ---
+        n_pts_for_ls = 10
+        n_neigh_areas = 2 * (n_pts_for_ls - 1)
+        x_dist, y_dist = xy2[0] - xy1[0], xy4[1] - xy3[1]
+        n_neigh_x = nn_def if x_dist >= n_neigh_areas * nn_def else int(x_dist // n_neigh_areas)
+        n_neigh_y = nn_def if y_dist >= n_neigh_areas * nn_def else int(y_dist // n_neigh_areas)
+
+        x_arr_for_ls = np.round(np.linspace(xy1[0], xy2[0], n_pts_for_ls)).astype(np.int32)
+        y_arr_for_ls = np.round(np.linspace(xy3[1], xy4[1], n_pts_for_ls)).astype(np.int32)
+        phx_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x=x, y=xy1[1], nn=n_neigh_x) for x in x_arr_for_ls] )
+        phy_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x=xy3[0], y=y, nn=n_neigh_y) for y in y_arr_for_ls] )
+        ax, bx = tr.LinLeastSquaresAlt(x_arr_for_ls, phx_arr_for_ls)
+        ay, by = tr.LinLeastSquaresAlt(y_arr_for_ls, phy_arr_for_ls)
 
         X = np.arange(0, w, dtype=np.float32)
         Y = np.arange(0, h, dtype=np.float32)
         X, Y = np.meshgrid(X, Y)
-        phs_grad_x = x_line.a * X + x_line.b
-        phs_grad_y = y_line.a * Y + y_line.b
+        phs_grad_x = ax * X
+        phs_grad_y = ay * Y
+        # ---
+
+        # --- without least squares (just boundary points) ---
+        # px1 = [xy1[0], tr.calc_avg_neigh(phs, x=xy1[0], y=xy1[1], nn=nn_def)]
+        # px2 = [xy2[0], tr.calc_avg_neigh(phs, x=xy2[0], y=xy2[1], nn=nn_def)]
+        # py1 = [xy3[1], tr.calc_avg_neigh(phs, x=xy3[0], y=xy3[1], nn=nn_def)]
+        # py2 = [xy4[1], tr.calc_avg_neigh(phs, x=xy4[0], y=xy4[1], nn=nn_def)]
+        #
+        # x_line = tr.Line(0, 0)
+        # y_line = tr.Line(0, 0)
+        # x_line.getFromPoints(px1, px2)
+        # y_line.getFromPoints(py1, py2)
+        #
+        # X = np.arange(0, w, dtype=np.float32)
+        # Y = np.arange(0, h, dtype=np.float32)
+        # X, Y = np.meshgrid(X, Y)
+        # phs_grad_x = x_line.a * X # + x_line.b
+        # phs_grad_y = y_line.a * Y # + y_line.b
+        # ---
+
         phs_grad_xy = phs_grad_x + phs_grad_y
 
         phs_grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
