@@ -36,8 +36,8 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
         d_dist = r if orig_is_pt1 else 2 * r
         n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
 
-        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)      # the only place where pixel size is significant
-        x_arr_for_ls = np.linspace(0, d_dist, 5, dtype=np.float32)      # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
+        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)
+        x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)
 
         for ang, a_idx in zip(angles[r_idx], range(n_ang)):
             sin_cos = np.array([np.cos(ang), -np.sin(ang)])         # -sin(ang), because y increases from top to bottom of an image
@@ -54,7 +54,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
             aa, bb = tr.LinLeastSquaresAlt(x_arr_for_ls, ph_arr_for_ls)
 
             # d_phase = tr.calc_avg_neigh(phs, x2, y2, nn=n_neigh) - tr.calc_avg_neigh(phs, x1, y1, nn=n_neigh)
-            d_phase = aa * (x_arr_for_ls[4] - x_arr_for_ls[0])
+            d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
             B_val = B_coeff * d_phase
             if B_val < 0: angles[r_idx][a_idx] += np.pi
             B_values[r_idx].append(np.abs(B_val))

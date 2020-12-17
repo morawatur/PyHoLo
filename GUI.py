@@ -2628,21 +2628,35 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_phs = curr_img.amPh.ph
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
+
         dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
         pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
 
-        d_dist = la.norm(pt1-pt2) * px_sz
-        # d_phase = np.abs(curr_phs[pt1[1], pt1[0]] - curr_phs[pt2[1], pt2[0]])
-        # ---
-        ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
-        ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
-        d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
-        # d_phase = np.abs(ph1_avg - ph2_avg)
-        # ---
-        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
-        print('{0:.1f} nm'.format(d_dist * 1e9))
+        d_dist = la.norm(pt1 - pt2)
+        n_pts_for_ls = 5
+        nn_def = 4
+        n_neigh_areas = 2 * (n_pts_for_ls - 1)
+        n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
+
+        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
+        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)              # the only place where pixel size is significant
+        x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)   # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
+
+        xx = np.round(np.linspace(pt1[0], pt2[0], n_pts_for_ls)).astype(np.int32)
+        yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
+
+        ph_arr_for_ls = np.array([ tr.calc_avg_neigh(curr_phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
+        aa, bb = tr.LinLeastSquaresAlt(x_arr_for_ls, ph_arr_for_ls)
+
+        d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
+
+        # ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
+        # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
+        # d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
+
+        B_in_plane = B_coeff * d_phase
+        print('{0:.1f} nm'.format(d_dist * px_sz * 1e9))
         print('{0:.2f} rad'.format(d_phase))
         print('B = {0:.2f} T'.format(B_in_plane))
 
@@ -2650,9 +2664,9 @@ class HolographyWidget(QtWidgets.QWidget):
     def calc_B_from_profile(self):
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
-        d_phase = np.abs(pt1[1] - pt2[1])
-        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        B_in_plane = (const.dirac_const / sample_thickness) * (d_phase / d_dist)
+        d_phase = pt2[1] - pt1[1]       # consider sign of magnetic field
+        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
+        B_in_plane = (const.dirac_const / smpl_thck) * (d_phase / d_dist)
         print('{0:.1f} nm'.format(d_dist * 1e9))
         print('{0:.2f} rad'.format(d_phase))
         print('B = {0:.2f} T'.format(B_in_plane))
