@@ -69,9 +69,9 @@ class Image:
         self.prev = None
         self.next = None
         self.px_dim = px_dim_sz
-        self.bias = 0.0
-        self.gain = 255.0
-        self.gamma = 1.0
+        # self.bias = 0.0
+        # self.gain = 255.0
+        # self.gamma = 1.0
         if px_dim_sz < 0:
             self.px_dim = self.px_dim_default
 
@@ -588,18 +588,14 @@ def RemovePixelArtifacts(img, minThreshold=0.7, maxThreshold=1.3):
 #-------------------------------------------------------------------
 
 def flip_image_h(img):
-    am_flip = np.copy(np.fliplr(img.amPh.am))
-    ph_flip = np.copy(np.fliplr(img.amPh.ph))
-    img.amPh.am = np.copy(am_flip)
-    img.amPh.ph = np.copy(ph_flip)
+    img.amPh.am = np.fliplr(img.amPh.am)
+    img.amPh.ph = np.fliplr(img.amPh.ph)
 
 #-------------------------------------------------------------------
 
 def flip_image_v(img):
-    am_flip = np.copy(np.flipud(img.amPh.am))
-    ph_flip = np.copy(np.flipud(img.amPh.ph))
-    img.amPh.am = np.copy(am_flip)
-    img.amPh.ph = np.copy(ph_flip)
+    img.amPh.am = np.flipud(img.amPh.am)
+    img.amPh.ph = np.flipud(img.amPh.ph)
 
 #-------------------------------------------------------------------
 
@@ -755,3 +751,53 @@ def ShiftImage(img, shift):
     img.ChangeComplexRepr(dt)
     img_shifted.ChangeComplexRepr(dt)
     return img_shifted
+
+#-------------------------------------------------------------------
+
+def det_Imin_Imax_from_contrast(dI, def_max=256.0):
+    dImin = dI // 2 + 1
+    dImax = dI - dImin
+    Imin = def_max // 2 - dImin
+    Imax = def_max // 2 + dImax
+    return Imin, Imax
+
+#-------------------------------------------------------------------
+
+def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
+    Imin, Imax = det_Imin_Imax_from_contrast(cnt)
+
+    # option 1 (c->b->g)
+    # correct contrast
+    img_scaled = ScaleImage(img_src, Imin, Imax)
+    # correct brightness
+    img_scaled += brg
+    img_scaled[img_scaled < 0.0] = 0.0
+    # correct gamma
+    img_scaled **= gam
+    img_scaled[img_scaled > 255.0] = 255.0
+
+    # # option 2 (c->g->b)
+    # # correct contrast
+    # img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
+    # img_scaled[img_scaled < 0.0] = 0.0
+    # # correct gamma
+    # img_scaled **= gam
+    # # correct brightness
+    # img_scaled += brg
+    # img_scaled[img_scaled < 0.0] = 0.0
+    # img_scaled[img_scaled > 255.0] = 255.0
+    return img_scaled
+
+#-------------------------------------------------------------------
+
+def save_arr_as_tiff(data, fname, log, color, brg=0, cnt=255, gam=1.0):
+    if log:
+        data[np.where(data <= 0)] = 1e-5
+        data = np.log(data)
+    data = update_image_bright_cont_gamma(data, brg, cnt, gam)
+    if color:
+        data = grayscale_to_rgb(data)
+        data_to_save = im.fromarray(data.astype(np.uint8), 'RGB')
+    else:
+        data_to_save = im.fromarray(data.astype(np.uint8))
+    data_to_save.save('{0}.tif'.format(fname))

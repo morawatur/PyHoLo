@@ -164,7 +164,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
-        if self.image.buffer.am.shape[0] == self.image.height:
+        if self.image.buffer.am.shape[0] != const.disp_dim:
             self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
 
         if dispAmp:
@@ -182,7 +182,7 @@ class LabelExt(QtWidgets.QLabel):
         if not update_bcg:
             pixmap_to_disp = imsup.ScaleImage(px_arr, 0.0, 255.0)
         else:
-            pixmap_to_disp = update_image_bright_cont_gamma(px_arr, brg=bright, cnt=cont, gam=gamma)
+            pixmap_to_disp = imsup.update_image_bright_cont_gamma(px_arr, brg=bright, cnt=cont, gam=gamma)
 
         # final image with all properties set
         q_image = QtGui.QImage(pixmap_to_disp.astype(np.uint8), pixmap_to_disp.shape[0], pixmap_to_disp.shape[1],
@@ -225,33 +225,6 @@ class LabelExt(QtWidgets.QLabel):
         self.hide_labels()
         if self.show_labs:
             self.show_labels()
-
-# --------------------------------------------------------
-
-def update_image_bright_cont_gamma(img_src, brg=0, cnt=1, gam=1.0):
-    Imin, Imax = det_Imin_Imax_from_contrast(cnt)
-
-    # option 1 (c->b->g)
-    # correct contrast
-    img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
-    # correct brightness
-    img_scaled += brg
-    img_scaled[img_scaled < 0.0] = 0.0
-    # correct gamma
-    img_scaled **= gam
-    img_scaled[img_scaled > 255.0] = 255.0
-
-    # # option 2 (c->g->b)
-    # # correct contrast
-    # img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
-    # img_scaled[img_scaled < 0.0] = 0.0
-    # # correct gamma
-    # img_scaled **= gam
-    # # correct brightness
-    # img_scaled += brg
-    # img_scaled[img_scaled < 0.0] = 0.0
-    # img_scaled[img_scaled > 255.0] = 255.0
-    return img_scaled
 
 # --------------------------------------------------------
 
@@ -586,11 +559,11 @@ class HolographyWidget(QtWidgets.QWidget):
         export_all_button.clicked.connect(self.export_all)
         blank_area_button.clicked.connect(self.blank_area)
         norm_phase_button.clicked.connect(self.norm_phase)
-        self.amp_radio_button.toggled.connect(self.update_display)
-        self.phs_radio_button.toggled.connect(self.update_display)
-        self.cos_phs_radio_button.toggled.connect(self.update_display)
-        self.gray_radio_button.toggled.connect(self.update_display)
-        self.color_radio_button.toggled.connect(self.update_display)
+        self.amp_radio_button.toggled.connect(self.update_display_and_bcg)
+        self.phs_radio_button.toggled.connect(self.update_display_and_bcg)
+        self.cos_phs_radio_button.toggled.connect(self.update_display_and_bcg)
+        self.gray_radio_button.toggled.connect(self.update_display_and_bcg)
+        self.color_radio_button.toggled.connect(self.update_display_and_bcg)
 
         grid_disp = QtWidgets.QGridLayout()
         grid_disp.setColumnStretch(0, 1)
@@ -1175,38 +1148,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.go_to_image(last_idx)
 
     def flip_image_h(self):
-        curr = self.display.image
-        imsup.flip_image_h(curr)
-        self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
-        self.display.setImage()
-
-    def save_amp_as_tiff(self, fname, log, color):
         curr_img = self.display.image
-        amp = np.copy(curr_img.amPh.am)
-        if log:
-            amp[np.where(amp <= 0)] = 1e-5
-            amp = np.log(amp)
-        amp = update_image_bright_cont_gamma(amp, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
-        if color:
-            amp = imsup.grayscale_to_rgb(amp)
-            amp_to_save = imsup.im.fromarray(amp.astype(np.uint8), 'RGB')
-        else:
-            amp_to_save = imsup.im.fromarray(amp.astype(np.uint8))
-        amp_to_save.save('{0}.tif'.format(fname))
-
-    def save_phs_as_tiff(self, fname, log, color):
-        curr_img = self.display.image
-        phs = np.copy(curr_img.amPh.ph)
-        if log:
-            phs[np.where(phs <= 0)] = 1e-5
-            phs = np.log(phs)
-        phs = update_image_bright_cont_gamma(phs, brg=curr_img.bias, cnt=curr_img.gain, gam=curr_img.gamma)
-        if color:
-            phs = imsup.grayscale_to_rgb(phs)
-            phs_to_save = imsup.im.fromarray(phs.astype(np.uint8), 'RGB')
-        else:
-            phs_to_save = imsup.im.fromarray(phs.astype(np.uint8))
-        phs_to_save.save('{0}.tif'.format(fname))
+        imsup.flip_image_h(curr_img)
+        self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)   # refresh buffer
+        self.update_display()
 
     def export_image(self):
         curr_num = self.display.image.numInSeries
@@ -1222,32 +1167,23 @@ class HolographyWidget(QtWidgets.QWidget):
             else:
                 fname = 'cos_phs{0}'.format(curr_num)
 
+        if is_amp_checked:
+            data_to_export = np.copy(curr_img.amPh.am)
+        elif is_phs_checked:
+            data_to_export = np.copy(curr_img.amPh.ph)
+        else:
+            data_to_export = np.cos(curr_img.amPh.ph)
+
         # numpy array file (new)
         if self.export_npy_radio_button.isChecked():
             fname_ext = '.npy'
-
-            if is_amp_checked:
-                np.save(fname, curr_img.amPh.am)
-            elif is_phs_checked:
-                np.save(fname, curr_img.amPh.ph)
-            else:
-                cos_phs = np.cos(curr_img.amPh.ph)
-                np.save(fname, cos_phs)
-
+            np.save(fname, data_to_export)
             print('Saved image to numpy array file: "{0}.npy"'.format(fname))
 
         # raw data file
         elif self.export_raw_radio_button.isChecked():
             fname_ext = ''
-
-            if is_amp_checked:
-                curr_img.amPh.am.tofile(fname)
-            elif is_phs_checked:
-                curr_img.amPh.ph.tofile(fname)
-            else:
-                cos_phs = np.cos(curr_img.amPh.ph)
-                cos_phs.tofile(fname)
-
+            data_to_export.tofile(fname)
             print('Saved image to raw data file: "{0}"'.format(fname))
 
         # TIF file
@@ -1255,17 +1191,11 @@ class HolographyWidget(QtWidgets.QWidget):
             fname_ext = '.tif'
             log = True if self.log_scale_checkbox.isChecked() else False
             color = True if self.color_radio_button.isChecked() else False
+            bright = int(self.bright_input.text())
+            cont = int(self.cont_input.text())
+            gamma = float(self.gamma_input.text())
 
-            if is_amp_checked:
-                self.save_amp_as_tiff(fname, log, color)
-            elif is_phs_checked:
-                self.save_phs_as_tiff(fname, log, color)
-            else:
-                phs_tmp = np.copy(curr_img.amPh.ph)
-                curr_img.amPh.ph = np.cos(phs_tmp)
-                self.save_phs_as_tiff(fname, log, color)
-                curr_img.amPh.ph = np.copy(phs_tmp)
-
+            imsup.save_arr_as_tiff(data_to_export, fname, log, color, brg=bright, cnt=cont, gam=gamma)
             print('Saved image as "{0}.tif"'.format(fname))
 
         # save log file
@@ -1276,7 +1206,7 @@ class HolographyWidget(QtWidgets.QWidget):
                            'Image size:\t{3}x{4}\n'
                            'Data type:\t{5}\n'
                            'Calibration:\t{6} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
-                                                           curr_img.height, curr_img.amPh.am.dtype,
+                                                           curr_img.height, data_to_export.dtype,
                                                            curr_img.px_dim * 1e9))
         print('Saved log file: "{0}"'.format(log_fname))
 
@@ -1475,7 +1405,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def export_3d_image(self):
         from matplotlib import cm
-        from mpl_toolkits.mplot3d import Axes3D
+        # from mpl_toolkits.mplot3d import Axes3D
 
         curr_img = self.display.image
         img_dim = curr_img.width
@@ -3049,15 +2979,6 @@ def convert_points_to_tl_br(p1, p2):
     tl = list(np.amin([p1, p2], axis=0))
     br = list(np.amax([p1, p2], axis=0))
     return tl, br
-
-# --------------------------------------------------------
-
-def det_Imin_Imax_from_contrast(dI, def_max=256.0):
-    dImin = dI // 2 + 1
-    dImax = dI - dImin
-    Imin = def_max // 2 - dImin
-    Imax = def_max // 2 + dImax
-    return Imin, Imax
 
 # --------------------------------------------------------
 
