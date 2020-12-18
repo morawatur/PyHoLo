@@ -2813,16 +2813,19 @@ def LoadImageSeriesFromFirstFile(img_path):
             is_there_info = True
             imgs_info = pd.read_csv(info_file_path, sep='\t', header=None)
             imgs_info = imgs_info.values
+            print('info file detected')
+        else:
+            print('info file not detected')
 
     while path.isfile(img_path):
         print('Reading file "' + img_path + '"')
         img_name_match = re.search('(.+)/(.+).dm3$', img_path)
         img_name_text = img_name_match.group(2)
-        img_type = imgs_info[img_idx, 2]
+        img_type = imgs_info[img_idx, 2] if is_there_info else 'amp'
 
         img = open_dm3_file(img_path, img_type)
         img.numInSeries = img_num
-        img.name = img_name_text if not is_there_info else imgs_info[img_idx, 1]
+        img.name = imgs_info[img_idx, 1] if is_there_info else img_name_text
         img = rescale_image_buffer_to_window(img, const.disp_dim)
 
         # ---
