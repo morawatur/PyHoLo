@@ -568,12 +568,14 @@ class HolographyWidget(QtWidgets.QWidget):
         color_group.addButton(self.color_radio_button)
 
         self.export_tiff_radio_button = QtWidgets.QRadioButton('TIFF image', self)
-        self.export_bin_radio_button = QtWidgets.QRadioButton('Numpy array file', self)
+        self.export_npy_radio_button = QtWidgets.QRadioButton('Numpy array file', self)
+        self.export_raw_radio_button = QtWidgets.QRadioButton('Raw data file', self)
         self.export_tiff_radio_button.setChecked(True)
 
         export_group = QtWidgets.QButtonGroup(self)
         export_group.addButton(self.export_tiff_radio_button)
-        export_group.addButton(self.export_bin_radio_button)
+        export_group.addButton(self.export_npy_radio_button)
+        export_group.addButton(self.export_raw_radio_button)
 
         fname_label = QtWidgets.QLabel('File name', self)
         self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
@@ -612,13 +614,14 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_exp.setColumnStretch(0, 1)
         grid_exp.setColumnStretch(4, 1)
         grid_exp.setRowStretch(0, 1)
-        grid_exp.setRowStretch(3, 1)
+        grid_exp.setRowStretch(4, 1)
         grid_exp.addWidget(fname_label, 1, 1)
         grid_exp.addWidget(self.fname_input, 2, 1)
         grid_exp.addWidget(export_button, 1, 2)
         grid_exp.addWidget(export_all_button, 2, 2)
         grid_exp.addWidget(self.export_tiff_radio_button, 1, 3)
-        grid_exp.addWidget(self.export_bin_radio_button, 2, 3)
+        grid_exp.addWidget(self.export_npy_radio_button, 2, 3)
+        grid_exp.addWidget(self.export_raw_radio_button, 3, 3)
 
         self.tab_disp = QtWidgets.QWidget()
         self.tab_disp.layout = QtWidgets.QVBoxLayout()
@@ -1219,20 +1222,8 @@ class HolographyWidget(QtWidgets.QWidget):
             else:
                 fname = 'cos_phs{0}'.format(curr_num)
 
-        # binary file (deprecated)
-        # if self.export_bin_radio_button.isChecked():
-        #     fname_ext = ''
-        #     if is_amp_checked:
-        #         curr_img.amPh.am.tofile(fname)
-        #     elif is_phs_checked:
-        #         curr_img.amPh.ph.tofile(fname)
-        #     else:
-        #         cos_phs = np.cos(curr_img.amPh.ph)
-        #         cos_phs.tofile(fname)
-        #     print('Saved image to binary file: "{0}"'.format(fname))
-
         # numpy array file (new)
-        if self.export_bin_radio_button.isChecked():
+        if self.export_npy_radio_button.isChecked():
             fname_ext = '.npy'
 
             if is_amp_checked:
@@ -1242,7 +1233,23 @@ class HolographyWidget(QtWidgets.QWidget):
             else:
                 cos_phs = np.cos(curr_img.amPh.ph)
                 np.save(fname, cos_phs)
+
             print('Saved image to numpy array file: "{0}.npy"'.format(fname))
+
+        # raw data file
+        elif self.export_raw_radio_button.isChecked():
+            fname_ext = ''
+
+            if is_amp_checked:
+                curr_img.amPh.am.tofile(fname)
+            elif is_phs_checked:
+                curr_img.amPh.ph.tofile(fname)
+            else:
+                cos_phs = np.cos(curr_img.amPh.ph)
+                cos_phs.tofile(fname)
+
+            print('Saved image to raw data file: "{0}"'.format(fname))
+
         # TIF file
         else:
             fname_ext = '.tif'
@@ -1258,6 +1265,7 @@ class HolographyWidget(QtWidgets.QWidget):
                 curr_img.amPh.ph = np.cos(phs_tmp)
                 self.save_phs_as_tiff(fname, log, color)
                 curr_img.amPh.ph = np.copy(phs_tmp)
+
             print('Saved image as "{0}.tif"'.format(fname))
 
         # save log file
