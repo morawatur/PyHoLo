@@ -62,18 +62,17 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='polar')
 
-    B_min, B_max = 0.0, np.max(B_values) + 0.1
-    # B_min, B_max = 0.0, const.temp_B_max_for_polar_plot
+    B_lim1, B_lim2 = 0.0, np.max(B_values) + 0.1
     for p_idx in range(n_r):
         ax.plot(angles[p_idx], np.array(B_values[p_idx]), '.-', lw=1.0, ms=3.5,
                 label='r={0:.0f}px'.format(round(r_values[p_idx])))
-    ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_max, B_max]), 'k--', lw=0.8)    # mark selected direction
-    ax.plot(np.array([ang1, ang2]), np.array([B_max, B_max]), 'g--', lw=0.8)            # boundary between positive and negative values of B
+    ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_lim2, B_lim2]), 'k--', lw=0.8)    # mark selected direction
+    ax.plot(np.array([ang1, ang2]), np.array([B_lim2, B_lim2]), 'g--', lw=0.8)            # boundary between positive and negative values of B
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
     # ax.plot(angles, np.zeros(n_ang), 'g--', lw=1)
-    # for ang, r in zip(angles[:n_ang:4], B_values[:n_ang:4]):
+    # for ang, r in zip(angles[:n_ang:4], B_values[0][:n_ang:4]):
     #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
-    ax.set_ylim(B_min, B_max)
+    ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
     ax.margins(0, 0)
@@ -83,7 +82,12 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     plt.close(fig)
     print('B_pol_{0}{1}.png exported!'.format(img.name, addn_str))
 
+    # print [Bx, By] components of resultant (projected) vector B
+    max_B = np.max(B_values[0])
     max_B_angle = angles[0][np.argmax(B_values[0])] - np.pi / 2.0
+    Bx, By = max_B * np.cos(max_B_angle), -max_B * np.sin(max_B_angle)
+    print('B_proj = [Bx, By] = [{0:.2f}, {1:.2f}] T'.format(Bx, By))
+
     return max_B_angle
 
 #-------------------------------------------------------------------

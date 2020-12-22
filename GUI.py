@@ -2504,7 +2504,7 @@ class HolographyWidget(QtWidgets.QWidget):
             orig_xy = np.round(np.mean([pt1, pt2], axis=0)).astype(np.int32)
             r1 = d_dist / 2
 
-        if gen_multiple_plots is False or n_rows * n_cols == 1:
+        if gen_multiple_plots is False:
             dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
             mc.calc_B_polar_from_orig_r(curr_img, orig_xy, r1, sample_thickness, orig_is_pt1, dir_ang, n_r_iters)
         else:
