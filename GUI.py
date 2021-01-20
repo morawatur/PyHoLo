@@ -336,7 +336,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
 
         open_act = QtWidgets.QAction('Open dm3 or npy...', self)
         open_act.setShortcut('Ctrl+O')
-        open_act.triggered.connect(self.open_file)
+        open_act.triggered.connect(self.open_files)
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('File')
@@ -352,44 +352,50 @@ class HolographyWindow(QtWidgets.QMainWindow):
         self.show()
         self.setFixedSize(self.width(), self.height())  # disable window resizing
 
-    def open_file(self):
+    def open_files(self):
+        import pathlib
+        curr_dir = str(pathlib.Path().absolute())
+
         file_dialog = QtWidgets.QFileDialog()
-        img_path = file_dialog.getOpenFileName()[0]
-        if img_path == '':
+        file_paths = file_dialog.getOpenFileNames(self, 'Open file', curr_dir, 'Image files (*.dm3 *.npy)')[0]
+
+        if len(file_paths) == 0:
             print('No images to read. Exiting...')
             return
 
-        print('Reading file "{0}"'.format(img_path))
         img_type = 'amp' if self.holo_widget.amp_radio_button.isChecked() else 'phs'
 
-        # dm3 file
-        if img_path.endswith('.dm3'):
-            img_name_match = re.search('(.+)/(.+).dm3$', img_path)
-            img_name_text = img_name_match.group(2)
+        for fpath in file_paths:
+            print('Reading file "{0}"'.format(fpath))
 
-            new_img = open_dm3_file(img_path, img_type)
-        # npy file
-        elif img_path.endswith('.npy'):
-            img_name_match = re.search('(.+)/(.+).npy$', img_path)
-            img_name_text = img_name_match.group(2)
+            # dm3 file
+            if fpath.endswith('.dm3'):
+                img_name_match = re.search('(.+)/(.+).dm3$', fpath)
+                img_name_text = img_name_match.group(2)
 
-            new_img_arr = np.load(img_path)
-            h, w = new_img_arr.shape
+                new_img = open_dm3_file(fpath, img_type)
+            # npy file
+            elif fpath.endswith('.npy'):
+                img_name_match = re.search('(.+)/(.+).npy$', fpath)
+                img_name_text = img_name_match.group(2)
 
-            new_img = imsup.ImageExp(h, w, imsup.Image.cmp['CAP'])
-            if img_type == 'amp':
-                new_img.LoadAmpData(new_img_arr)
+                new_img_arr = np.load(fpath)
+                h, w = new_img_arr.shape
+
+                new_img = imsup.ImageExp(h, w, imsup.Image.cmp['CAP'])
+                if img_type == 'amp':
+                    new_img.LoadAmpData(new_img_arr)
+                else:
+                    new_img.LoadPhsData(new_img_arr)
             else:
-                new_img.LoadPhsData(new_img_arr)
-        else:
-            print('Could not load the image. It must be in dm3 or npy format...')
-            return
+                print('Could not load the image. It must be in dm3 or npy format...')
+                return
 
-        # in the case of npy file the px_dim will be the same as for the last dm3 file opened
-        new_img.name = img_name_text
-        new_img = rescale_image_buffer_to_window(new_img, const.disp_dim)
+            # in the case of npy file the px_dim will be the same as for the last dm3 file opened
+            new_img.name = img_name_text
+            new_img = rescale_image_buffer_to_window(new_img, const.disp_dim)
 
-        self.holo_widget.insert_img_after_curr(new_img)
+            self.holo_widget.insert_img_after_curr(new_img)
 
 # --------------------------------------------------------
 
