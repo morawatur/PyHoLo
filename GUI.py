@@ -90,7 +90,8 @@ class SimpleImageLabel(QtWidgets.QLabel):
 class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
         super(LabelExt, self).__init__(parent)
-        self.image = image
+        blank_image = imsup.ImageExp(const.disp_dim, const.disp_dim, num=-1)
+        self.image = image if image is not None else blank_image
         self.setImage()
         self.pointSets = [[]]
         self.show_lines = True
@@ -106,11 +107,11 @@ class LabelExt(QtWidgets.QLabel):
         qp = QtGui.QPainter()
         qp.begin(self)
         qp.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        imgIdx = self.image.numInSeries - 1
+        img_idx = abs(self.image.numInSeries) - 1
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.yellow)
 
-        for pt in self.pointSets[imgIdx]:
+        for pt in self.pointSets[img_idx]:
             # rect = QtCore.QRect(pt[0]-3, pt[1]-3, 7, 7)
             # qp.drawArc(rect, 0, 16*360)
             qp.drawEllipse(pt[0]-3, pt[1]-3, 7, 7)
@@ -118,7 +119,7 @@ class LabelExt(QtWidgets.QLabel):
         linePen.setWidth(2)
         if self.show_lines:
             qp.setPen(linePen)
-            for pt1, pt2 in zip(self.pointSets[imgIdx], self.pointSets[imgIdx][1:] + self.pointSets[imgIdx][:1]):
+            for pt1, pt2 in zip(self.pointSets[img_idx], self.pointSets[img_idx][1:] + self.pointSets[img_idx][:1]):
                 line = QtCore.QLine(pt1[0], pt1[1], pt2[0], pt2[1])
                 qp.drawLine(line)
 
@@ -127,8 +128,8 @@ class LabelExt(QtWidgets.QLabel):
         linePen.setCapStyle(QtCore.Qt.FlatCap)
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.NoBrush)
-        if len(self.pointSets[imgIdx]) == 2:
-            pt1, pt2 = self.pointSets[imgIdx]
+        if len(self.pointSets[img_idx]) == 2:
+            pt1, pt2 = self.pointSets[img_idx]
             pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
             w = np.abs(pt2[0] - pt1[0])
             h = np.abs(pt2[1] - pt1[1])
@@ -148,10 +149,11 @@ class LabelExt(QtWidgets.QLabel):
     def mouseReleaseEvent(self, QMouseEvent):
         pos = QMouseEvent.pos()
         curr_pos = [pos.x(), pos.y()]
-        self.pointSets[self.image.numInSeries - 1].append(curr_pos)
+        img_idx = abs(self.image.numInSeries) - 1
+        self.pointSets[img_idx].append(curr_pos)
         self.repaint()
 
-        pt_idx = len(self.pointSets[self.image.numInSeries - 1])
+        pt_idx = len(self.pointSets[img_idx])
         real_x, real_y = disp_pt_to_real_tl_pt(self.image.width, curr_pos)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
@@ -211,7 +213,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def show_last_label(self):
-        img_idx = self.image.numInSeries - 1
+        img_idx = abs(self.image.numInSeries) - 1
         pt_idx = len(self.pointSets[img_idx]) - 1
         last_pt = self.pointSets[img_idx][pt_idx]
         lab = QtWidgets.QLabel('{0}'.format(pt_idx+1), self)
@@ -334,13 +336,18 @@ class HolographyWindow(QtWidgets.QMainWindow):
         # Menu bar
         # ------------------------------
 
-        open_act = QtWidgets.QAction('Open dm3 or npy...', self)
-        open_act.setShortcut('Ctrl+O')
-        open_act.triggered.connect(self.open_files)
+        open_img_act = QtWidgets.QAction('Open dm3 or npy...', self)
+        open_img_act.setShortcut('Ctrl+O')
+        open_img_act.triggered.connect(self.open_image_files)
+
+        open_img_ser_act = QtWidgets.QAction('Open dm3 series...', self)
+        open_img_ser_act.setShortcut('Ctrl+D')
+        open_img_ser_act.triggered.connect(self.open_image_series)
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu('File')
-        file_menu.addAction(open_act)
+        file_menu.addAction(open_img_act)
+        file_menu.addAction(open_img_ser_act)
 
         # ------------------------------
 
@@ -352,12 +359,12 @@ class HolographyWindow(QtWidgets.QMainWindow):
         self.show()
         self.setFixedSize(self.width(), self.height())  # disable window resizing
 
-    def open_files(self):
+    def open_image_files(self):
         import pathlib
         curr_dir = str(pathlib.Path().absolute())
 
         file_dialog = QtWidgets.QFileDialog()
-        file_paths = file_dialog.getOpenFileNames(self, 'Open file', curr_dir, 'Image files (*.dm3 *.npy)')[0]
+        file_paths = file_dialog.getOpenFileNames(self, 'Open image file', curr_dir, 'Image files (*.dm3 *.npy)')[0]
 
         if len(file_paths) == 0:
             print('No images to read. Exiting...')
@@ -397,22 +404,40 @@ class HolographyWindow(QtWidgets.QMainWindow):
 
             self.holo_widget.insert_img_after_curr(new_img)
 
+            if not self.holo_widget.tab_disp.isEnabled():
+                self.holo_widget.enable_tabs()
+
+    def open_image_series(self):
+        import pathlib
+        curr_dir = str(pathlib.Path().absolute())
+
+        file_dialog = QtWidgets.QFileDialog()
+        file_path = file_dialog.getOpenFileName(self, 'Open dm3 series', curr_dir, 'Image files (*.dm3)')[0]
+
+        if file_path == '':
+            print('No images to read. Exiting...')
+            return
+        if not file_path.endswith('.dm3'):
+            print('Could not load the starting image. It must be in dm3 format...')
+            return
+
+        first_img = LoadImageSeriesFromFirstFile(file_path)
+        self.holo_widget.insert_img_after_curr(first_img)
+
+        if not self.holo_widget.tab_disp.isEnabled():
+            self.holo_widget.enable_tabs()
+
 # --------------------------------------------------------
 
 class HolographyWidget(QtWidgets.QWidget):
     def __init__(self):
         super(HolographyWidget, self).__init__()
-        file_dialog = QtWidgets.QFileDialog()
-        image_path = file_dialog.getOpenFileName()[0]
-        if image_path == '':
-            print('No images to read. Exiting...')
-            exit()
-        image = LoadImageSeriesFromFirstFile(image_path)
-        self.display = LabelExt(self, image)
+        self.display = LabelExt(self)
         self.display.setFixedWidth(const.disp_dim)
         self.display.setFixedHeight(const.disp_dim)
+        self.display.setStyleSheet('background-color: black;')
         self.plot_widget = PlotWidget()
-        self.preview_scroll = ImgScrollArea(image)
+        self.preview_scroll = ImgScrollArea()
         self.backup_image = None
         self.changes_made = []
         self.shift = [0, 0]
@@ -424,8 +449,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def initUI(self):
         self.plot_widget.canvas.setFixedHeight(350)
 
-        self.curr_info_label = QtWidgets.QLabel('', self)
-        self.update_curr_info_label()
+        self.curr_info_label = QtWidgets.QLabel('Image info', self)
 
         # ------------------------------
         # Navigation panel (1)
@@ -452,7 +476,7 @@ class HolographyWidget(QtWidgets.QWidget):
         amp_phs_group.addButton(self.phs_radio_button)
         amp_phs_group.addButton(self.cos_phs_radio_button)
 
-        self.name_input = QtWidgets.QLineEdit(self.display.image.name, self)
+        self.name_input = QtWidgets.QLineEdit('', self)
 
         marker_xy_label = QtWidgets.QLabel('Marker xy-coords:')
         self.marker_x_input = QtWidgets.QLineEdit('0', self)
@@ -551,7 +575,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
 
         fname_label = QtWidgets.QLabel('File name', self)
-        self.fname_input = QtWidgets.QLineEdit(self.display.image.name, self)
+        self.fname_input = QtWidgets.QLineEdit('', self)
 
         unwrap_button.clicked.connect(self.unwrap_img_phase)
         wrap_button.clicked.connect(self.wrap_img_phase)
@@ -1056,6 +1080,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tabs.addTab(self.tab_calc_2, 'Mag. field #2')
         self.tabs.addTab(self.tab_corr, 'Corrections')
 
+        self.disable_tabs()
+        self.tab_nav.setEnabled(True)
+
         vbox_panel = QtWidgets.QVBoxLayout()
         vbox_panel.addWidget(self.curr_info_label)
         vbox_panel.addWidget(self.tabs)
@@ -1069,11 +1096,31 @@ class HolographyWidget(QtWidgets.QWidget):
         self.setLayout(hbox_main)
 
     def update_curr_info_label(self):
+        if self.display.image is None:
+            return
         curr_img = self.display.image
         disp_name = curr_img.name[:const.disp_name_max_len]
         if len(curr_img.name) > const.disp_name_max_len:
             disp_name = disp_name[:-3] + '...'
         self.curr_info_label.setText('{0}, dim = {1} px'.format(disp_name, curr_img.width))
+
+    def enable_tabs(self):
+        # self.tab_nav.setEnabled(True)
+        self.tab_disp.setEnabled(True)
+        self.tab_align.setEnabled(True)
+        self.tab_holo.setEnabled(True)
+        self.tab_calc.setEnabled(True)
+        self.tab_calc_2.setEnabled(True)
+        self.tab_corr.setEnabled(True)
+
+    def disable_tabs(self):
+        # self.tab_nav.setEnabled(False)
+        self.tab_disp.setEnabled(False)
+        self.tab_align.setEnabled(False)
+        self.tab_holo.setEnabled(False)
+        self.tab_calc.setEnabled(False)
+        self.tab_calc_2.setEnabled(False)
+        self.tab_corr.setEnabled(False)
 
     def enable_manual_panel(self):
         self.left_button.setEnabled(True)
@@ -1111,8 +1158,7 @@ class HolographyWidget(QtWidgets.QWidget):
         first_img = imsup.GetFirstImage(curr_img)
         img_queue = imsup.CreateImageListFromFirstImage(first_img)
         for img, idx in zip(img_queue, range(len(img_queue))):
-            img.numInSeries = idx + 1
-            img.name = 'img0{0}'.format(idx + 1) if idx < 9 else 'img{0}'.format(idx + 1)
+            img.name = 'img_0{0}'.format(idx + 1) if idx < 9 else 'img_{0}'.format(idx + 1)
         self.update_curr_info_label()
         self.name_input.setText(curr_img.name)
         self.fname_input.setText(curr_img.name)
@@ -1506,11 +1552,12 @@ class HolographyWidget(QtWidgets.QWidget):
         labToDel = self.display.children()
         for child in labToDel:
             child.deleteLater()
-        self.display.pointSets[self.display.image.numInSeries - 1][:] = []
+        curr_idx = abs(self.display.image.numInSeries) - 1
+        self.display.pointSets[curr_idx][:] = []
         self.display.repaint()
 
     def remove_last_point(self):
-        curr_idx = self.display.image.numInSeries - 1
+        curr_idx = abs(self.display.image.numInSeries) - 1
         if len(self.display.pointSets[curr_idx]) == 0:
             return
         all_labels = self.display.children()
@@ -1522,7 +1569,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def add_marker_at_xy(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = abs(curr_img.numInSeries) - 1
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
             # --- to be removed later ---
@@ -1990,14 +2037,23 @@ class HolographyWidget(QtWidgets.QWidget):
         warped_img = tr.WarpImage(curr_img, src, dst)
         self.insert_img_after_curr(warped_img)
 
-    def insert_img_after_curr(self, img):
+    def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
-        tmp_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        tmp_img_list.insert(1, img)
-        self.display.pointSets.insert(curr_num, [])
-        tmp_img_list.UpdateLinks()
-        self.go_to_next_image()
-        self.preview_scroll.update_scroll_list(self.display.image)
+
+        if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
+            new_img.numInSeries = 1
+            self.display.image = new_img
+            self.display.pointSets[0] = []
+            self.go_to_image(0)
+        else:
+            curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
+            new_img_list = imsup.CreateImageListFromFirstImage(new_img)
+            curr_img_list[1:1] = new_img_list
+            self.display.pointSets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
+            curr_img_list.UpdateLinks()
+            self.go_to_next_image()
+
+        # self.preview_scroll.update_scroll_list(self.display.image)
 
     def rec_holo_no_ref_1(self):
         holo_img = self.display.image
