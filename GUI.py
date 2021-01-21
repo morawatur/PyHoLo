@@ -364,7 +364,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
         curr_dir = str(pathlib.Path().absolute())
 
         file_dialog = QtWidgets.QFileDialog()
-        file_paths = file_dialog.getOpenFileNames(self, 'Open image file', curr_dir, 'Image files (*.dm3 *.npy)')[0]
+        file_paths = file_dialog.getOpenFileNames(self, 'Open image files', curr_dir, 'Image files (*.dm3 *.npy)')[0]
 
         if len(file_paths) == 0:
             print('No images to read. Exiting...')
