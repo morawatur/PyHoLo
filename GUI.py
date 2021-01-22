@@ -758,13 +758,13 @@ class HolographyWidget(QtWidgets.QWidget):
         holo_no_ref_2_button = QtWidgets.QPushButton('Holo', self)
         holo_with_ref_2_button = QtWidgets.QPushButton('Holo+Ref', self)
         holo_no_ref_3_button = QtWidgets.QPushButton('IFFT', self)
+        holo_with_ref_fast_button = QtWidgets.QPushButton('H+R (Fast)', self)
         sum_button = QtWidgets.QPushButton('Sum', self)
         diff_button = QtWidgets.QPushButton('Diff', self)
         amplify_button = QtWidgets.QPushButton('Amplify', self)
         add_radians_button = QtWidgets.QPushButton('Add radians', self)
         remove_phase_tilt_button = QtWidgets.QPushButton('Remove phase tilt', self)
         get_sideband_from_xy_button = QtWidgets.QPushButton('Get sideband', self)
-        do_all_button = QtWidgets.QPushButton('DO ALL', self)
 
         self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift', self)
         self.subpixel_shift_checkbox.setChecked(False)
@@ -784,21 +784,17 @@ class HolographyWidget(QtWidgets.QWidget):
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
         self.sideband_y_input = QtWidgets.QLineEdit('0', self)
 
-        hbox_holo = QtWidgets.QHBoxLayout()
-        hbox_holo.addWidget(holo_no_ref_2_button)
-        hbox_holo.addWidget(holo_with_ref_2_button)
-
         holo_no_ref_1_button.clicked.connect(self.rec_holo_no_ref_1)
         holo_no_ref_2_button.clicked.connect(self.rec_holo_no_ref_2)
         holo_with_ref_2_button.clicked.connect(self.rec_holo_with_ref_2)
         holo_no_ref_3_button.clicked.connect(self.rec_holo_no_ref_3)
+        holo_with_ref_fast_button.clicked.connect(self.rec_holo_with_ref_fast)
         sum_button.clicked.connect(self.calc_phs_sum)
         diff_button.clicked.connect(self.calc_phs_diff)
         amplify_button.clicked.connect(self.amplify_phase)
         add_radians_button.clicked.connect(self.add_radians)
         remove_phase_tilt_button.clicked.connect(self.remove_phase_tilt)
         get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
-        do_all_button.clicked.connect(self.do_all)
 
         self.tab_holo = QtWidgets.QWidget()
         self.tab_holo.layout = QtWidgets.QGridLayout()
@@ -817,22 +813,23 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(hann_win_label, 1, 3, 1, 2)
         self.tab_holo.layout.addWidget(self.hann_win_input, 2, 3, 1, 2)
         self.tab_holo.layout.addWidget(holo_no_ref_1_button, 3, 1, 1, 2)
-        self.tab_holo.layout.addLayout(hbox_holo, 3, 3, 1, 2)
+        self.tab_holo.layout.addWidget(holo_no_ref_2_button, 3, 3)
+        self.tab_holo.layout.addWidget(holo_with_ref_2_button, 3, 4)
+        self.tab_holo.layout.addWidget(holo_with_ref_fast_button, 4, 3)
         self.tab_holo.layout.addWidget(holo_no_ref_3_button, 4, 1, 1, 2)
-        self.tab_holo.layout.addWidget(sum_button, 4, 3, 1, 2)
+        self.tab_holo.layout.addWidget(sum_button, 4, 4)
         self.tab_holo.layout.addWidget(diff_button, 4, 5, 1, 2)
         self.tab_holo.layout.addWidget(amp_factor_label, 1, 5, 1, 2)
         self.tab_holo.layout.addWidget(self.amp_factor_input, 2, 5, 1, 2)
         self.tab_holo.layout.addWidget(amplify_button, 3, 5, 1, 2)
-        self.tab_holo.layout.addWidget(add_radians_button, 5, 1, 1, 1)
-        self.tab_holo.layout.addWidget(self.radians2add_input, 5, 2, 1, 1)
+        self.tab_holo.layout.addWidget(add_radians_button, 5, 1)
+        self.tab_holo.layout.addWidget(self.radians2add_input, 5, 2)
+        self.tab_holo.layout.addWidget(remove_phase_tilt_button, 6, 1, 1, 2)
         self.tab_holo.layout.addWidget(sideband_xy_label, 5, 3, 1, 2)
         self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 5, 1, 2)
         self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 5, 1, 2)
         self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 3, 1, 2)
-        self.tab_holo.layout.addWidget(do_all_button, 6, 1, 1, 2)
         self.tab_holo.layout.addWidget(self.subpixel_shift_checkbox, 7, 1, 1, 2)
-        self.tab_holo.layout.addWidget(remove_phase_tilt_button, 7, 3, 1, 2)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -2067,6 +2064,11 @@ class HolographyWidget(QtWidgets.QWidget):
     def rec_holo_no_ref_2(self):
         # general convention is (y, x), i.e. (r, c)
         holo_fft = self.display.image
+
+        print('--------------------------')
+        print('Hologram reconstruction (no reference hologram)')
+        print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(holo_fft.name))
+
         [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(holo_fft.width, dpts)
@@ -2101,8 +2103,19 @@ class HolographyWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
 
+        print('Output:\n"{0}" -- cropped and centered sideband of the object hologram'.format(sband_img_ap.name))
+        print('--------------------------')
+
     def rec_holo_with_ref_2(self):
         ref_fft = self.display.image
+        holo_img = self.display.image.next
+
+        print('--------------------------')
+        print('Hologram reconstruction (with reference hologram)'
+              '\nInput:'
+              '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
+              '\n"{1}" -- object hologram'.format(ref_fft.name, holo_img.name))
+
         [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
@@ -2123,7 +2136,6 @@ class HolographyWidget(QtWidgets.QWidget):
 
         ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
-        holo_img = self.display.image.next
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
@@ -2131,12 +2143,70 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(ref_sband_ap)
         self.insert_img_after_curr(holo_sband_ap)
 
+        print('Output:'
+              '\n"{0}" -- cropped and centered sideband of the reference hologram'
+              '\n"{1}" -- cropped and centered sideband of the object hologram'.format(ref_sband_ap.name, holo_sband_ap.name))
+        print('--------------------------')
+
     def rec_holo_no_ref_3(self):
         sband_img = self.display.image
         rec_holo = holo.rec_holo_no_ref_3(sband_img)
         rec_holo.ReIm2AmPh()
         self.log_scale_checkbox.setChecked(False)
         self.insert_img_after_curr(rec_holo)
+
+    def rec_holo_with_ref_fast(self):
+        ref_fft = self.display.image
+        holo_img = ref_fft.next
+
+        print('--------------------------')
+        print('(Fast) Hologram reconstruction (with reference hologram)'
+              '\nInput:'
+              '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
+              '\n"{1}" -- object hologram'.format(ref_fft.name, holo_img.name))
+
+        [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
+        dpts = pt1 + pt2
+        rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
+        rpt1 = rpts[:2]  # x, y
+        rpt2 = rpts[2:]  # x, y
+        rpt1.reverse()   # r, c
+        rpt2.reverse()   # r, c
+
+        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
+        apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
+        sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
+
+        ap_radius = int(self.aperture_input.text())
+        hann_window = int(self.hann_win_input.text())
+
+        mid = ref_fft.width // 2
+        shift = [mid - sband_xy[0], mid - sband_xy[1]]
+
+        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+
+        holo_fft = holo.rec_holo_no_ref_1(holo_img)
+        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+
+        rec_ref = holo.rec_holo_no_ref_3(ref_sband_ap)
+        rec_holo = holo.rec_holo_no_ref_3(holo_sband_ap)
+        rec_ref.ReIm2AmPh()
+        rec_holo.ReIm2AmPh()
+
+        # unwrapping
+        new_ref_phs = tr.unwrap_phase(rec_ref.amPh.ph)
+        new_holo_phs = tr.unwrap_phase(rec_holo.amPh.ph)
+        rec_ref.amPh.ph = np.copy(new_ref_phs)
+        rec_holo.amPh.ph = np.copy(new_holo_phs)
+
+        rec_holo_corr = holo.calc_phase_diff(rec_ref, rec_holo)
+        rec_holo_corr = rescale_image_buffer_to_window(rec_holo_corr, const.disp_dim)
+        rec_holo_corr.name = 'ph_from_{0}'.format(holo_img.name)
+        self.insert_img_after_curr(rec_holo_corr)
+        self.log_scale_checkbox.setChecked(False)
+
+        print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_holo_corr.name))
+        print('--------------------------')
 
     # def rec_holo_no_ref(self):
     #     holo1 = self.display.image.prev
@@ -2160,8 +2230,8 @@ class HolographyWidget(QtWidgets.QWidget):
     #     tmp_img_list.UpdateLinks()
     #     self.go_to_next_image()
 
-    def rec_holo_with_ref(self):
-        pass
+    # def rec_holo_with_ref(self):
+    #     pass
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev
@@ -2357,50 +2427,6 @@ class HolographyWidget(QtWidgets.QWidget):
         sband_img_ap = holo.rec_holo_no_ref_2(curr_img, shift, ap_rad=ap_radius, N_hann=hann_window)
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
-
-    # temporary method?
-    def do_all(self):
-        ref_fft = self.display.image
-        [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
-        dpts = pt1 + pt2
-        rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
-        rpt1 = rpts[:2] # x, y
-        rpt2 = rpts[2:] # x, y
-        rpt1.reverse()  # r, c
-        rpt2.reverse()  # r, c
-
-        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
-        apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
-        sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
-
-        ap_radius = int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
-
-        mid = ref_fft.width // 2
-        shift = [mid - sband_xy[0], mid - sband_xy[1]]
-
-        ref_sband_ap = holo.rec_holo_no_ref_2(ref_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
-
-        holo_img = ref_fft.next
-        holo_fft = holo.rec_holo_no_ref_1(holo_img)
-        holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
-
-        rec_ref = holo.rec_holo_no_ref_3(ref_sband_ap)
-        rec_holo = holo.rec_holo_no_ref_3(holo_sband_ap)
-        rec_ref.ReIm2AmPh()
-        rec_holo.ReIm2AmPh()
-
-        # unwrapping
-        new_ref_phs = tr.unwrap_phase(rec_ref.amPh.ph)
-        new_holo_phs = tr.unwrap_phase(rec_holo.amPh.ph)
-        rec_ref.amPh.ph = np.copy(new_ref_phs)
-        rec_holo.amPh.ph = np.copy(new_holo_phs)
-
-        rec_holo_corr = holo.calc_phase_diff(rec_ref, rec_holo)
-        rec_holo_corr = rescale_image_buffer_to_window(rec_holo_corr, const.disp_dim)
-        rec_holo_corr.name = 'ph_from_{0}'.format(holo_img.name)
-        self.insert_img_after_curr(rec_holo_corr)
-        self.log_scale_checkbox.setChecked(False)
 
     def swap_left(self):
         curr_img = self.display.image
