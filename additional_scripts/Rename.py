@@ -14,7 +14,7 @@ for file, idx in zip(dm3_files, range(num_of_files)):
     new_fname = '{0}_{1}.dm3'.format(new_ser_name, idx + 1)
     if idx < 9:
         new_fname = new_fname[:-5] + '0' + new_fname[-5:]
-    description_file.write('{0}\t{1}\tamp\n'.format(new_fname, old_fname))
+    description_file.write('{0}\t{1}\tamp\n'.format(new_fname.replace('.dm3', ''), old_fname.replace('.dm3', '')))
     os.rename(file, path + new_fname)
 
 description_file.close()
