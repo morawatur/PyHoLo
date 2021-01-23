@@ -2,7 +2,7 @@ import os
 import glob
 
 path = 'C:\\img_dir\\'
-dm3_files = glob.glob(path + '*.dm3')
+dm3_files = sorted(glob.glob(path + '*.dm3'))
 num_of_files = len(dm3_files)
 description_file = open(path + 'info.txt', 'w')
 
