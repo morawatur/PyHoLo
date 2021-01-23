@@ -93,7 +93,6 @@ class LabelExt(QtWidgets.QLabel):
         blank_image = imsup.ImageExp(const.disp_dim, const.disp_dim, num=-1)
         self.image = image if image is not None else blank_image
         self.setImage()
-        self.pointSets = [[]]
         self.show_lines = True
         self.show_labs = True
         self.rgb_cm = RgbColorTable_B2R()
@@ -108,10 +107,11 @@ class LabelExt(QtWidgets.QLabel):
         qp.begin(self)
         qp.setRenderHint(QtGui.QPainter.Antialiasing, True)
         img_idx = abs(self.image.numInSeries) - 1
+        points = self.parent().point_sets[img_idx]
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.yellow)
 
-        for pt in self.pointSets[img_idx]:
+        for pt in points:
             # rect = QtCore.QRect(pt[0]-3, pt[1]-3, 7, 7)
             # qp.drawArc(rect, 0, 16*360)
             qp.drawEllipse(pt[0]-3, pt[1]-3, 7, 7)
@@ -119,7 +119,7 @@ class LabelExt(QtWidgets.QLabel):
         linePen.setWidth(2)
         if self.show_lines:
             qp.setPen(linePen)
-            for pt1, pt2 in zip(self.pointSets[img_idx], self.pointSets[img_idx][1:] + self.pointSets[img_idx][:1]):
+            for pt1, pt2 in zip(points, points[1:] + points[:1]):
                 line = QtCore.QLine(pt1[0], pt1[1], pt2[0], pt2[1])
                 qp.drawLine(line)
 
@@ -128,8 +128,8 @@ class LabelExt(QtWidgets.QLabel):
         linePen.setCapStyle(QtCore.Qt.FlatCap)
         qp.setPen(linePen)
         qp.setBrush(QtCore.Qt.NoBrush)
-        if len(self.pointSets[img_idx]) == 2:
-            pt1, pt2 = self.pointSets[img_idx]
+        if len(points) == 2:
+            pt1, pt2 = points
             pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
             w = np.abs(pt2[0] - pt1[0])
             h = np.abs(pt2[1] - pt1[1])
@@ -150,10 +150,11 @@ class LabelExt(QtWidgets.QLabel):
         pos = QMouseEvent.pos()
         curr_pos = [pos.x(), pos.y()]
         img_idx = abs(self.image.numInSeries) - 1
-        self.pointSets[img_idx].append(curr_pos)
+        points = self.parent().point_sets[img_idx]
+        points.append(curr_pos)
         self.repaint()
 
-        pt_idx = len(self.pointSets[img_idx])
+        pt_idx = len(points)
         real_x, real_y = disp_pt_to_real_tl_pt(self.image.width, curr_pos)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
@@ -205,8 +206,9 @@ class LabelExt(QtWidgets.QLabel):
 
     def show_labels(self):
         img_idx = self.image.numInSeries - 1
-        n_pt = len(self.pointSets[img_idx])
-        for pt, idx in zip(self.pointSets[img_idx], range(1, n_pt+1)):
+        points = self.parent().point_sets[img_idx]
+        n_pt = len(points)
+        for pt, idx in zip(points, range(1, n_pt+1)):
             lab = QtWidgets.QLabel('{0}'.format(idx), self)
             lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
             lab.move(pt[0] + 4, pt[1] + 4)
@@ -214,16 +216,15 @@ class LabelExt(QtWidgets.QLabel):
 
     def show_last_label(self):
         img_idx = abs(self.image.numInSeries) - 1
-        pt_idx = len(self.pointSets[img_idx]) - 1
-        last_pt = self.pointSets[img_idx][pt_idx]
+        points = self.parent().point_sets[img_idx]
+        pt_idx = len(points) - 1
+        last_pt = points[pt_idx]
         lab = QtWidgets.QLabel('{0}'.format(pt_idx+1), self)
         lab.setStyleSheet('font-size:14pt; background-color:white; border:1px solid rgb(0, 0, 0);')
         lab.move(last_pt[0] + 4, last_pt[1] + 4)
         lab.show()
 
     def update_labels(self):
-        # if len(self.pointSets) < self.image.numInSeries:
-        #     self.pointSets.append([])
         self.hide_labels()
         if self.show_labs:
             self.show_labels()
@@ -439,6 +440,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.plot_widget = PlotWidget()
         self.preview_scroll = ImgScrollArea()
         self.backup_image = None
+        self.point_sets = [[]]
         self.changes_made = []
         self.shift = [0, 0]
         self.rot_angle = 0
@@ -1173,8 +1175,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.manual_mode_checkbox.setChecked(False)
         self.disable_manual_panel()
         self.display.image = imgs[new_idx]
-        if len(self.display.pointSets) < self.display.image.numInSeries:
-            self.display.pointSets.append([])
+        if len(self.point_sets) < self.display.image.numInSeries:
+            self.point_sets.append([])
         self.display.update_labels()
         self.update_curr_info_label()
         self.update_display_and_bcg()
@@ -1285,7 +1287,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.go_to_image(new_idx)
 
         del all_img_list[curr_idx]
-        del self.display.pointSets[curr_idx]
+        del self.point_sets[curr_idx]
 
     def toggle_lines(self):
         self.display.show_lines = not self.display.show_lines
@@ -1413,11 +1415,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
 
-        if len(self.display.pointSets[curr_idx]) < 2:
+        if len(self.point_sets[curr_idx]) < 2:
             print('Mark the area by selecting two points!')
             return
 
-        p1, p2 = self.display.pointSets[curr_idx][:2]
+        p1, p2 = self.point_sets[curr_idx][:2]
         p1 = disp_pt_to_real_tl_pt(curr_img.width, p1)
         p2 = disp_pt_to_real_tl_pt(curr_img.width, p2)
 
@@ -1431,12 +1433,12 @@ class HolographyWidget(QtWidgets.QWidget):
     def norm_phase(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
-        n_points = len(self.display.pointSets[curr_idx])
+        n_points = len(self.point_sets[curr_idx])
         if n_points == 0:
             print('Mark reference point (or area) on the image')
             return
 
-        pt_disp = self.display.pointSets[curr_idx][:n_points]
+        pt_disp = self.point_sets[curr_idx][:n_points]
         pt_real = disp_pts_to_real_tl_pts(curr_img.width, pt_disp)
 
         x1, y1 = pt_real[0]
@@ -1507,12 +1509,12 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def zoom_n_fragments(self):
         curr_idx = self.display.image.numInSeries - 1
-        if len(self.display.pointSets[curr_idx]) < 2:
+        if len(self.point_sets[curr_idx]) < 2:
             print('You have to mark two points on the image in order to zoom!')
             return
 
         curr_img = self.display.image
-        pt1, pt2 = self.display.pointSets[curr_idx][:2]
+        pt1, pt2 = self.point_sets[curr_idx][:2]
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
@@ -1534,13 +1536,13 @@ class HolographyWidget(QtWidgets.QWidget):
             frag.name = 'crop_from_{0}'.format(img.name)
             print(frag.width, frag.height)
             img_list.insert(n, frag)
-            self.display.pointSets.insert(n, [])
+            self.point_sets.insert(n, [])
 
         img_list.UpdateLinks()
 
         if self.clear_prev_checkbox.isChecked():
             del img_list[curr_idx:insert_idx]
-            del self.display.pointSets[curr_idx:insert_idx]
+            del self.point_sets[curr_idx:insert_idx]
 
         self.go_to_image(curr_idx)
         print('Zooming complete!')
@@ -1550,18 +1552,18 @@ class HolographyWidget(QtWidgets.QWidget):
         for child in labToDel:
             child.deleteLater()
         curr_idx = abs(self.display.image.numInSeries) - 1
-        self.display.pointSets[curr_idx][:] = []
+        self.point_sets[curr_idx][:] = []
         self.display.repaint()
 
     def remove_last_point(self):
         curr_idx = abs(self.display.image.numInSeries) - 1
-        if len(self.display.pointSets[curr_idx]) == 0:
+        if len(self.point_sets[curr_idx]) == 0:
             return
         all_labels = self.display.children()
         if len(all_labels) > 0:
             last_label = all_labels[-1]
             last_label.deleteLater()
-        del self.display.pointSets[curr_idx][-1]
+        del self.point_sets[curr_idx][-1]
         self.display.repaint()
 
     def add_marker_at_xy(self):
@@ -1570,15 +1572,15 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
             # --- to be removed later ---
-            # for idx in range(len(self.display.pointSets)):
-            #     self.display.pointSets[idx].append(curr_pos)
+            # for idx in range(len(self.point_sets)):
+            #     self.point_sets[idx].append(curr_pos)
             # ---------------------------
-            self.display.pointSets[curr_idx].append(curr_pos)         # uncomment later
+            self.point_sets[curr_idx].append(curr_pos)         # uncomment later
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_last_label()
 
-            pt_idx = len(self.display.pointSets[curr_idx])
+            pt_idx = len(self.point_sets[curr_idx])
             disp_x, disp_y = curr_pos
             real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
             print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
@@ -1705,7 +1707,7 @@ class HolographyWidget(QtWidgets.QWidget):
         img_align_list.insert(0, ref_img)
         all_img_list += img_align_list
         for i in range(n_imgs):
-            self.display.pointSets.append([])
+            self.point_sets.append([])
         all_img_list.UpdateAndRestrainLinks()
 
         self.go_to_image(insert_idx)
@@ -1721,11 +1723,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
 
-        # p11, p12 = self.display.pointSets[curr_idx-1][:2]
-        # p21, p22 = self.display.pointSets[curr_idx][:2]
+        # p11, p12 = self.point_sets[curr_idx-1][:2]
+        # p21, p22 = self.point_sets[curr_idx][:2]
 
-        points1 = self.display.pointSets[curr_idx-1]
-        points2 = self.display.pointSets[curr_idx]
+        points1 = self.point_sets[curr_idx-1]
+        points2 = self.point_sets[curr_idx]
 
         np1 = len(points1)
         np2 = len(points2)
@@ -1768,8 +1770,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
 
-        points1 = self.display.pointSets[curr_idx-1]
-        points2 = self.display.pointSets[curr_idx]
+        points1 = self.point_sets[curr_idx-1]
+        points2 = self.point_sets[curr_idx]
         n_points1 = len(points1)
         n_points2 = len(points2)
 
@@ -1846,8 +1848,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
 
-        points1 = self.display.pointSets[curr_idx - 1]
-        points2 = self.display.pointSets[curr_idx]
+        points1 = self.point_sets[curr_idx - 1]
+        points2 = self.point_sets[curr_idx]
         n_points1 = len(points1)
         n_points2 = len(points2)
 
@@ -1903,7 +1905,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         img_width = curr_img.width
 
-        points2 = self.display.pointSets[curr_idx]
+        points2 = self.point_sets[curr_idx]
         n_points2 = len(points2)
 
         if curr_img.prev is None or n_points2 == 0:
@@ -1913,7 +1915,7 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         ref_img = curr_img.prev
-        points1 = self.display.pointSets[curr_idx - 1]
+        points1 = self.point_sets[curr_idx - 1]
         n_points1 = len(points1)
 
         if n_points1 != n_points2:
@@ -1980,8 +1982,8 @@ class HolographyWidget(QtWidgets.QWidget):
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
         curr_idx = self.display.image.numInSeries - 1
-        real_points1 = disp_pts_to_real_cnt_pts(curr_img.width, self.display.pointSets[curr_idx-1])
-        real_points2 = disp_pts_to_real_cnt_pts(curr_img.width, self.display.pointSets[curr_idx])
+        real_points1 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx-1])
+        real_points2 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx])
         user_points1 = real_cnt_pts_to_tl_pts(curr_img.width, real_points1)
         user_points2 = real_cnt_pts_to_tl_pts(curr_img.width, real_points2)
 
@@ -2020,7 +2022,7 @@ class HolographyWidget(QtWidgets.QWidget):
         tmp_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
         tmp_img_list.insert(1, img_warp)
         tmp_img_list.UpdateLinks()
-        self.display.pointSets.insert(curr_num, [])
+        self.point_sets.insert(curr_num, [])
         self.go_to_next_image()
 
     def rewarp(self):
@@ -2040,13 +2042,13 @@ class HolographyWidget(QtWidgets.QWidget):
         if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
             new_img.numInSeries = 1
             self.display.image = new_img
-            self.display.pointSets[0] = []
+            self.point_sets[0] = []
             self.go_to_image(0)
         else:
             curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
             new_img_list = imsup.CreateImageListFromFirstImage(new_img)
             curr_img_list[1:1] = new_img_list
-            self.display.pointSets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
+            self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
             curr_img_list.UpdateLinks()
             self.go_to_next_image()
 
@@ -2069,7 +2071,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Hologram reconstruction (no reference hologram)')
         print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(holo_fft.name))
 
-        [pt1, pt2] = self.display.pointSets[holo_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[holo_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(holo_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2116,7 +2118,7 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_fft.name, holo_img.name))
 
-        [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2165,7 +2167,7 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_fft.name, holo_img.name))
 
-        [pt1, pt2] = self.display.pointSets[ref_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[ref_fft.numInSeries - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2]  # x, y
@@ -2221,11 +2223,11 @@ class HolographyWidget(QtWidgets.QWidget):
     #         rec_holo1 = holo.rec_holo_no_ref(holo1)
     #         tmp_img_list.insert(1, rec_holo1)
     #         tmp_img_list.insert(2, rec_holo2)
-    #         self.display.pointSets.insert(curr_num, [])
-    #         self.display.pointSets.insert(curr_num+1, [])
+    #         self.point_sets.insert(curr_num, [])
+    #         self.point_sets.insert(curr_num+1, [])
     #     else:
     #         tmp_img_list.insert(1, rec_holo2)
-    #         self.display.pointSets.insert(curr_num, [])
+    #         self.point_sets.insert(curr_num, [])
     #
     #     tmp_img_list.UpdateLinks()
     #     self.go_to_next_image()
@@ -2279,7 +2281,7 @@ class HolographyWidget(QtWidgets.QWidget):
     # def remove_phase_gradient(self):
     #     curr_img = self.display.image
     #     curr_idx = curr_img.numInSeries - 1
-    #     p1, p2, p3 = self.display.pointSets[curr_idx][:3]
+    #     p1, p2, p3 = self.point_sets[curr_idx][:3]
     #     p1.append(curr_img.amPh.ph[p1[1], p1[0]])
     #     p2.append(curr_img.amPh.ph[p2[1], p2[0]])
     #     p3.append(curr_img.amPh.ph[p3[1], p3[0]])
@@ -2307,11 +2309,11 @@ class HolographyWidget(QtWidgets.QWidget):
         xy3 = [w//2, 0]
         xy4 = [w//2, h-1]
 
-        n_usr_pts = len(self.display.pointSets[curr_idx])
+        n_usr_pts = len(self.point_sets[curr_idx])
 
         if n_usr_pts == 2:
             print('Removing local phase tilt...')
-            dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+            dpt1, dpt2 = self.point_sets[curr_idx][:2]
             rpt1 = disp_pt_to_real_tl_pt(w, dpt1)
             rpt2 = disp_pt_to_real_tl_pt(w, dpt2)
             mid_x = (rpt1[0]+rpt2[0]) // 2
@@ -2322,7 +2324,7 @@ class HolographyWidget(QtWidgets.QWidget):
             xy4 = [mid_x, rpt2[1]]
         elif n_usr_pts == 4:
             print('Removing global phase tilt...')
-            dpts = self.display.pointSets[curr_idx][:4]
+            dpts = self.point_sets[curr_idx][:4]
             # dpts_f = [c for dpt in dpts for c in dpt]     # unpacking list of lists
             rpts = [ disp_pt_to_real_tl_pt(w, dpt) for dpt in dpts ]
             xy1[0] = rpts[0][0]
@@ -2443,7 +2445,7 @@ class HolographyWidget(QtWidgets.QWidget):
         imgs[curr_idx-1].numInSeries = imgs[curr_idx].numInSeries
         imgs.UpdateLinks()
 
-        ps = self.display.pointSets
+        ps = self.point_sets
         if len(ps[curr_idx-1]) > 0:
             ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
         self.go_to_next_image()
@@ -2463,7 +2465,7 @@ class HolographyWidget(QtWidgets.QWidget):
         imgs[curr_idx].numInSeries = imgs[curr_idx+1].numInSeries
         imgs.UpdateLinks()
 
-        ps = self.display.pointSets
+        ps = self.point_sets
         if len(ps[curr_idx]) > 0:
             ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
         self.go_to_prev_image()
@@ -2473,7 +2475,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
 
-        points = self.display.pointSets[curr_idx][:2]
+        points = self.point_sets[curr_idx][:2]
         points = np.array(disp_pts_to_real_cnt_pts(curr_img.width, points))
 
         # find rotation center (center of the line)
@@ -2578,11 +2580,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
 
-        if len(self.display.pointSets[curr_idx]) < 2:
+        if len(self.point_sets[curr_idx]) < 2:
             print('You must select two point on the image!')
             return
 
-        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+        dpt1, dpt2 = self.point_sets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
         pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
         d_dist = la.norm(pt1 - pt2)
@@ -2606,7 +2608,7 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             orig_pts = mc.calc_B_polar_sectors(curr_img, orig_xy, r1, n_rows, n_cols, sample_thickness, orig_is_pt1, n_r_iters)
             d_orig_pts = real_tl_pts_to_disp_pts(curr_img.width, orig_pts)
-            self.display.pointSets[curr_idx].extend(d_orig_pts)
+            self.point_sets[curr_idx].extend(d_orig_pts)
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_labels()
@@ -2616,11 +2618,11 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
-        if len(self.display.pointSets[curr_idx]) < 2:
+        if len(self.point_sets[curr_idx]) < 2:
             print('You have to mark two points!')
             return
 
-        pt1, pt2 = self.display.pointSets[curr_idx][:2]
+        pt1, pt2 = self.point_sets[curr_idx][:2]
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
@@ -2663,7 +2665,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.numInSeries - 1
         px_sz = curr_img.px_dim
 
-        dpt1, dpt2 = self.display.pointSets[curr_idx][:2]
+        dpt1, dpt2 = self.point_sets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
         pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
 
@@ -2785,7 +2787,7 @@ class HolographyWidget(QtWidgets.QWidget):
     #     curr_img = self.display.image
     #     curr_idx = curr_img.numInSeries - 1
     #     px_sz = curr_img.px_dim
-    #     p1, p2 = self.display.pointSets[curr_idx][:2]
+    #     p1, p2 = self.point_sets[curr_idx][:2]
     #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
     #     p2 = disp_pt_to_real_cnt_pt(curr_img.width, p2)
     #
