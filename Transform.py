@@ -50,8 +50,8 @@ def RotateImageSki(img, angle, mode='constant'):
     amp_cval = (np.min(amp_scaled) + np.max(amp_scaled)) / 2.0
     phs_cval = (np.min(phs_scaled) + np.max(phs_scaled)) / 2.0
 
-    amp_rot = tr.rotate(amp_scaled, angle, mode=mode, cval=amp_cval).astype(np.float32)
-    phs_rot = tr.rotate(phs_scaled, angle, mode=mode, cval=phs_cval).astype(np.float32)
+    amp_rot = tr.rotate(amp_scaled, angle, mode=mode, cval=amp_cval).astype(amp_scaled.dtype)
+    phs_rot = tr.rotate(phs_scaled, angle, mode=mode, cval=phs_cval).astype(phs_scaled.dtype)
 
     if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
         amp_rot_rescaled = imsup.ScaleImage(amp_rot, amp_limits[0], amp_limits[1])
@@ -97,8 +97,8 @@ def RescaleImageSki(img, factor):
     else:
         phs_scaled = np.copy(img.amPh.ph)
 
-    amp_mag = tr.rescale(amp_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(np.float32)
-    phs_mag = tr.rescale(phs_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(np.float32)
+    amp_mag = tr.rescale(amp_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(amp_scaled.dtype)
+    phs_mag = tr.rescale(phs_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(phs_scaled.dtype)
 
     if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
         amp_mag_rescaled = imsup.ScaleImage(amp_mag, amp_limits[0], amp_limits[1])
@@ -146,8 +146,8 @@ def WarpImage(img, src_set, dst_set):
 
     tform3 = tr.ProjectiveTransform()
     tform3.estimate(src_set, dst_set)
-    amp_warp = tr.warp(amp_scaled, tform3, output_shape=amp_scaled.shape).astype(np.float32)
-    phs_warp = tr.warp(phs_scaled, tform3, output_shape=amp_scaled.shape).astype(np.float32)
+    amp_warp = tr.warp(amp_scaled, tform3, output_shape=amp_scaled.shape).astype(amp_scaled.dtype)
+    phs_warp = tr.warp(phs_scaled, tform3, output_shape=amp_scaled.shape).astype(phs_scaled.dtype)
 
     if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
         amp_warp_rescaled = imsup.ScaleImage(amp_warp, amp_limits[0], amp_limits[1])

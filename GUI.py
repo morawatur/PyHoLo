@@ -2910,9 +2910,6 @@ def cross_corr_images(img_list):
 
 def zoom_fragment(img, coords):
     crop_img = imsup.crop_am_ph_roi(img, coords)
-    crop_img = imsup.create_imgexp_from_img(crop_img)
-    # crop_img.MoveToCPU()
-
     crop_img.defocus = img.defocus
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
