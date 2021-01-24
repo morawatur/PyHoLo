@@ -605,8 +605,8 @@ def IFFT(fft):
     fft.AmPh2ReIm()
 
     ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
-    ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)     # works on py36 (home)
-    # ifft.reIm = sp.fftpack.ifft2(fft.reIm)                    # works on py35 (work)
+    # ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)       # works on py36 (home)
+    ifft.reIm = sp.fftpack.ifft2(fft.reIm)                          # works on py35 (work)
 
     fft.ChangeComplexRepr(dt)
     ifft.ChangeComplexRepr(dt)
