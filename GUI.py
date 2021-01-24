@@ -2533,9 +2533,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def calc_phase_gradient(self):
         curr_img = self.display.image
-        dx_img = imsup.copy_am_ph_image(curr_img)
-        dy_img = imsup.copy_am_ph_image(curr_img)
-        grad_img = imsup.copy_am_ph_image(curr_img)
+        dx_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        dy_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
         print('Calculating gradient for sample distance = {0:.2f} nm'.format(curr_img.px_dim * 1e9))
         dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
         dr = np.sqrt(dx * dx + dy * dy)
@@ -2561,13 +2561,11 @@ class HolographyWidget(QtWidgets.QWidget):
         Bx = B_coeff * dx
         By = B_coeff * dy
 
-        Bx_img = imsup.copy_am_ph_image(curr_img)
-        Bx_img.amPh.am *= 0
+        Bx_img = imsup.ImageExp(curr_img.height, curr_img.width)
         Bx_img.amPh.ph = np.copy(Bx)
         Bx_img.name = 'Bx_from_{0}'.format(curr_img.name)
 
-        By_img = imsup.copy_am_ph_image(Bx_img)
-        By_img.amPh.am *= 0
+        By_img = imsup.ImageExp(curr_img.height, curr_img.width)
         By_img.amPh.ph = np.copy(By)
         By_img.name = 'By_from_{0}'.format(curr_img.name)
 

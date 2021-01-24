@@ -423,12 +423,6 @@ def copy_re_im_image(img):
     img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
                         px_dim_sz=img.px_dim)
     img_copy.reIm = np.copy(img.amPh.reIm)
-
-    if img.prev is not None:
-        img_copy.prev = img.prev
-    if img.next is not None:
-        img_copy.next = img.next
-
     return img_copy
 
 #-------------------------------------------------------------------
@@ -438,12 +432,6 @@ def copy_am_ph_image(img):
                         px_dim_sz=img.px_dim)
     img_copy.amPh.am = np.copy(img.amPh.am)
     img_copy.amPh.ph = np.copy(img.amPh.ph)
-
-    if img.prev is not None:
-        img_copy.prev = img.prev
-    if img.next is not None:
-        img_copy.next = img.next
-
     return img_copy
 
 #-------------------------------------------------------------------
@@ -617,8 +605,8 @@ def IFFT(fft):
     fft.AmPh2ReIm()
 
     ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
-    # ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)   # doesn't work (don't know why)
-    ifft.reIm = sp.fftpack.ifft2(fft.reIm)
+    ifft.reIm = np.fft.ifft2(fft.reIm).astype(np.complex64)     # works on py36 (home)
+    # ifft.reIm = sp.fftpack.ifft2(fft.reIm)                    # works on py35 (work)
 
     fft.ChangeComplexRepr(dt)
     ifft.ChangeComplexRepr(dt)
