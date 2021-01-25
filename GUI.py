@@ -2253,30 +2253,28 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def amplify_phase(self):
         curr_img = self.display.image
-        curr_name = self.name_input.text()
         amp_factor = float(self.amp_factor_input.text())
 
         phs_amplified = imsup.copy_am_ph_image(curr_img)
         phs_amplified.amPh.ph *= amp_factor
         phs_amplified.update_cos_phase()
-        phs_amplified.name = '{0}_x{1:.0f}'.format(curr_name, amp_factor)
+        phs_amplified.name = '{0}_x{1:.0f}'.format(curr_img.name, amp_factor)
         phs_amplified = rescale_image_buffer_to_window(phs_amplified, const.disp_dim)
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
 
     def add_radians(self):
         curr_img = self.display.image
-        curr_name = self.name_input.text()
         radians = float(self.radians2add_input.text())
 
         new_phs_img = imsup.copy_am_ph_image(curr_img)
         new_phs_img.amPh.ph += radians
         new_phs_img.update_cos_phase()
-        new_phs_img.name = '{0}_+{1:.2f}rad'.format(curr_name, radians)
+        new_phs_img.name = '{0}_+{1:.2f}rad'.format(curr_img.name, radians)
         new_phs_img = rescale_image_buffer_to_window(new_phs_img, const.disp_dim)
         self.insert_img_after_curr(new_phs_img)
         self.cos_phs_radio_button.setChecked(True)
-        print('Added {0:.2f} rad to "{1}"'.format(radians, curr_name))
+        print('Added {0:.2f} rad to "{1}"'.format(radians, curr_img.name))
 
     # def remove_phase_gradient(self):
     #     curr_img = self.display.image
