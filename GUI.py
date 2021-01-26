@@ -1765,84 +1765,6 @@ class HolographyWidget(QtWidgets.QWidget):
         img_rot.name = curr_img.name + '_rot'
         self.insert_img_after_curr(img_rot)
 
-    def auto_shift_rot_old(self):
-        curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-        img_width = curr_img.width
-
-        points1 = self.point_sets[curr_idx-1]
-        points2 = self.point_sets[curr_idx]
-        n_points1 = len(points1)
-        n_points2 = len(points2)
-
-        if n_points1 != n_points2:
-            print('Mark the same number of points on both images!')
-            return
-
-        poly1 = disp_pts_to_real_cnt_pts(img_width, points1)
-        poly2 = disp_pts_to_real_cnt_pts(img_width, points2)
-
-        rcSum = [0, 0]
-        rotCenters = []
-        for idx1 in range(len(poly1)):
-            for idx2 in range(idx1+1, len(poly1)):
-                rotCenter = tr.FindRotationCenter([poly1[idx1], poly1[idx2]],
-                                                  [poly2[idx1], poly2[idx2]])
-                rotCenters.append(rotCenter)
-                print(rotCenter)
-                rcSum = list(np.array(rcSum) + np.array(rotCenter))
-
-        rotCenterAvg = list(np.array(rcSum) / n_points1)
-        rcShift = [ -int(rc) for rc in rotCenterAvg ]
-        rcShift.reverse()
-        img1 = imsup.copy_am_ph_image(self.display.image.prev)
-        img2 = imsup.copy_am_ph_image(self.display.image)
-
-        bufSz = max([abs(x) for x in rcShift])
-        dirs = 'tblr'
-        img1Pad = imsup.PadImage(img1, bufSz, 0.0, dirs)
-        img2Pad = imsup.PadImage(img2, bufSz, 0.0, dirs)
-
-        img1Rc = imsup.shift_am_ph_image(img1Pad, rcShift)
-        img2Rc = imsup.shift_am_ph_image(img2Pad, rcShift)
-
-        img1Rc = imsup.create_imgexp_from_img(img1Rc)
-        img2Rc = imsup.create_imgexp_from_img(img2Rc)
-
-        rotAngles = []
-        for idx, p1, p2 in zip(range(n_points1), poly1, poly2):
-            p1New = CalcNewCoords(p1, rotCenterAvg)
-            p2New = CalcNewCoords(p2, rotCenterAvg)
-            poly1[idx] = p1New
-            poly2[idx] = p2New
-            rotAngles.append(CalcRotAngle(p1New, p2New))
-
-        rotAngleAvg = np.average(rotAngles)
-
-        print('---- Rotation ----')
-        print([ 'phi{0} = {1:.0f} deg\n'.format(idx + 1, angle) for idx, angle in zip(range(len(rotAngles)), rotAngles) ])
-        print('------------------')
-        print('Average rotation = {0:.2f} deg'.format(rotAngleAvg))
-
-        self.shift = rcShift
-        self.rot_angle = rotAngleAvg
-
-        img2Rot = tr.RotateImageSki(img2Rc, rotAngleAvg)
-        padSz = (img2Rot.width - img1Rc.width) // 2
-        img1RcPad = imsup.PadImage(img1Rc, padSz, 0.0, 'tblr')
-
-        img1RcPad.UpdateBuffer()
-        img2Rot.UpdateBuffer()
-
-        mag_factor = curr_img.width / img1RcPad.width
-        img1_mag = tr.RescaleImageSki(img1RcPad, mag_factor)
-        img2_mag = tr.RescaleImageSki(img2Rot, mag_factor)
-
-        self.insert_img_after_curr(img1_mag)
-        self.insert_img_after_curr(img2_mag)
-
-        print('Rotation complete!')
-
     def auto_shift_image(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -1945,14 +1867,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
         pad_sz = (magnified_img.width - curr_img.width) // 2
         if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
-            padded_img1 = imsup.pad_img_from_ref(ref_img, magnified_img.width, 0.0, 'tblr')
+            padded_img1 = imsup.pad_img_from_ref(ref_img, magnified_img.width, 0.0)
             padded_img2 = imsup.copy_am_ph_image(magnified_img)
             resc_factor = ref_img.width / padded_img1.width
             resc_img1 = tr.RescaleImageSki(padded_img1, resc_factor)
             resc_img2 = tr.RescaleImageSki(padded_img2, resc_factor)
         else:
             resc_img1 = imsup.copy_am_ph_image(ref_img)
-            resc_img2 = imsup.pad_img_from_ref(magnified_img, ref_img.width, 0.0, 'tblr')
+            resc_img2 = imsup.pad_img_from_ref(magnified_img, ref_img.width, 0.0)
 
         resc_img1.name = ref_img.name + '_resc1'
         resc_img2.name = curr_img.name + '_resc2'
@@ -1967,11 +1889,11 @@ class HolographyWidget(QtWidgets.QWidget):
         pad_sz = (mag_img.width - curr_img.width) // 2
 
         if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
-            pad_img = imsup.pad_img_from_ref(curr_img, mag_img.width, 0.0, 'tblr')
+            pad_img = imsup.pad_img_from_ref(curr_img, mag_img.width, 0.0)
             resc_factor = curr_img.width / pad_img.width
             resc_img = tr.RescaleImageSki(pad_img, resc_factor)
         else:
-            resc_img = imsup.pad_img_from_ref(mag_img, curr_img.width, 0.0, 'tblr')
+            resc_img = imsup.pad_img_from_ref(mag_img, curr_img.width, 0.0)
 
         resc_img.name = curr_img.name + '_resc'
         self.insert_img_after_curr(resc_img)
