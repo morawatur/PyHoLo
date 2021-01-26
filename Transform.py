@@ -37,8 +37,8 @@ def RotateImageSki(img, angle, mode='constant'):
     # amp_cval = (np.min(img.amPh.am) + np.max(img.amPh.am)) / 2.0
     # phs_cval = (np.min(img.amPh.ph) + np.max(img.amPh.ph)) / 2.0
 
-    amp_rot = tr.rotate(img.amPh.am, angle, mode=mode, cval=0.0).astype(img.amPh.am)
-    phs_rot = tr.rotate(img.amPh.ph, angle, mode=mode, cval=0.0).astype(img.amPh.ph)
+    amp_rot = tr.rotate(img.amPh.am, angle, mode=mode, cval=0.0)
+    phs_rot = tr.rotate(img.amPh.ph, angle, mode=mode, cval=0.0)
 
     img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
     img_rot.LoadAmpData(amp_rot)
@@ -57,8 +57,8 @@ def RescaleImageSki(img, factor):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
-    amp_mag = tr.rescale(img.amPh.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False).astype(img.amPh.am)
-    phs_mag = tr.rescale(img.amPh.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False).astype(img.amPh.ph)
+    amp_mag = tr.rescale(img.amPh.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
+    phs_mag = tr.rescale(img.amPh.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
 
     img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
     img_mag.LoadAmpData(amp_mag)
@@ -79,8 +79,8 @@ def WarpImage(img, src_set, dst_set):
 
     tform3 = tr.ProjectiveTransform()
     tform3.estimate(src_set, dst_set)
-    amp_warp = tr.warp(img.amPh.am, tform3, output_shape=img.amPh.am.shape, mode='constant', cval=0.0).astype(img.amPh.am)
-    phs_warp = tr.warp(img.amPh.ph, tform3, output_shape=img.amPh.ph.shape, mode='constant', cval=0.0).astype(img.amPh.ph)
+    amp_warp = tr.warp(img.amPh.am, tform3, output_shape=img.amPh.am.shape, mode='constant', cval=0.0)
+    phs_warp = tr.warp(img.amPh.ph, tform3, output_shape=img.amPh.ph.shape, mode='constant', cval=0.0)
 
     img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
     img_warp.LoadAmpData(amp_warp)
