@@ -1455,8 +1455,8 @@ class HolographyWidget(QtWidgets.QWidget):
                 norm_val = np.average(img.amPh.ph[y1:y2, x1:x2])
             img.amPh.ph -= norm_val
             img.update_cos_phase()
-            img.name += '_' if norm_val > 0.0 else '_+'
-            img.name += '{0:.2f}rad'.format(-norm_val)
+            img.name += '_-' if norm_val > 0.0 else '_+'
+            img.name += '{0:.2f}rad'.format(abs(norm_val))
 
         self.update_display()
         self.update_curr_info_label()
@@ -2270,7 +2270,11 @@ class HolographyWidget(QtWidgets.QWidget):
         new_phs_img = imsup.copy_am_ph_image(curr_img)
         new_phs_img.amPh.ph += radians
         new_phs_img.update_cos_phase()
-        new_phs_img.name = '{0}_+{1:.2f}rad'.format(curr_img.name, radians)
+
+        name_app = '_-' if radians < 0.0 else '_+'
+        name_app += '{0:.2f}rad'.format(abs(radians))
+        new_phs_img.name = '{0}{1}'.format(curr_img.name, name_app)
+
         new_phs_img = rescale_image_buffer_to_window(new_phs_img, const.disp_dim)
         self.insert_img_after_curr(new_phs_img)
         self.cos_phs_radio_button.setChecked(True)
