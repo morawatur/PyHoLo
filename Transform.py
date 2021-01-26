@@ -66,6 +66,8 @@ def RescaleImageSki(img, factor):
     if img.cos_phase is not None:
         img_mag.update_cos_phase()
 
+    img_mag.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_mag.width)
+
     img.ChangeComplexRepr(dt)
     img_mag.ChangeComplexRepr(dt)
 
