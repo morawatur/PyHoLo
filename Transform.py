@@ -34,44 +34,17 @@ def RotateImageSki(img, angle, mode='constant'):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
-    amp_limits = [np.min(img.amPh.am), np.max(img.amPh.am)]
-    phs_limits = [np.min(img.amPh.ph), np.max(img.amPh.ph)]
+    # amp_cval = (np.min(img.amPh.am) + np.max(img.amPh.am)) / 2.0
+    # phs_cval = (np.min(img.amPh.ph) + np.max(img.amPh.ph)) / 2.0
 
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_scaled = imsup.ScaleImage(img.amPh.am, -1.0, 1.0)
-    else:
-        amp_scaled = np.copy(img.amPh.am)
+    amp_rot = tr.rotate(img.amPh.am, angle, mode=mode, cval=0.0).astype(img.amPh.am)
+    phs_rot = tr.rotate(img.amPh.ph, angle, mode=mode, cval=0.0).astype(img.amPh.ph)
 
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_scaled = imsup.ScaleImage(img.amPh.ph, -1.0, 1.0)
-    else:
-        phs_scaled = np.copy(img.amPh.ph)
-
-    amp_cval = (np.min(amp_scaled) + np.max(amp_scaled)) / 2.0
-    phs_cval = (np.min(phs_scaled) + np.max(phs_scaled)) / 2.0
-
-    amp_rot = tr.rotate(amp_scaled, angle, mode=mode, cval=amp_cval).astype(amp_scaled.dtype)
-    phs_rot = tr.rotate(phs_scaled, angle, mode=mode, cval=phs_cval).astype(phs_scaled.dtype)
-
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_rot_rescaled = imsup.ScaleImage(amp_rot, amp_limits[0], amp_limits[1])
-    else:
-        amp_rot_rescaled = np.copy(amp_rot)
-
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_rot_rescaled = imsup.ScaleImage(phs_rot, phs_limits[0], phs_limits[1])
-    else:
-        phs_rot_rescaled = np.copy(phs_rot)
-
-    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], defocus=img.defocus, num=img.numInSeries, px_dim_sz=img.px_dim)
-    img_rot.LoadAmpData(amp_rot_rescaled)
-    img_rot.LoadPhsData(phs_rot_rescaled)
+    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
+    img_rot.LoadAmpData(amp_rot)
+    img_rot.LoadPhsData(phs_rot)
     if img.cos_phase is not None:
         img_rot.update_cos_phase()
-
-    # resc_factor = img_rot.width / img.width
-    # img_rot.px_dim *= resc_factor
-    img_rot.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_rot.width)
 
     img.ChangeComplexRepr(dt)
     img_rot.ChangeComplexRepr(dt)
@@ -84,41 +57,14 @@ def RescaleImageSki(img, factor):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
-    amp_limits = [np.min(img.amPh.am), np.max(img.amPh.am)]
-    phs_limits = [np.min(img.amPh.ph), np.max(img.amPh.ph)]
+    amp_mag = tr.rescale(img.amPh.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False).astype(img.amPh.am)
+    phs_mag = tr.rescale(img.amPh.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False).astype(img.amPh.ph)
 
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_scaled = imsup.ScaleImage(img.amPh.am, -1.0, 1.0)
-    else:
-        amp_scaled = np.copy(img.amPh.am)
-
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_scaled = imsup.ScaleImage(img.amPh.ph, -1.0, 1.0)
-    else:
-        phs_scaled = np.copy(img.amPh.ph)
-
-    amp_mag = tr.rescale(amp_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(amp_scaled.dtype)
-    phs_mag = tr.rescale(phs_scaled, scale=factor, mode='constant', multichannel=False, anti_aliasing=False).astype(phs_scaled.dtype)
-
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_mag_rescaled = imsup.ScaleImage(amp_mag, amp_limits[0], amp_limits[1])
-    else:
-        amp_mag_rescaled = np.copy(amp_mag)
-
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_mag_rescaled = imsup.ScaleImage(phs_mag, phs_limits[0], phs_limits[1])
-    else:
-        phs_mag_rescaled = np.copy(phs_mag)
-
-    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], defocus=img.defocus, num=img.numInSeries, px_dim_sz=img.px_dim)
-    img_mag.LoadAmpData(amp_mag_rescaled)
-    img_mag.LoadPhsData(phs_mag_rescaled)
+    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
+    img_mag.LoadAmpData(amp_mag)
+    img_mag.LoadPhsData(phs_mag)
     if img.cos_phase is not None:
         img_mag.update_cos_phase()
-
-    # resc_factor = img_mag.width / img.width
-    # img_mag.px_dim *= resc_factor
-    img_mag.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_mag.width)
 
     img.ChangeComplexRepr(dt)
     img_mag.ChangeComplexRepr(dt)
@@ -131,37 +77,14 @@ def WarpImage(img, src_set, dst_set):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
-    amp_limits = [np.min(img.amPh.am), np.max(img.amPh.am)]
-    phs_limits = [np.min(img.amPh.ph), np.max(img.amPh.ph)]
-
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_scaled = imsup.ScaleImage(img.amPh.am, -1.0, 1.0)
-    else:
-        amp_scaled = np.copy(img.amPh.am)
-
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_scaled = imsup.ScaleImage(img.amPh.ph, -1.0, 1.0)
-    else:
-        phs_scaled = np.copy(img.amPh.ph)
-
     tform3 = tr.ProjectiveTransform()
     tform3.estimate(src_set, dst_set)
-    amp_warp = tr.warp(amp_scaled, tform3, output_shape=amp_scaled.shape).astype(amp_scaled.dtype)
-    phs_warp = tr.warp(phs_scaled, tform3, output_shape=amp_scaled.shape).astype(phs_scaled.dtype)
+    amp_warp = tr.warp(img.amPh.am, tform3, output_shape=img.amPh.am.shape, mode='constant', cval=0.0).astype(img.amPh.am)
+    phs_warp = tr.warp(img.amPh.ph, tform3, output_shape=img.amPh.ph.shape, mode='constant', cval=0.0).astype(img.amPh.ph)
 
-    if amp_limits[0] < -1.0 or amp_limits[1] > 1.0:
-        amp_warp_rescaled = imsup.ScaleImage(amp_warp, amp_limits[0], amp_limits[1])
-    else:
-        amp_warp_rescaled = np.copy(amp_warp)
-
-    if phs_limits[0] < -1.0 or phs_limits[1] > 1.0:
-        phs_warp_rescaled = imsup.ScaleImage(phs_warp, phs_limits[0], phs_limits[1])
-    else:
-        phs_warp_rescaled = np.copy(phs_warp)
-
-    img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], defocus=img.defocus, num=img.numInSeries)
-    img_warp.LoadAmpData(amp_warp_rescaled)
-    img_warp.LoadPhsData(phs_warp_rescaled)
+    img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
+    img_warp.LoadAmpData(amp_warp)
+    img_warp.LoadPhsData(phs_warp)
     if img.cos_phase is not None:
         img_warp.update_cos_phase()
 
