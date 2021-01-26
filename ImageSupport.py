@@ -486,7 +486,7 @@ def CreateImageListFromImage(img, howMany):
 
 #-------------------------------------------------------------------
 
-def PadArray(arr, arr_pad, pads, pad_val):
+def pad_array(arr, arr_pad, pads, pad_val):
     p_height, p_width = arr_pad.shape
     arr_pad[pads[0]:p_height - pads[1], pads[2]:p_width - pads[3]] = np.copy(arr)
     arr_pad[0:pads[0], :] = pad_val
@@ -496,43 +496,49 @@ def PadArray(arr, arr_pad, pads, pad_val):
 
 #-------------------------------------------------------------------
 
-def PadImage(img, bufSz, padValue, dirs):
-    if bufSz == 0:
+def pad_img_with_buf(img, buf_sz, pad_value, dirs):
+    if buf_sz == 0:
         return img
 
-    pads = [ bufSz if d in 'tblr' else 0 for d in dirs ]
-    pHeight = img.height + pads[0] + pads[1]
-    pWidth = img.width + pads[2] + pads[3]
+    pads = [ buf_sz if d in 'tblr' else 0 for d in dirs ]
+    p_height = img.height + pads[0] + pads[1]
+    p_width = img.width + pads[2] + pads[3]
     img.ReIm2AmPh()
 
-    imgPadded = ImageExp(pHeight, pWidth, img.cmpRepr, img.defocus, img.numInSeries, px_dim_sz=img.px_dim)
-    PadArray(img.amPh.am, imgPadded.amPh.am, pads, padValue)
-    PadArray(img.amPh.ph, imgPadded.amPh.ph, pads, padValue)
+    pad_img = ImageExp(p_height, p_width, img.cmpRepr, num=img.numInSeries, px_dim_sz=img.px_dim)
+    pad_img.amPh.am = pad_img.amPh.am.astype(img.amPh.am.dtype)
+    pad_img.amPh.ph = pad_img.amPh.ph.astype(img.amPh.ph.dtype)
 
-    resc_factor = pWidth / img.width
-    imgPadded.px_dim *= resc_factor
+    pad_array(img.amPh.am, pad_img.amPh.am, pads, pad_value)
+    pad_array(img.amPh.ph, pad_img.amPh.ph, pads, pad_value)
 
-    return imgPadded
+    return pad_img
 
 #-------------------------------------------------------------------
 
-def pad_img_from_ref(img, ref_width, pad_value, dirs):
+def pad_img_from_ref(img, ref_width, pad_value):
     buf_sz_tot = ref_width - img.width
+    if buf_sz_tot <= 0:
+        return img
     buf_sz = buf_sz_tot // 2
 
     if buf_sz_tot % 2 == 0:
-        pads = [buf_sz if d in 'tblr' else 0 for d in dirs]
+        pads = 4 * [buf_sz]
     else:
-        pads = [(buf_sz + (1 if idx % 2 else 0)) if d in 'tblr' else 0 for d, idx in zip(dirs, range(len(dirs)))]
+        pads = [ (buf_sz + (1 if idx % 2 else 0)) for idx in range(4) ]
 
     p_height = img.height + pads[0] + pads[1]
     p_width = img.width + pads[2] + pads[3]
+    img.ReIm2AmPh()
 
-    padded_img = ImageExp(p_height, p_width, img.cmpRepr, img.defocus, img.numInSeries)
-    PadArray(img.amPh.am, padded_img.amPh.am, pads, pad_value)
-    PadArray(img.amPh.ph, padded_img.amPh.ph, pads, pad_value)
+    pad_img = ImageExp(p_height, p_width, img.cmpRepr, num=img.numInSeries, px_dim_sz=img.px_dim)
+    pad_img.amPh.am = pad_img.amPh.am.astype(img.amPh.am.dtype)
+    pad_img.amPh.ph = pad_img.amPh.ph.astype(img.amPh.ph.dtype)
 
-    return padded_img
+    pad_array(img.amPh.am, pad_img.amPh.am, pads, pad_value)
+    pad_array(img.amPh.ph, pad_img.amPh.ph, pads, pad_value)
+
+    return pad_img
 
 #-------------------------------------------------------------------
 
