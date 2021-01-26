@@ -1944,16 +1944,14 @@ class HolographyWidget(QtWidgets.QWidget):
         magnified_img = tr.RescaleImageSki(curr_img, scf_avg)
 
         pad_sz = (magnified_img.width - curr_img.width) // 2
-        if pad_sz > 0:
+        if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
             padded_img1 = imsup.pad_img_from_ref(ref_img, magnified_img.width, 0.0, 'tblr')
             padded_img2 = imsup.copy_am_ph_image(magnified_img)
             resc_factor = ref_img.width / padded_img1.width
             resc_img1 = tr.RescaleImageSki(padded_img1, resc_factor)
             resc_img2 = tr.RescaleImageSki(padded_img2, resc_factor)
-            resc_img2.prev, resc_img2.next = None, None
         else:
             resc_img1 = imsup.copy_am_ph_image(ref_img)
-            resc_img1.prev, resc_img1.next = None, None
             resc_img2 = imsup.pad_img_from_ref(magnified_img, ref_img.width, 0.0, 'tblr')
 
         resc_img1.name = ref_img.name + '_resc1'
@@ -1968,7 +1966,7 @@ class HolographyWidget(QtWidgets.QWidget):
         mag_img = tr.RescaleImageSki(curr_img, self.scale_factor)
         pad_sz = (mag_img.width - curr_img.width) // 2
 
-        if pad_sz > 0:
+        if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
             pad_img = imsup.pad_img_from_ref(curr_img, mag_img.width, 0.0, 'tblr')
             resc_factor = curr_img.width / pad_img.width
             resc_img = tr.RescaleImageSki(pad_img, resc_factor)
