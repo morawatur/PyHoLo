@@ -1923,8 +1923,6 @@ class HolographyWidget(QtWidgets.QWidget):
         holo_img = self.display.image
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         holo_fft.name = 'fft_of_{0}'.format(holo_img.name)
-        # self.display.image = rescale_image_buffer_to_window(holo_img, const.disp_dim)
-        # holo_fft = rescale_image_buffer_to_window(holo_fft, const.disp_dim)
         self.insert_img_after_curr(holo_fft)
         self.log_scale_checkbox.setChecked(True)
 
@@ -1965,6 +1963,8 @@ class HolographyWidget(QtWidgets.QWidget):
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
         sband_img_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        sband_img_ap.name = 'sband_{0}'.format(holo_fft.name)
+
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_img_ap)
 
@@ -2002,6 +2002,9 @@ class HolographyWidget(QtWidgets.QWidget):
         holo_fft = holo.rec_holo_no_ref_1(holo_img)
         holo_sband_ap = holo.rec_holo_no_ref_2(holo_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
 
+        ref_sband_ap.name = 'ref_sband'
+        holo_sband_ap.name = 'obj_sband'
+
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(ref_sband_ap)
         self.insert_img_after_curr(holo_sband_ap)
@@ -2015,6 +2018,7 @@ class HolographyWidget(QtWidgets.QWidget):
         sband_img = self.display.image
         rec_holo = holo.rec_holo_no_ref_3(sband_img)
         rec_holo.ReIm2AmPh()
+        rec_holo.name = 'ifft_of_{0}'.format(sband_img.name)
         self.log_scale_checkbox.setChecked(False)
         self.insert_img_after_curr(rec_holo)
 
@@ -2063,36 +2067,12 @@ class HolographyWidget(QtWidgets.QWidget):
         rec_holo_corr = holo.calc_phase_diff(rec_ref, rec_holo)
         rec_holo_corr = rescale_image_buffer_to_window(rec_holo_corr, const.disp_dim)
         rec_holo_corr.name = 'ph_from_{0}'.format(holo_img.name)
-        self.insert_img_after_curr(rec_holo_corr)
+
         self.log_scale_checkbox.setChecked(False)
+        self.insert_img_after_curr(rec_holo_corr)
 
         print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_holo_corr.name))
         print('--------------------------')
-
-    # def rec_holo_no_ref(self):
-    #     holo1 = self.display.image.prev
-    #     holo2 = self.display.image
-    #
-    #     rec_holo2 = holo.rec_holo_no_ref(holo2)
-    #
-    #     curr_num = self.display.image.numInSeries
-    #     tmp_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-    #
-    #     if holo1 is not None:
-    #         rec_holo1 = holo.rec_holo_no_ref(holo1)
-    #         tmp_img_list.insert(1, rec_holo1)
-    #         tmp_img_list.insert(2, rec_holo2)
-    #         self.point_sets.insert(curr_num, [])
-    #         self.point_sets.insert(curr_num+1, [])
-    #     else:
-    #         tmp_img_list.insert(1, rec_holo2)
-    #         self.point_sets.insert(curr_num, [])
-    #
-    #     tmp_img_list.UpdateLinks()
-    #     self.go_to_next_image()
-
-    # def rec_holo_with_ref(self):
-    #     pass
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev
