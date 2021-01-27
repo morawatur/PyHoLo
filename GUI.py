@@ -2098,7 +2098,12 @@ class HolographyWidget(QtWidgets.QWidget):
         rec_holo1 = self.display.image.prev
         rec_holo2 = self.display.image
 
+        if rec_holo1 is None:
+            print('Two images are necessary (sum = curr. phase + prev. phase)')
+            return
+
         phs_sum = holo.calc_phase_sum(rec_holo1, rec_holo2)
+        phs_sum.name = 'sum_{0}+{1}'.format(rec_holo2.name, rec_holo1.name)
         phs_sum = rescale_image_buffer_to_window(phs_sum, const.disp_dim)
         self.insert_img_after_curr(phs_sum)
 
@@ -2106,7 +2111,12 @@ class HolographyWidget(QtWidgets.QWidget):
         rec_holo1 = self.display.image.prev
         rec_holo2 = self.display.image
 
+        if rec_holo1 is None:
+            print('Two images are necessary (diff = curr. phase - prev. phase)')
+            return
+
         phs_diff = holo.calc_phase_diff(rec_holo1, rec_holo2)
+        phs_diff.name = 'diff_{0}-{1}'.format(rec_holo2.name, rec_holo1.name)
         phs_diff = rescale_image_buffer_to_window(phs_diff, const.disp_dim)
         self.insert_img_after_curr(phs_diff)
 
