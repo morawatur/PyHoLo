@@ -1713,58 +1713,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.go_to_image(insert_idx)
         print('Cross-correlation done!')
 
-    # def align_images(self):
-    #     if self.shift_radio_button.isChecked():
-    #         self.align_shift()
-    #     else:
-    #         self.align_rot_dev()
-
-    def auto_rot_image(self):
-        curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-
-        # p11, p12 = self.point_sets[curr_idx-1][:2]
-        # p21, p22 = self.point_sets[curr_idx][:2]
-
-        points1 = self.point_sets[curr_idx-1]
-        points2 = self.point_sets[curr_idx]
-
-        np1 = len(points1)
-        np2 = len(points2)
-
-        if np1 != np2:
-            print('Mark the same number of points on both images!')
-            return
-
-        if np1 % 2:
-            np1 -= 1
-            np2 -= 1
-            points1 = points1[:-1]
-            points2 = points2[:-1]
-
-        line1 = tr.Line(0, 0)
-        line2 = tr.Line(0, 0)
-        rot_angle_avg = 0.0
-        n_pairs = np1 // 2
-
-        for l in range(n_pairs):
-            p11, p12 = points1[2*l:2*(l+1)]
-            p21, p22 = points2[2*l:2*(l+1)]
-            line1.getFromPoints(p11, p12)
-            line2.getFromPoints(p21, p22)
-            rot_angle = imsup.Degrees(np.arctan(line2.a) - np.arctan(line1.a))
-            print('Rot. angle = {0:.2f} deg'.format(rot_angle))
-            rot_angle_avg += rot_angle
-
-        rot_angle_avg /= n_pairs
-        self.rot_angle = rot_angle_avg
-        print('Avg. rot. angle = {0:.2f} deg'.format(rot_angle_avg))
-
-        img_rot = tr.RotateImageSki(curr_img, rot_angle_avg)
-
-        img_rot.name = curr_img.name + '_rot'
-        self.insert_img_after_curr(img_rot)
-
     def auto_shift_image(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -1788,25 +1736,67 @@ class HolographyWidget(QtWidgets.QWidget):
             shift_sum += shift
 
         shift_avg = list(shift_sum // n_points1)
-        shift_avg.reverse()     # !!!
+        shift_avg.reverse()  # !!!
+
         self.shift = shift_avg
+        print('Average shift = {0} px'.format(shift_avg))
+        self.reshift()
 
-        shifted_img2 = imsup.shift_am_ph_image(curr_img, shift_avg)
+    def auto_rot_image(self):
+        curr_img = self.display.image
+        curr_idx = curr_img.numInSeries - 1
 
-        shifted_img2.name = curr_img.name + '_sh'
-        self.insert_img_after_curr(shifted_img2)
+        points1 = self.point_sets[curr_idx-1]
+        points2 = self.point_sets[curr_idx]
+
+        np1 = len(points1)
+        np2 = len(points2)
+
+        if np1 != np2:
+            print('Mark the same number of points on both images!')
+            return
+
+        if np1 % 2:
+            np1 -= 1
+            np2 -= 1
+            points1 = points1[:-1]
+            points2 = points2[:-1]
+
+        line1 = tr.Line(0, 0)
+        line2 = tr.Line(0, 0)
+
+        rot_angles = []
+        rot_angle_avg = 0.0
+        n_pairs = np1 // 2
+
+        for l in range(n_pairs):
+            p11, p12 = points1[2*l:2*(l+1)]
+            p21, p22 = points2[2*l:2*(l+1)]
+            line1.getFromPoints(p11, p12)
+            line2.getFromPoints(p21, p22)
+            rot_angle = imsup.Degrees(np.arctan(line2.a) - np.arctan(line1.a))
+            rot_angles.append(rot_angle)
+            rot_angle_avg += rot_angle
+
+        rot_angle_avg /= n_pairs
+        self.rot_angle = rot_angle_avg
+
+        print('Partial rot. angles: ' + ', '.join('{0:.2f} deg'.format(ang) for ang in rot_angles))
+        # print('Average rot. angle = {0:.2f} deg'.format(rot_angle_avg))
+
+        self.rerotate()
 
     def reshift(self):
+        print('Using shift = {0} px'.format(self.shift))
         curr_img = self.display.image
-        shift = self.shift
-        shifted_img = imsup.shift_am_ph_image(curr_img, shift)
+        shifted_img = imsup.shift_am_ph_image(curr_img, self.shift)
         shifted_img.name = curr_img.name + '_sh'
         self.insert_img_after_curr(shifted_img)
 
     def rerotate(self):
+        print('Using rot. angle = {0:.2f} deg'.format(self.rot_angle))
         curr_img = self.display.image
-        rot_angle = self.rot_angle
-        rotated_img = tr.RotateImageSki(curr_img, rot_angle)
+        rotated_img = tr.RotateImageSki(curr_img, self.rot_angle)
         rotated_img.name = curr_img.name + '_rot'
         self.insert_img_after_curr(rotated_img)
 
@@ -1831,12 +1821,12 @@ class HolographyWidget(QtWidgets.QWidget):
         n_points2 = len(points2)
 
         if curr_img.prev is None or n_points2 == 0:
-            print('Using manual magnification...')
+            print('Manual scaling')
             self.scale_factor = float(self.scale_factor_input.text())
             self.rescale_image()
             return
 
-        ref_img = curr_img.prev
+        # ref_img = curr_img.prev
         points1 = self.point_sets[curr_idx - 1]
         n_points1 = len(points1)
 
@@ -1854,44 +1844,25 @@ class HolographyWidget(QtWidgets.QWidget):
                 poly1_dists.append(CalcDistance(poly1[i], poly1[j]))
                 poly2_dists.append(CalcDistance(poly2[i], poly2[j]))
 
-        scfs = [dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists)]
+        scfs = [ dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists) ]
         scf_avg = np.average(scfs)
         self.scale_factor = scf_avg
 
-        print('---- Scale factor ----')
-        print(['scf{0} = {1:.2f}x\n'.format(idx + 1, mag) for idx, mag in zip(range(len(scfs)), scfs)])
-        print('Average scale factor = {0:.2f}x'.format(scf_avg))
-        print('------------------')
+        print('Automatic scaling:')
+        print('Partial scale factors: ' + ', '.join('{0:.2f}x'.format(scf) for scf in scfs))
+        # print('Average scale factor = {0:.2f}x'.format(scf_avg))
 
-        magnified_img = tr.RescaleImageSki(curr_img, scf_avg)
-
-        pad_sz = (magnified_img.width - curr_img.width) // 2
-        if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
-            padded_img1 = imsup.pad_img_from_ref(ref_img, magnified_img.width, 0.0)
-            padded_img2 = imsup.copy_am_ph_image(magnified_img)
-            resc_factor = ref_img.width / padded_img1.width
-            resc_img1 = tr.RescaleImageSki(padded_img1, resc_factor)
-            resc_img2 = tr.RescaleImageSki(padded_img2, resc_factor)
-        else:
-            resc_img1 = imsup.copy_am_ph_image(ref_img)
-            resc_img2 = imsup.pad_img_from_ref(magnified_img, ref_img.width, 0.0)
-
-        resc_img1.name = ref_img.name + '_resc1'
-        resc_img2.name = curr_img.name + '_resc2'
-        self.insert_img_after_curr(resc_img1)
-        self.insert_img_after_curr(resc_img2)
-
-        print('Image(s) rescaled!')
+        self.rescale_image()
 
     def rescale_image(self):
+        print('Using scale factor = {0:.2f}x'.format(self.scale_factor))
         curr_img = self.display.image
         mag_img = tr.RescaleImageSki(curr_img, self.scale_factor)
         pad_sz = (mag_img.width - curr_img.width) // 2
 
-        if pad_sz > 0:      # should crop smaller area from magnified image so that both images have the same size
-            pad_img = imsup.pad_img_from_ref(curr_img, mag_img.width, 0.0)
-            resc_factor = curr_img.width / pad_img.width
-            resc_img = tr.RescaleImageSki(pad_img, resc_factor)
+        if pad_sz > 0:
+            crop_coords = 2 * [pad_sz] + 2 * [pad_sz + curr_img.width]
+            resc_img = imsup.crop_am_ph_roi(mag_img, crop_coords)
         else:
             resc_img = imsup.pad_img_from_ref(mag_img, curr_img.width, 0.0)
 
@@ -1907,8 +1878,6 @@ class HolographyWidget(QtWidgets.QWidget):
         user_points1 = real_cnt_pts_to_tl_pts(curr_img.width, real_points1)
         user_points2 = real_cnt_pts_to_tl_pts(curr_img.width, real_points2)
 
-        self.warp_points = [ user_points1, user_points2 ]
-
         if more_accurate:
             n_div = const.n_div_for_warp
             frag_dim_size = curr_img.width // n_div
@@ -1921,8 +1890,6 @@ class HolographyWidget(QtWidgets.QWidget):
                 closest_node = [ np.floor(x / frag_dim_size) * frag_dim_size for x in pt1 ]
                 grid_points1 = [ pt1 if grid_node == closest_node else grid_node for grid_node in grid_points1 ]
 
-            src = np.array(grid_points1)
-
             # points #2
             grid_points2 = [ (b, a) for a in range(n_div) for b in range(n_div) ]
             grid_points2 = [ [ gptx * frag_dim_size for gptx in gpt ] for gpt in grid_points2 ]
@@ -1930,31 +1897,22 @@ class HolographyWidget(QtWidgets.QWidget):
                 closestNode = [ np.floor(x / frag_dim_size) * frag_dim_size for x in pt2 ]
                 grid_points2 = [ pt2 if gridNode == closestNode else gridNode for gridNode in grid_points2 ]
 
-            dst = np.array(grid_points2)
+            self.warp_points = [ grid_points1, grid_points2 ]
 
         else:
-            src = np.array(user_points1)
-            dst = np.array(user_points2)
+            self.warp_points = [ user_points1, user_points2 ]
 
-        img_warp = tr.WarpImage(curr_img, src, dst)
-
-        curr_num = self.display.image.numInSeries
-        tmp_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        tmp_img_list.insert(1, img_warp)
-        tmp_img_list.UpdateLinks()
-        self.point_sets.insert(curr_num, [])
-        self.go_to_next_image()
+        self.rewarp()
 
     def rewarp(self):
         curr_img = self.display.image
-        user_pts1 = self.warp_points[0]
-        user_pts2 = self.warp_points[1]
 
-        src = np.array(user_pts1)
-        dst = np.array(user_pts2)
+        src = np.array(self.warp_points[0])
+        dst = np.array(self.warp_points[1])
 
         warped_img = tr.WarpImage(curr_img, src, dst)
         self.insert_img_after_curr(warped_img)
+        print('Image warped!')
 
     def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
