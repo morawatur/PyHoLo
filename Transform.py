@@ -239,8 +239,7 @@ def calc_corr_array(arr1, arr2, max_shift=20):
 
     for y in range(y1, y2):
         for x in range(x1, x2):
-            shift = [y, x]
-            arr2_sh = imsup.shift_array(arr2, shift)
+            arr2_sh = imsup.shift_array(arr2, x, y)
             roi2 = np.copy(arr2_sh[y2:h-y2, x2:w-x2])
             corr_coef = calc_corr_coef(roi1, roi2)
             corr_arr[y2+y, x2+x] = corr_coef

@@ -682,15 +682,14 @@ def GetShift(ccf):
 
     ccfMidXY = np.array(ccf.amPh.am.shape) // 2
     ccfMaxXY = np.array(np.unravel_index(np.argmax(ccf.amPh.am), ccf.amPh.am.shape))
-    shift = tuple(ccfMidXY - ccfMaxXY)
+    shift = tuple(ccfMidXY - ccfMaxXY)[::-1]
 
     ccf.ChangeComplexRepr(dt)
     return shift
 
 #-------------------------------------------------------------------
 
-def shift_array(arr, shift, fval=0.0):
-    dy, dx = shift
+def shift_array(arr, dx, dy, fval=0.0):
     if dx == 0 and dy == 0:
         return np.copy(arr)
     # arr_shifted = np.zeros(arr.shape, dtype=arr.dtype)
@@ -724,10 +723,11 @@ def shift_array(arr, shift, fval=0.0):
 #-------------------------------------------------------------------
 
 def shift_am_ph_image(img, shift):
+    dx, dy = shift
     img_shifted = ImageExp(img.height, img.width, img.cmpRepr, px_dim_sz=img.px_dim)
 
-    img_shifted.amPh.am = shift_array(img.amPh.am, shift)
-    img_shifted.amPh.ph = shift_array(img.amPh.ph, shift)
+    img_shifted.amPh.am = shift_array(img.amPh.am, dx, dy)
+    img_shifted.amPh.ph = shift_array(img.amPh.ph, dx, dy)
 
     if img.cos_phase is not None:
         img_shifted.update_cos_phase()
@@ -739,9 +739,10 @@ def shift_am_ph_image(img, shift):
 def ShiftImage(img, shift):
     dt = img.cmpRepr
     img.AmPh2ReIm()
+    dx, dy = shift
 
     img_shifted = ImageExp(img.height, img.width, img.cmpRepr)
-    img_shifted.reIm = shift_array(img.reIm, shift)
+    img_shifted.reIm = shift_array(img.reIm, dx, dy)
 
     img.ChangeComplexRepr(dt)
     img_shifted.ChangeComplexRepr(dt)

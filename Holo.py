@@ -41,8 +41,9 @@ def mask_fft_center(fft, r, out=True):
 #-------------------------------------------------------------------
 
 def find_img_max(img):
-    max_xy = np.array(np.unravel_index(np.argmax(img), img.shape))
-    return list(max_xy)
+    max_xy = list(np.unravel_index(np.argmax(img), img.shape))[::-1]
+    # max_xy.reverse()      # reverse() is the same as [::-1]
+    return max_xy
 
 #-------------------------------------------------------------------
 
@@ -166,27 +167,27 @@ def find_mass_center(arr):
     all_sum = np.sum(arr)
     xm = np.sum(arr * xv) / all_sum
     ym = np.sum(arr * yv) / all_sum
-    return ym, xm
+    return xm, ym
 
 #-------------------------------------------------------------------
 
 def find_sideband_center(sband, orig=(0, 0), subpx=False):
-    # general convention is (y, x), i.e. (r, c)
+    # general convention is (x, y), i.e. (col, row)
 
     sb_xy = find_img_max(sband)
     sband_xy = list(np.array(sb_xy) + np.array(orig))
 
     if subpx:
-        print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[1] + sb_xy[1], orig[0] + sb_xy[0]))
-        roi_hlf_edge = min([const.min_COM_roi_hlf_edge] + sb_xy + list(np.array(sband.shape) - np.array(sb_xy)))
+        print('Sband precentered at (x, y) = ({0}, {1})'.format(orig[0] + sb_xy[0], orig[1] + sb_xy[1]))
+        roi_hlf_edge = min([const.min_COM_roi_hlf_edge] + sb_xy + list(np.array(sband.shape[::-1]) - np.array(sb_xy)))
         print('Edge of center of mass ROI = {0}'.format(2 * roi_hlf_edge))
-        sb_y1, sb_y2 = sb_xy[0] - roi_hlf_edge, sb_xy[0] + roi_hlf_edge
-        sb_x1, sb_x2 = sb_xy[1] - roi_hlf_edge, sb_xy[1] + roi_hlf_edge
+        sb_x1, sb_x2 = sb_xy[0] - roi_hlf_edge, sb_xy[0] + roi_hlf_edge
+        sb_y1, sb_y2 = sb_xy[1] - roi_hlf_edge, sb_xy[1] + roi_hlf_edge
         sband_precentered = np.copy(sband[sb_y1:sb_y2, sb_x1:sb_x2])
         sband_xy = list(find_mass_center(sband_precentered))
-        sband_xy = list(np.array(sband_xy) + np.array([sb_y1, sb_x1]) + np.array(orig))
+        sband_xy = list(np.array(sband_xy) + np.array([sb_x1, sb_y1]) + np.array(orig))
 
-    print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[1], sband_xy[0]))
+    print('Sband found at (x, y) = ({0:.2f}, {1:.2f})'.format(sband_xy[0], sband_xy[1]))
 
     return sband_xy
 
@@ -198,7 +199,7 @@ def subpixel_shift(img, subpx_sh):
     h, w = img.reIm.shape
     img_sh = imsup.ImageExp(h, w, img.cmpRepr)
 
-    dy, dx = subpx_sh
+    dx, dy = subpx_sh
     wx = np.abs(dx)
     wy = np.abs(dy)
     arr = np.copy(img.reIm)
@@ -235,7 +236,7 @@ def subpixel_shift(img, subpx_sh):
 #     h, w = img.amPh.am.shape
 #     img_sh = imsup.ImageExp(h, w, img.cmpRepr)
 #
-#     dy, dx = subpx_sh
+#     dx, dy = subpx_sh
 #     wx = np.abs(dx)
 #     wy = np.abs(dy)
 #     amp = np.copy(img.amPh.am)

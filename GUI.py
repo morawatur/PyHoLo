@@ -441,7 +441,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.preview_scroll = ImgScrollArea()
         self.backup_image = None
         self.point_sets = [[]]
-        self.changes_made = []
         self.shift = [0, 0]
         self.rot_angle = 0
         self.scale_factor = 1.0
@@ -1599,19 +1598,19 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def move_left(self):
         n_px = int(self.px_shift_input.text())
-        self.move_image([0, -n_px])
+        self.move_image([-n_px, 0])
 
     def move_right(self):
         n_px = int(self.px_shift_input.text())
-        self.move_image([0, n_px])
+        self.move_image([n_px, 0])
 
     def move_up(self):
         n_px = int(self.px_shift_input.text())
-        self.move_image([-n_px, 0])
+        self.move_image([0, -n_px])
 
     def move_down(self):
         n_px = int(self.px_shift_input.text())
-        self.move_image([n_px, 0])
+        self.move_image([0, n_px])
 
     def move_image(self, shift):
         bckp = self.backup_image
@@ -1656,12 +1655,6 @@ class HolographyWidget(QtWidgets.QWidget):
         curr.rot = total_rot
         # self.display.setImage()
         self.update_display_and_bcg()
-
-    # def repeat_prev_mods(self):
-    #     curr = imsup.copy_am_ph_image(self.backup_image)
-    #     for mod in self.changes_made:
-    #         curr = modify_image(curr, mod[:2], bool(mod[2]))
-    #     self.display.image = curr
 
     def zero_shift_rot(self):
         self.display.image.shift = [0, 0]
@@ -1735,11 +1728,7 @@ class HolographyWidget(QtWidgets.QWidget):
             shift = np.array(pt1) - np.array(pt2)
             shift_sum += shift
 
-        shift_avg = list(shift_sum // n_points1)
-        shift_avg.reverse()  # !!!
-
-        self.shift = shift_avg
-        print('Average shift = {0} px'.format(shift_avg))
+        self.shift = list(shift_sum // n_points1)
         self.reshift()
 
     def auto_rot_image(self):
@@ -1783,11 +1772,10 @@ class HolographyWidget(QtWidgets.QWidget):
 
         print('Partial rot. angles: ' + ', '.join('{0:.2f} deg'.format(ang) for ang in rot_angles))
         # print('Average rot. angle = {0:.2f} deg'.format(rot_angle_avg))
-
         self.rerotate()
 
     def reshift(self):
-        print('Using shift = {0} px'.format(self.shift))
+        print('Shifting by [dx, dy] = {0} px'.format(self.shift))
         curr_img = self.display.image
         shifted_img = imsup.shift_am_ph_image(curr_img, self.shift)
         shifted_img.name = curr_img.name + '_sh'
@@ -1851,7 +1839,6 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Automatic scaling:')
         print('Partial scale factors: ' + ', '.join('{0:.2f}x'.format(scf) for scf in scfs))
         # print('Average scale factor = {0:.2f}x'.format(scf_avg))
-
         self.rescale_image()
 
     def rescale_image(self):
@@ -1942,7 +1929,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(True)
 
     def rec_holo_no_ref_2(self):
-        # general convention is (y, x), i.e. (r, c)
+        # general convention is (x, y), i.e. (col, row)
         holo_fft = self.display.image
 
         print('--------------------------')
@@ -1954,10 +1941,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpts = disp_pt_to_real_tl_pt(holo_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
-        rpt1.reverse()  # r, c
-        rpt2.reverse()  # r, c
 
-        sband = np.copy(holo_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
+        sband = np.copy(holo_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2001,10 +1986,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
-        rpt1.reverse()  # r, c
-        rpt2.reverse()  # r, c
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
+        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2050,10 +2033,8 @@ class HolographyWidget(QtWidgets.QWidget):
         rpts = disp_pt_to_real_tl_pt(ref_fft.width, dpts)
         rpt1 = rpts[:2]  # x, y
         rpt2 = rpts[2:]  # x, y
-        rpt1.reverse()   # r, c
-        rpt2.reverse()   # r, c
 
-        sband = np.copy(ref_fft.amPh.am[rpt1[0]:rpt2[0], rpt1[1]:rpt2[1]])
+        sband = np.copy(ref_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2369,9 +2350,8 @@ class HolographyWidget(QtWidgets.QWidget):
         print('dir. angle = {0:.2f} deg'.format(dir_angle))
 
         # shift image by -center
-        shift_to_rot_center = list(-rot_center)
-        shift_to_rot_center.reverse()
-        img_shifted = imsup.shift_am_ph_image(curr_img, shift_to_rot_center)
+        shift_to_rc = list(-rot_center)
+        img_shifted = imsup.shift_am_ph_image(curr_img, shift_to_rc)
 
         # rotate image by angle
         img_rot = tr.RotateImageSki(img_shifted, dir_angle)
@@ -2793,16 +2773,6 @@ def zoom_fragment(img, coords):
     crop_img.defocus = img.defocus
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
-
-# --------------------------------------------------------
-
-def modify_image(img, mod=list([0, 0]), is_shift=True):
-    if is_shift:
-        mod_img = imsup.shift_am_ph_image(img, mod)
-    else:
-        mod_img = tr.RotateImageSki(img, mod[0])
-
-    return mod_img
 
 # --------------------------------------------------------
 
