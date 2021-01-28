@@ -441,7 +441,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.preview_scroll = ImgScrollArea()
         self.backup_image = None
         self.point_sets = [[]]
-        self.shift = [0, 0]
+        self.shift = [0, 0]     # [dx, dy]
         self.rot_angle = 0
         self.scale_factor = 1.0
         self.warp_points = []

@@ -110,7 +110,7 @@ class ImageExp(Image):
     def __init__(self, height, width, cmpRepr=Image.cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
         super(ImageExp, self).__init__(height, width, cmpRepr, defocus, num, px_dim_sz)
         self.parent = super(ImageExp, self)
-        self.shift = [0, 0]
+        self.shift = [0, 0]     # [dx, dy]
         self.rot = 0
         self.amp_factor = 1.0
         self.cos_phase = None
