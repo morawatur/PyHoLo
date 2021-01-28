@@ -2709,7 +2709,7 @@ def LoadImageSeriesFromFirstFile(img_path):
         if path.isfile(info_file_path):
             is_there_info = True
             imgs_info = pd.read_csv(info_file_path, sep='\t', header=None)
-            imgs_info = imgs_info.values
+            imgs_info = imgs_info.values[img_num-1:, :]
             print('info file detected')
         else:
             print('info file not detected')
