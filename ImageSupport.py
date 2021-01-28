@@ -741,7 +741,7 @@ def ShiftImage(img, shift):
     img.AmPh2ReIm()
     dx, dy = shift
 
-    img_shifted = ImageExp(img.height, img.width, img.cmpRepr)
+    img_shifted = ImageExp(img.height, img.width, img.cmpRepr, px_dim_sz=img.px_dim)
     img_shifted.reIm = shift_array(img.reIm, dx, dy)
 
     img.ChangeComplexRepr(dt)
