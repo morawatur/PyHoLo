@@ -116,7 +116,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
 
     for [x, y], dir_ang in zip(orig_pts, max_B_angles):
         dx, dy = r1 * np.cos(dir_ang), -r1 * np.sin(dir_ang)
-        ax.arrow(x, y, dx, dy, fc='k', ec='k', lw=0.6, head_width=3, head_length=6, length_includes_head=True)
+        ax.arrow(x, y, dx, dy, fc='k', ec='k', lw=0.6, head_width=12, head_length=20, length_includes_head=True)
         circ = Circle((x, y), r1, fill=False, ec='orange', ls='--', lw=0.6)
         ax.add_patch(circ)
 
