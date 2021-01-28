@@ -1168,7 +1168,7 @@ class HolographyWidget(QtWidgets.QWidget):
             new_idx = len(imgs) - 1
         curr_img = imgs[new_idx]
         if curr_img.name == '':
-            curr_img.name = 'img0{0}'.format(new_idx + 1) if new_idx < 9 else 'img{0}'.format(new_idx + 1)
+            curr_img.name = 'img_0{0}'.format(new_idx + 1) if new_idx < 9 else 'img_{0}'.format(new_idx + 1)
         self.name_input.setText(curr_img.name)
         self.fname_input.setText(curr_img.name)
         self.manual_mode_checkbox.setChecked(False)
@@ -1900,13 +1900,26 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Image warped!')
 
     def insert_img_after_curr(self, new_img):
+        # # option 1
+        # curr_num = self.display.image.numInSeries
+        # new_img_list = imsup.CreateImageListFromFirstImage(new_img)
+        #
+        # if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
+        #     self.display.image = new_img
+        #     del self.point_sets[0]
+        #     curr_num = 0
+        # else:
+        #     curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
+        #     curr_img_list[1:1] = new_img_list
+        #     curr_img_list.UpdateLinks()
+        #
+        # self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
+        # self.go_to_image(curr_num)
+
+        # option 2
         curr_num = self.display.image.numInSeries
         curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
         new_img_list = imsup.CreateImageListFromFirstImage(new_img)
-
-        # if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
-        #     self.display.image = new_img_list.pop(0)
-        #     curr_num = 0
 
         curr_img_list[1:1] = new_img_list
         self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
@@ -1914,28 +1927,9 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img_list.UpdateLinks()
         self.go_to_image(abs(curr_num))
 
-        if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
+        if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
             del curr_img_list[0]
             del self.point_sets[0]
-            curr_img_list.UpdateLinks()
-
-        # curr_img_list.UpdateLinks()
-        # self.go_to_image(curr_num)
-
-        # curr_num = self.display.image.numInSeries
-        #
-        # if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
-        #     new_img.numInSeries = 1
-        #     self.display.image = new_img
-        #     self.point_sets[0] = []
-        #     self.go_to_image(0)
-        # else:
-        #     curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        #     new_img_list = imsup.CreateImageListFromFirstImage(new_img)
-        #     curr_img_list[1:1] = new_img_list
-        #     self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
-        #     curr_img_list.UpdateLinks()
-        #     self.go_to_next_image()
 
         # self.preview_scroll.update_scroll_list(self.display.image)
 
