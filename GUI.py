@@ -1174,8 +1174,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.manual_mode_checkbox.setChecked(False)
         self.disable_manual_panel()
         self.display.image = imgs[new_idx]
-        if len(self.point_sets) < self.display.image.numInSeries:
-            self.point_sets.append([])
         self.display.update_labels()
         self.update_curr_info_label()
         self.update_display_and_bcg()
@@ -1903,19 +1901,41 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
+        curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
+        new_img_list = imsup.CreateImageListFromFirstImage(new_img)
 
-        if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
-            new_img.numInSeries = 1
-            self.display.image = new_img
-            self.point_sets[0] = []
-            self.go_to_image(0)
-        else:
-            curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-            new_img_list = imsup.CreateImageListFromFirstImage(new_img)
-            curr_img_list[1:1] = new_img_list
-            self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
+        # if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
+        #     self.display.image = new_img_list.pop(0)
+        #     curr_num = 0
+
+        curr_img_list[1:1] = new_img_list
+        self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
+
+        curr_img_list.UpdateLinks()
+        self.go_to_image(abs(curr_num))
+
+        if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
+            del curr_img_list[0]
+            del self.point_sets[0]
             curr_img_list.UpdateLinks()
-            self.go_to_next_image()
+
+        # curr_img_list.UpdateLinks()
+        # self.go_to_image(curr_num)
+
+        # curr_num = self.display.image.numInSeries
+        #
+        # if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
+        #     new_img.numInSeries = 1
+        #     self.display.image = new_img
+        #     self.point_sets[0] = []
+        #     self.go_to_image(0)
+        # else:
+        #     curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
+        #     new_img_list = imsup.CreateImageListFromFirstImage(new_img)
+        #     curr_img_list[1:1] = new_img_list
+        #     self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
+        #     curr_img_list.UpdateLinks()
+        #     self.go_to_next_image()
 
         # self.preview_scroll.update_scroll_list(self.display.image)
 
@@ -2297,8 +2317,7 @@ class HolographyWidget(QtWidgets.QWidget):
         imgs.UpdateLinks()
 
         ps = self.point_sets
-        if len(ps[curr_idx-1]) > 0:
-            ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
+        ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
         self.go_to_next_image()
 
     def swap_right(self):
@@ -2317,8 +2336,7 @@ class HolographyWidget(QtWidgets.QWidget):
         imgs.UpdateLinks()
 
         ps = self.point_sets
-        if len(ps[curr_idx]) > 0:
-            ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
+        ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
         self.go_to_prev_image()
 
     def plot_profile(self):
