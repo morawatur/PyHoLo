@@ -1283,7 +1283,7 @@ class HolographyWidget(QtWidgets.QWidget):
         new_idx = curr_idx - 1 if curr_img.prev is not None else curr_idx + 1
         self.go_to_image(new_idx)
 
-        del all_img_list[curr_idx]
+        del all_img_list[curr_idx]      # ImageList destructor updates and restrains links among the remaining images
         del self.point_sets[curr_idx]
 
     def toggle_lines(self):
@@ -1900,23 +1900,6 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Image warped!')
 
     def insert_img_after_curr(self, new_img):
-        # # option 1
-        # curr_num = self.display.image.numInSeries
-        # new_img_list = imsup.CreateImageListFromFirstImage(new_img)
-        #
-        # if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
-        #     self.display.image = new_img
-        #     del self.point_sets[0]
-        #     curr_num = 0
-        # else:
-        #     curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        #     curr_img_list[1:1] = new_img_list
-        #     curr_img_list.UpdateLinks()
-        #
-        # self.point_sets[curr_num:curr_num] = [[] for _ in range(len(new_img_list))]
-        # self.go_to_image(curr_num)
-
-        # option 2
         curr_num = self.display.image.numInSeries
         curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
         new_img_list = imsup.CreateImageListFromFirstImage(new_img)
@@ -2741,6 +2724,7 @@ def LoadImageSeriesFromFirstFile(img_path):
         img_num_text = img_num_text_new
 
     img_list.UpdateLinks()
+    # img_list.UpdateAndRestrainLinks()
     return img_list[0]
 
 # --------------------------------------------------------
