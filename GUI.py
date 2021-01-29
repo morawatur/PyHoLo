@@ -2104,7 +2104,10 @@ class HolographyWidget(QtWidgets.QWidget):
         phs_amplified = imsup.copy_am_ph_image(curr_img)
         phs_amplified.amPh.ph *= amp_factor
         phs_amplified.update_cos_phase()
-        phs_amplified.name = '{0}_x{1:.0f}'.format(curr_img.name, amp_factor)
+
+        n_dec = '0' if amp_factor.is_integer() else '1'
+        phs_amplified.name = '{0}_x{1:.{2}f}'.format(curr_img.name, amp_factor, n_dec)
+
         phs_amplified = rescale_image_buffer_to_window(phs_amplified, const.disp_dim)
         self.insert_img_after_curr(phs_amplified)
         self.cos_phs_radio_button.setChecked(True)
