@@ -2067,6 +2067,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.log_scale_checkbox.setChecked(False)
         self.insert_img_after_curr(rec_holo_corr)
+        self.phs_radio_button.setChecked(True)
 
         print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_holo_corr.name))
         print('--------------------------')
