@@ -422,7 +422,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
             print('Could not load the starting image. It must be in dm3 format...')
             return
 
-        first_img = LoadImageSeriesFromFirstFile(file_path)
+        first_img = load_image_series_from_first_file(file_path)
         self.holo_widget.insert_img_after_curr(first_img)
 
         if not self.holo_widget.tab_disp.isEnabled():
@@ -2674,7 +2674,7 @@ def open_dm3_file(file_path, img_type='amp'):
 
 # --------------------------------------------------------
 
-def LoadImageSeriesFromFirstFile(img_path):
+def load_image_series_from_first_file(img_path):
     img_list = imsup.ImageList()
     img_num_match = re.search('([0-9]+).dm3', img_path)
     img_num_text = img_num_match.group(1)
