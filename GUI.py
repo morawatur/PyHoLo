@@ -2347,7 +2347,7 @@ class HolographyWidget(QtWidgets.QWidget):
             # img_cropped.cos_phase += cos_ph_fix
             int_matrix = np.copy(img_cropped.cos_phase)
 
-        int_profile = np.sum(int_matrix, proj_dir)  # 0 - horizontal projection, 1 - vertical projection
+        int_profile = np.sum(int_matrix, proj_dir) / frag_dim2  # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
         dists *= 1e9
 
