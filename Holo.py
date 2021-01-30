@@ -87,56 +87,28 @@ def mult_by_hann_window(img, N=100):
 
 #-------------------------------------------------------------------
 
-def rec_holo_no_ref_1(holo_img):
-    holo_img.AmPh2ReIm()
-    holo_fft = imsup.FFT(holo_img)
-    holo_fft = imsup.FFT2Diff(holo_fft)
-    holo_img.ReIm2AmPh()
-    holo_fft.ReIm2AmPh()
-    return holo_fft
+def holo_fft(h_img):
+    h_fft = imsup.FFT(h_img)
+    h_fft = imsup.FFT2Diff(h_fft)
+    return h_fft
 
 #-------------------------------------------------------------------
 
-def rec_holo_no_ref_2(holo_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
+def holo_get_sideband(h_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
-    sband_mid_img = imsup.ShiftImage(holo_fft, list(px_shift.astype(np.int32)))
+    sband_ctr = imsup.ShiftImage(h_fft, list(px_shift.astype(np.int32)))
     if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
-        sband_mid_img = subpixel_shift(sband_mid_img, list(subpx_shift))
-    sband_img_ap = insert_aperture(sband_mid_img, ap_rad)
-    sband_img_ap = mult_by_hann_window(sband_img_ap, N=N_hann)
-    return sband_img_ap
+        sband_ctr = subpixel_shift(sband_ctr, list(subpx_shift))
+    sband_ctr_ap = insert_aperture(sband_ctr, ap_rad)
+    sband_ctr_ap = mult_by_hann_window(sband_ctr_ap, N=N_hann)
+    return sband_ctr_ap
 
 #-------------------------------------------------------------------
 
-def rec_holo_no_ref_3(sband_img):
-    sband_img = imsup.Diff2FFT(sband_img)
-    rec_holo = imsup.IFFT(sband_img)
-    return rec_holo
-
-#-------------------------------------------------------------------
-
-def rec_holo_no_ref(holo_img, rec_sz=128, ap_sz=32, mask_sz=50, N_hann=100):
-    holo_fft = imsup.FFT(holo_img)
-    holo_fft = imsup.FFT2Diff(holo_fft)    # diff is re_im
-    holo_fft.ReIm2AmPh()
-
-    mfft = mask_fft_center(holo_fft.amPh.am, mask_sz, True)
-    sband_xy = find_img_max(mfft)
-
-    mid = holo_img.width // 2
-    shift = [ mid - sband_xy[0], mid - sband_xy[1] ]
-    sband_img = imsup.ShiftImage(holo_fft, shift)
-
-    sband_img_ap = mult_by_hann_window(sband_img, N=N_hann)
-    sband_img_ap = insert_aperture(sband_img_ap, ap_sz)
-
-    sband_img_ap = imsup.Diff2FFT(sband_img_ap)
-    rec_holo = imsup.IFFT(sband_img_ap)
-
-    # factor = holo_img.width / rec_sz
-    # rec_holo_resc = tr.RescaleImageSki(rec_holo, factor)
-    rec_holo = imsup.create_imgexp_from_img(rec_holo)
-    return rec_holo
+def holo_ifft(h_fft):
+    h_fft = imsup.Diff2FFT(h_fft)
+    h_ifft = imsup.IFFT(h_fft)
+    return h_ifft
 
 #-------------------------------------------------------------------
 
