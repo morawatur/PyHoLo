@@ -28,7 +28,7 @@ import Dm3Reader as dm3
 import Constants as const
 import ImageSupport as imsup
 import Transform as tr
-import Holo as holo
+import Holography as holo
 import MagCalc as mc
 
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
