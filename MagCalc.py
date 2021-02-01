@@ -70,7 +70,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
 
             # ph_arr_for_ls = np.array([ curr_phs[y, x] for y, x in zip(yy, xx) ])
             ph_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
-            aa, bb = tr.LinLeastSquaresAlt(x_arr_for_ls, ph_arr_for_ls)
+            aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
 
             # d_phase = tr.calc_avg_neigh(phs, x2, y2, nn=n_neigh) - tr.calc_avg_neigh(phs, x1, y1, nn=n_neigh)
             d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
