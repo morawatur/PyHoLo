@@ -1223,6 +1223,7 @@ class HolographyWidget(QtWidgets.QWidget):
         if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
             del curr_img_list[0]
             del self.point_sets[0]
+            self.update_curr_info_label()
 
         # self.preview_scroll.update_scroll_list(self.display.image)
 
