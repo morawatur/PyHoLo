@@ -458,6 +458,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
         prev_button = QtWidgets.QPushButton('<---', self)
         next_button = QtWidgets.QPushButton('--->', self)
+        first_button = QtWidgets.QPushButton('<<<-', self)
+        last_button = QtWidgets.QPushButton('->>>', self)
         lswap_button = QtWidgets.QPushButton('L-Swap', self)
         rswap_button = QtWidgets.QPushButton('R-Swap', self)
         set_name_button = QtWidgets.QPushButton('Set name', self)
@@ -485,6 +487,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
         prev_button.clicked.connect(self.go_to_prev_image)
         next_button.clicked.connect(self.go_to_next_image)
+        first_button.clicked.connect(self.go_to_first_image)
+        last_button.clicked.connect(self.go_to_last_image)
         lswap_button.clicked.connect(self.swap_left)
         rswap_button.clicked.connect(self.swap_right)
         set_name_button.clicked.connect(self.set_image_name)
@@ -508,8 +512,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_nav.layout.setColumnStretch(5, 1)
         self.tab_nav.layout.setRowStretch(0, 1)
         self.tab_nav.layout.setRowStretch(8, 1)
-        self.tab_nav.layout.addWidget(prev_button, 1, 1, 1, 2)
-        self.tab_nav.layout.addWidget(next_button, 1, 3, 1, 2)
+        self.tab_nav.layout.addWidget(first_button, 1, 1)
+        self.tab_nav.layout.addWidget(prev_button, 1, 2)
+        self.tab_nav.layout.addWidget(next_button, 1, 3)
+        self.tab_nav.layout.addWidget(last_button, 1, 4)
         self.tab_nav.layout.addWidget(lswap_button, 2, 1, 1, 2)
         self.tab_nav.layout.addWidget(rswap_button, 2, 3, 1, 2)
         self.tab_nav.layout.addWidget(self.name_input, 3, 1, 1, 2)
@@ -1095,7 +1101,7 @@ class HolographyWidget(QtWidgets.QWidget):
         disp_name = curr_img.name[:const.disp_name_max_len]
         if len(curr_img.name) > const.disp_name_max_len:
             disp_name = disp_name[:-3] + '...'
-        self.curr_info_label.setText('{0}, dim = {1} px'.format(disp_name, curr_img.width))
+        self.curr_info_label.setText('{0}: {1}, dim = {2} px'.format(curr_img.numInSeries, disp_name, curr_img.width))
 
     def enable_tabs(self):
         # self.tab_nav.setEnabled(True)
@@ -1159,11 +1165,13 @@ class HolographyWidget(QtWidgets.QWidget):
     def go_to_image(self, new_idx):
         first_img = imsup.GetFirstImage(self.display.image)
         imgs = imsup.CreateImageListFromFirstImage(first_img)
-        if new_idx > len(imgs) - 1:
-            new_idx = len(imgs) - 1
+        if 0 > new_idx >= len(imgs):
+            return
+
         curr_img = imgs[new_idx]
         if curr_img.name == '':
             curr_img.name = 'img_0{0}'.format(new_idx + 1) if new_idx < 9 else 'img_{0}'.format(new_idx + 1)
+
         self.name_input.setText(curr_img.name)
         self.fname_input.setText(curr_img.name)
         self.manual_mode_checkbox.setChecked(False)
@@ -1187,11 +1195,18 @@ class HolographyWidget(QtWidgets.QWidget):
         next_idx = curr_img.next.numInSeries - 1
         self.go_to_image(next_idx)
 
+    def go_to_first_image(self):
+        curr_idx = self.display.image.numInSeries - 1
+        if curr_idx > 0:
+            self.go_to_image(0)
+
     def go_to_last_image(self):
         curr_img = self.display.image
         last_img = imsup.GetLastImage(curr_img)
+        curr_idx = curr_img.numInSeries - 1
         last_idx = last_img.numInSeries - 1
-        self.go_to_image(last_idx)
+        if curr_idx < last_idx:
+            self.go_to_image(last_idx)
 
     def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
@@ -1208,7 +1223,7 @@ class HolographyWidget(QtWidgets.QWidget):
             del curr_img_list[0]
             del self.point_sets[0]
 
-            # self.preview_scroll.update_scroll_list(self.display.image)
+        # self.preview_scroll.update_scroll_list(self.display.image)
 
     def swap_left(self):
         curr_img = self.display.image
