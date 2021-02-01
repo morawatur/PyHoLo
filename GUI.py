@@ -1166,6 +1166,7 @@ class HolographyWidget(QtWidgets.QWidget):
         first_img = imsup.GetFirstImage(self.display.image)
         imgs = imsup.CreateImageListFromFirstImage(first_img)
         if 0 > new_idx >= len(imgs):
+            print('Image index out of range')
             return
 
         curr_img = imgs[new_idx]
