@@ -108,8 +108,12 @@ class Line:
         self.b = b_coeff
 
     def getFromPoints(self, p1, p2):
-        self.a = (p2[1] - p1[1]) / (p2[0] - p1[0])
-        self.b = p1[1] - self.a * p1[0]
+        if p1[0] != p2[0]:
+            self.a = (p2[1] - p1[1]) / (p2[0] - p1[0])
+            self.b = p1[1] - self.a * p1[0]
+        else:
+            self.a = None
+            self.b = None
 
     def getFromDirCoeffAndPoint(self, a_coeff, p1):
         self.a = a_coeff
@@ -179,6 +183,15 @@ def RotatePoint(p1, angle):
     phi = np.angle(z1) + imsup.Radians(angle)
     p2 = [r * np.cos(phi), r * np.sin(phi)]
     return p2
+
+#-------------------------------------------------------------------
+
+def find_dir_angle(p1, p2, orig=(0, 0)):
+    p1 = np.array(p1)
+    p2 = np.array(p2)
+    orig = np.array(orig)
+    p2 += (orig - p1)
+    return np.arctan2(p2[1], p2[0])
 
 #-------------------------------------------------------------------
 

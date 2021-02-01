@@ -1744,9 +1744,6 @@ class HolographyWidget(QtWidgets.QWidget):
             points1 = points1[:-1]
             points2 = points2[:-1]
 
-        line1 = tr.Line(0, 0)
-        line2 = tr.Line(0, 0)
-
         rot_angles = []
         rot_angle_avg = 0.0
         n_pairs = np1 // 2
@@ -1754,9 +1751,9 @@ class HolographyWidget(QtWidgets.QWidget):
         for l in range(n_pairs):
             p11, p12 = points1[2*l:2*(l+1)]
             p21, p22 = points2[2*l:2*(l+1)]
-            line1.getFromPoints(p11, p12)
-            line2.getFromPoints(p21, p22)
-            rot_angle = imsup.Degrees(np.arctan(line2.a) - np.arctan(line1.a))
+            ang1 = tr.find_dir_angle(p11, p12)
+            ang2 = tr.find_dir_angle(p21, p22)
+            rot_angle = imsup.Degrees(ang2 - ang1)
             rot_angles.append(rot_angle)
             rot_angle_avg += rot_angle
 
