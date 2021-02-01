@@ -671,13 +671,13 @@ class HolographyWidget(QtWidgets.QWidget):
         # Automatic alignment panel (4)
         # ------------------------------
 
-        auto_shift_button = QtWidgets.QPushButton('Auto-shift', self)
-        auto_rot_button = QtWidgets.QPushButton('Auto-rotate', self)
-        warpButton = QtWidgets.QPushButton('Warp', self)
+        auto_shift_button = QtWidgets.QPushButton('Auto-Shift', self)
+        auto_rot_button = QtWidgets.QPushButton('Auto-Rotate', self)
         get_scale_ratio_button = QtWidgets.QPushButton('Get scale ratio from image calib.')
         scale_button = QtWidgets.QPushButton('Scale', self)
+        warp_button = QtWidgets.QPushButton('Warp', self)
         reshift_button = QtWidgets.QPushButton('Re-Shift', self)
-        rerot_button = QtWidgets.QPushButton('Re-Rot', self)
+        rerot_button = QtWidgets.QPushButton('Re-Rotate', self)
         rescale_button = QtWidgets.QPushButton('Re-Scale', self)
         rewarp_button = QtWidgets.QPushButton('Re-Warp', self)
         cross_corr_w_prev_button = QtWidgets.QPushButton('Cross corr. w. prev.', self)
@@ -687,9 +687,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
         auto_shift_button.clicked.connect(self.auto_shift_image)
         auto_rot_button.clicked.connect(self.auto_rot_image)
-        warpButton.clicked.connect(partial(self.warp_image, False))
         get_scale_ratio_button.clicked.connect(self.get_scale_ratio_from_images)
         scale_button.clicked.connect(self.scale_image)
+        warp_button.clicked.connect(partial(self.warp_image, False))
         reshift_button.clicked.connect(self.reshift)
         rerot_button.clicked.connect(self.rerotate)
         rescale_button.clicked.connect(self.rescale_image)
@@ -736,7 +736,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_auto.addWidget(auto_rot_button, 2, 1)
         grid_auto.addWidget(get_scale_ratio_button, 3, 1, 1, 2)
         grid_auto.addWidget(scale_button, 4, 1)
-        grid_auto.addWidget(warpButton, 5, 1)
+        grid_auto.addWidget(warp_button, 5, 1)
         grid_auto.addWidget(reshift_button, 1, 2)
         grid_auto.addWidget(rerot_button, 2, 2)
         grid_auto.addWidget(rescale_button, 4, 2)
@@ -839,7 +839,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_Bxy_maps_button = QtWidgets.QPushButton('Calc. Bx, By maps', self)
         calc_B_pol_button = QtWidgets.QPushButton('Calc. B polar', self)
         calc_B_pol_sectors_button = QtWidgets.QPushButton('Calc. B polar (n x m)', self)
-        gen_B_stats_button = QtWidgets.QPushButton('Gen. B statistics', self)
+        gen_phase_stats_button = QtWidgets.QPushButton('Gen. phase statistics', self)
         calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
 
@@ -876,7 +876,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_Bxy_maps_button.clicked.connect(self.calc_Bxy_maps)
         calc_B_pol_button.clicked.connect(self.calc_B_polar_from_section)
         calc_B_pol_sectors_button.clicked.connect(partial(self.calc_B_polar_from_section, True))
-        gen_B_stats_button.clicked.connect(self.gen_phase_stats)
+        gen_phase_stats_button.clicked.connect(self.gen_phase_stats)
         calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
 
@@ -898,7 +898,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(calc_B_sec_button, 4, 1, 1, 2)
         self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1, 1, 2)
         self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1, 1, 2)
-        self.tab_calc.layout.addWidget(gen_B_stats_button, 7, 1, 1, 2)
+        self.tab_calc.layout.addWidget(gen_phase_stats_button, 7, 1, 1, 2)
         self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
@@ -1193,78 +1193,103 @@ class HolographyWidget(QtWidgets.QWidget):
         last_idx = last_img.numInSeries - 1
         self.go_to_image(last_idx)
 
-    def flip_image_h(self):
-        curr_img = self.display.image
-        imsup.flip_image_h(curr_img)
-        self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)   # refresh buffer
-        self.update_display()
-
-    def export_image(self):
+    def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
+        curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
+        new_img_list = imsup.CreateImageListFromFirstImage(new_img)
+
+        curr_img_list[1:1] = new_img_list
+        self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
+
+        curr_img_list.UpdateLinks()
+        self.go_to_image(abs(curr_num))
+
+        if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
+            del curr_img_list[0]
+            del self.point_sets[0]
+
+            # self.preview_scroll.update_scroll_list(self.display.image)
+
+    def swap_left(self):
         curr_img = self.display.image
-        is_amp_checked = self.amp_radio_button.isChecked()
-        is_phs_checked = self.phs_radio_button.isChecked()
-        fname = self.fname_input.text()
-        if fname == '':
-            if is_amp_checked:
-                fname = 'amp{0}'.format(curr_num)
-            elif is_phs_checked:
-                fname = 'phs{0}'.format(curr_num)
-            else:
-                fname = 'cos_phs{0}'.format(curr_num)
+        if curr_img.prev is None:
+            return
+        curr_idx = curr_img.numInSeries - 1
 
-        if is_amp_checked:
-            data_to_export = np.copy(curr_img.amPh.am)
-        elif is_phs_checked:
-            data_to_export = np.copy(curr_img.amPh.ph)
+        first_img = imsup.GetFirstImage(curr_img)
+        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        imgs[curr_idx - 1], imgs[curr_idx] = imgs[curr_idx], imgs[curr_idx - 1]
+
+        imgs[0].prev = None
+        imgs[len(imgs) - 1].next = None
+        imgs[curr_idx - 1].numInSeries = imgs[curr_idx].numInSeries
+        imgs.UpdateLinks()
+
+        ps = self.point_sets
+        ps[curr_idx - 1], ps[curr_idx] = ps[curr_idx], ps[curr_idx - 1]
+        self.go_to_next_image()
+
+    def swap_right(self):
+        curr_img = self.display.image
+        if curr_img.next is None:
+            return
+        curr_idx = curr_img.numInSeries - 1
+
+        first_img = imsup.GetFirstImage(curr_img)
+        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        imgs[curr_idx], imgs[curr_idx + 1] = imgs[curr_idx + 1], imgs[curr_idx]
+
+        imgs[0].prev = None
+        imgs[len(imgs) - 1].next = None
+        imgs[curr_idx].numInSeries = imgs[curr_idx + 1].numInSeries
+        imgs.UpdateLinks()
+
+        ps = self.point_sets
+        ps[curr_idx], ps[curr_idx + 1] = ps[curr_idx + 1], ps[curr_idx]
+        self.go_to_prev_image()
+
+    def clear_image(self):
+        labToDel = self.display.children()
+        for child in labToDel:
+            child.deleteLater()
+        curr_idx = abs(self.display.image.numInSeries) - 1
+        self.point_sets[curr_idx][:] = []
+        self.display.repaint()
+
+    def remove_last_point(self):
+        curr_idx = abs(self.display.image.numInSeries) - 1
+        if len(self.point_sets[curr_idx]) == 0:
+            return
+        all_labels = self.display.children()
+        if len(all_labels) > 0:
+            last_label = all_labels[-1]
+            last_label.deleteLater()
+        del self.point_sets[curr_idx][-1]
+        self.display.repaint()
+
+    def add_marker_at_xy(self):
+        curr_img = self.display.image
+        curr_idx = abs(curr_img.numInSeries) - 1
+        curr_pos = [int(self.marker_x_input.text()), int(self.marker_y_input.text())]
+        if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
+            # --- to be removed later ---
+            # for idx in range(len(self.point_sets)):
+            #     self.point_sets[idx].append(curr_pos)
+            # ---------------------------
+            self.point_sets[curr_idx].append(curr_pos)  # uncomment later
+            self.display.repaint()
+            if self.display.show_labs:
+                self.display.show_last_label()
+
+            pt_idx = len(self.point_sets[curr_idx])
+            disp_x, disp_y = curr_pos
+            real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
+            print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
+            print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
+            print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amPh.am[real_y, real_x],
+                                                        curr_img.amPh.ph[real_y, real_x]))
         else:
-            data_to_export = np.cos(curr_img.amPh.ph)
-
-        # numpy array file (new)
-        if self.export_npy_radio_button.isChecked():
-            fname_ext = '.npy'
-            np.save(fname, data_to_export)
-            print('Saved image to numpy array file: "{0}.npy"'.format(fname))
-
-        # raw data file
-        elif self.export_raw_radio_button.isChecked():
-            fname_ext = ''
-            data_to_export.tofile(fname)
-            print('Saved image to raw data file: "{0}"'.format(fname))
-
-        # TIF file
-        else:
-            fname_ext = '.tif'
-            log = True if self.log_scale_checkbox.isChecked() else False
-            color = True if self.color_radio_button.isChecked() else False
-            bright = int(self.bright_input.text())
-            cont = int(self.cont_input.text())
-            gamma = float(self.gamma_input.text())
-
-            imsup.save_arr_as_tiff(data_to_export, fname, log, color, brg=bright, cnt=cont, gam=gamma)
-            print('Saved image as "{0}.tif"'.format(fname))
-
-        # save log file
-        log_fname = '{0}_log.txt'.format(fname)
-        with open(log_fname, 'w') as log_file:
-            log_file.write('File name:\t{0}{1}\n'
-                           'Image name:\t{2}\n'
-                           'Image size:\t{3}x{4}\n'
-                           'Data type:\t{5}\n'
-                           'Calibration:\t{6} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
-                                                           curr_img.height, data_to_export.dtype,
-                                                           curr_img.px_dim * 1e9))
-        print('Saved log file: "{0}"'.format(log_fname))
-
-    def export_all(self):
-        curr_img = imsup.GetFirstImage(self.display.image)
-        self.display.image = curr_img
-        self.export_image()
-        while curr_img.next is not None:
-            self.go_to_next_image()
-            self.export_image()
-            curr_img = self.display.image
-        print('All images saved')
+            print('Wrong marker coordinates!')
 
     def delete_image(self):
         curr_img = self.display.image
@@ -1454,6 +1479,79 @@ class HolographyWidget(QtWidgets.QWidget):
         self.update_curr_info_label()
         print('All phases normalized')
 
+    def flip_image_h(self):
+        curr_img = self.display.image
+        imsup.flip_image_h(curr_img)
+        self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)  # refresh buffer
+        self.update_display()
+
+    def export_image(self):
+        curr_num = self.display.image.numInSeries
+        curr_img = self.display.image
+        is_amp_checked = self.amp_radio_button.isChecked()
+        is_phs_checked = self.phs_radio_button.isChecked()
+        fname = self.fname_input.text()
+        if fname == '':
+            if is_amp_checked:
+                fname = 'amp{0}'.format(curr_num)
+            elif is_phs_checked:
+                fname = 'phs{0}'.format(curr_num)
+            else:
+                fname = 'cos_phs{0}'.format(curr_num)
+
+        if is_amp_checked:
+            data_to_export = np.copy(curr_img.amPh.am)
+        elif is_phs_checked:
+            data_to_export = np.copy(curr_img.amPh.ph)
+        else:
+            data_to_export = np.cos(curr_img.amPh.ph)
+
+        # numpy array file (new)
+        if self.export_npy_radio_button.isChecked():
+            fname_ext = '.npy'
+            np.save(fname, data_to_export)
+            print('Saved image to numpy array file: "{0}.npy"'.format(fname))
+
+        # raw data file
+        elif self.export_raw_radio_button.isChecked():
+            fname_ext = ''
+            data_to_export.tofile(fname)
+            print('Saved image to raw data file: "{0}"'.format(fname))
+
+        # TIF file
+        else:
+            fname_ext = '.tif'
+            log = True if self.log_scale_checkbox.isChecked() else False
+            color = True if self.color_radio_button.isChecked() else False
+            bright = int(self.bright_input.text())
+            cont = int(self.cont_input.text())
+            gamma = float(self.gamma_input.text())
+
+            imsup.save_arr_as_tiff(data_to_export, fname, log, color, brg=bright, cnt=cont, gam=gamma)
+            print('Saved image as "{0}.tif"'.format(fname))
+
+        # save log file
+        log_fname = '{0}_log.txt'.format(fname)
+        with open(log_fname, 'w') as log_file:
+            log_file.write('File name:\t{0}{1}\n'
+                           'Image name:\t{2}\n'
+                           'Image size:\t{3}x{4}\n'
+                           'Data type:\t{5}\n'
+                           'Calibration:\t{6} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
+                                                           curr_img.height, data_to_export.dtype,
+                                                           curr_img.px_dim * 1e9))
+        print('Saved log file: "{0}"'.format(log_fname))
+
+    def export_all(self):
+        curr_img = imsup.GetFirstImage(self.display.image)
+        self.display.image = curr_img
+        self.export_image()
+        while curr_img.next is not None:
+            self.go_to_next_image()
+            self.export_image()
+            curr_img = self.display.image
+        print('All images saved')
+
     def export_3d_image(self):
         from matplotlib import cm
         # from mpl_toolkits.mplot3d import Axes3D
@@ -1538,48 +1636,6 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.go_to_image(curr_idx)
         print('Zooming complete!')
-
-    def clear_image(self):
-        labToDel = self.display.children()
-        for child in labToDel:
-            child.deleteLater()
-        curr_idx = abs(self.display.image.numInSeries) - 1
-        self.point_sets[curr_idx][:] = []
-        self.display.repaint()
-
-    def remove_last_point(self):
-        curr_idx = abs(self.display.image.numInSeries) - 1
-        if len(self.point_sets[curr_idx]) == 0:
-            return
-        all_labels = self.display.children()
-        if len(all_labels) > 0:
-            last_label = all_labels[-1]
-            last_label.deleteLater()
-        del self.point_sets[curr_idx][-1]
-        self.display.repaint()
-
-    def add_marker_at_xy(self):
-        curr_img = self.display.image
-        curr_idx = abs(curr_img.numInSeries) - 1
-        curr_pos = [ int(self.marker_x_input.text()), int(self.marker_y_input.text()) ]
-        if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
-            # --- to be removed later ---
-            # for idx in range(len(self.point_sets)):
-            #     self.point_sets[idx].append(curr_pos)
-            # ---------------------------
-            self.point_sets[curr_idx].append(curr_pos)         # uncomment later
-            self.display.repaint()
-            if self.display.show_labs:
-                self.display.show_last_label()
-
-            pt_idx = len(self.point_sets[curr_idx])
-            disp_x, disp_y = curr_pos
-            real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
-            print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
-            print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
-            print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amPh.am[real_y, real_x], curr_img.amPh.ph[real_y, real_x]))
-        else:
-            print('Wrong marker coordinates!')
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
@@ -1890,23 +1946,6 @@ class HolographyWidget(QtWidgets.QWidget):
         warped_img = tr.warp_image_ski(curr_img, src, dst)
         self.insert_img_after_curr(warped_img)
         print('Image warped!')
-
-    def insert_img_after_curr(self, new_img):
-        curr_num = self.display.image.numInSeries
-        curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        new_img_list = imsup.CreateImageListFromFirstImage(new_img)
-
-        curr_img_list[1:1] = new_img_list
-        self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
-
-        curr_img_list.UpdateLinks()
-        self.go_to_image(abs(curr_num))
-
-        if curr_num == -1:      # starting (blank) image is identified by specific number (-1)
-            del curr_img_list[0]
-            del self.point_sets[0]
-
-        # self.preview_scroll.update_scroll_list(self.display.image)
 
     def holo_fft(self):
         h_img = self.display.image
@@ -2228,44 +2267,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_ctr_ap)
 
-    def swap_left(self):
-        curr_img = self.display.image
-        if curr_img.prev is None:
-            return
-        curr_idx = curr_img.numInSeries - 1
-
-        first_img = imsup.GetFirstImage(curr_img)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
-        imgs[curr_idx-1], imgs[curr_idx] = imgs[curr_idx], imgs[curr_idx-1]
-
-        imgs[0].prev = None
-        imgs[len(imgs)-1].next = None
-        imgs[curr_idx-1].numInSeries = imgs[curr_idx].numInSeries
-        imgs.UpdateLinks()
-
-        ps = self.point_sets
-        ps[curr_idx-1], ps[curr_idx] = ps[curr_idx], ps[curr_idx-1]
-        self.go_to_next_image()
-
-    def swap_right(self):
-        curr_img = self.display.image
-        if curr_img.next is None:
-            return
-        curr_idx = curr_img.numInSeries - 1
-
-        first_img = imsup.GetFirstImage(curr_img)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
-        imgs[curr_idx], imgs[curr_idx+1] = imgs[curr_idx+1], imgs[curr_idx]
-
-        imgs[0].prev = None
-        imgs[len(imgs)-1].next = None
-        imgs[curr_idx].numInSeries = imgs[curr_idx+1].numInSeries
-        imgs.UpdateLinks()
-
-        ps = self.point_sets
-        ps[curr_idx], ps[curr_idx+1] = ps[curr_idx+1], ps[curr_idx]
-        self.go_to_prev_image()
-
     def plot_profile(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -2326,6 +2327,36 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.plot_widget.plot(dists, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
 
+    # def plot_profile_alt(self):
+    #     curr_img = self.display.image
+    #     curr_idx = curr_img.numInSeries - 1
+    #     px_sz = curr_img.px_dim
+    #     p1, p2 = self.point_sets[curr_idx][:2]
+    #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
+    #     p2 = disp_pt_to_real_cnt_pt(curr_img.width, p2)
+    #
+    #     x1, x2 = min(p1[0], p2[0]), max(p1[0], p2[0])
+    #     y1, y2 = min(p1[1], p2[1]), max(p1[1], p2[1])
+    #     x_dist = x2 - x1
+    #     y_dist = y2 - y1
+    #
+    #     if x_dist > y_dist:
+    #         x_range = list(range(x1, x2))
+    #         a_coeff = (p2[1] - p1[1]) / (p2[0] - p1[0])
+    #         b_coeff = p1[1] - a_coeff * p1[0]
+    #         y_range = [ int(a_coeff * x + b_coeff) for x in x_range ]
+    #     else:
+    #         y_range = list(range(y1, y2))
+    #         a_coeff = (p2[0] - p1[0]) / (p2[1] - p1[1])
+    #         b_coeff = p1[0] - a_coeff * p1[1]
+    #         x_range = [ int(a_coeff * y + b_coeff) for y in y_range ]
+    #
+    #     print(len(x_range), len(y_range))
+    #     profile = curr_img.amPh.am[x_range, y_range]
+    #     dists = np.arange(0, profile.shape[0], 1) * px_sz
+    #     dists *= 1e9
+    #     self.plot_widget.plot(dists, profile, 'Distance [nm]', 'Intensity [a.u.]')
+
     def calc_phase_gradient(self):
         curr_img = self.display.image
         dx_img = imsup.ImageExp(curr_img.height, curr_img.width)
@@ -2344,6 +2375,56 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(dx_img)
         self.insert_img_after_curr(dy_img)
         self.insert_img_after_curr(grad_img)
+
+    # calculate B from section on image
+    def calc_B_from_section(self):
+        from numpy import linalg as la
+        curr_img = self.display.image
+        curr_phs = curr_img.amPh.ph
+        curr_idx = curr_img.numInSeries - 1
+        px_sz = curr_img.px_dim
+
+        dpt1, dpt2 = self.point_sets[curr_idx][:2]
+        pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
+        pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
+
+        d_dist = la.norm(pt1 - pt2)
+        n_pts_for_ls = 5
+        nn_def = 4
+        n_neigh_areas = 2 * (n_pts_for_ls - 1)
+        n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
+
+        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
+        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)              # the only place where pixel size is significant
+        x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)   # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
+
+        xx = np.round(np.linspace(pt1[0], pt2[0], n_pts_for_ls)).astype(np.int32)
+        yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
+
+        ph_arr_for_ls = np.array([ tr.calc_avg_neigh(curr_phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
+        aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
+
+        d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
+
+        # ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
+        # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
+        # d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
+
+        B_in_plane = B_coeff * d_phase
+        print('{0:.1f} nm'.format(d_dist * px_sz * 1e9))
+        print('{0:.2f} rad'.format(d_phase))
+        print('B = {0:.2f} T'.format(B_in_plane))
+
+    # calculate B from profile in PlotWidget
+    def calc_B_from_profile(self):
+        pt1, pt2 = self.plot_widget.markedPointsData
+        d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
+        d_phase = pt2[1] - pt1[1]       # consider sign of magnetic field
+        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
+        B_in_plane = (const.dirac_const / smpl_thck) * (d_phase / d_dist)
+        print('{0:.1f} nm'.format(d_dist * 1e9))
+        print('{0:.2f} rad'.format(d_phase))
+        print('B = {0:.2f} T'.format(B_in_plane))
 
     def calc_Bxy_maps(self):
         curr_img = self.display.image
@@ -2399,7 +2480,8 @@ class HolographyWidget(QtWidgets.QWidget):
             dir_ang = -np.arctan2(pt2[1] - pt1[1], pt2[0] - pt1[0])
             mc.calc_B_polar_from_orig_r(curr_img, orig_xy, r1, sample_thickness, orig_is_pt1, dir_ang, n_r_iters)
         else:
-            orig_pts = mc.calc_B_polar_sectors(curr_img, orig_xy, r1, n_rows, n_cols, sample_thickness, orig_is_pt1, n_r_iters)
+            orig_pts = mc.calc_B_polar_sectors(curr_img, orig_xy, r1, n_rows, n_cols, sample_thickness, orig_is_pt1,
+                                               n_r_iters)
             d_orig_pts = real_tl_pts_to_disp_pts(curr_img.width, orig_pts)
             self.point_sets[curr_idx].extend(d_orig_pts)
             self.display.repaint()
@@ -2450,56 +2532,6 @@ class HolographyWidget(QtWidgets.QWidget):
         plt.close(fig)
         print('B_pol_{0}.png exported!'.format(curr_img.name))
 
-    # calculate B from section on image
-    def calc_B_from_section(self):
-        from numpy import linalg as la
-        curr_img = self.display.image
-        curr_phs = curr_img.amPh.ph
-        curr_idx = curr_img.numInSeries - 1
-        px_sz = curr_img.px_dim
-
-        dpt1, dpt2 = self.point_sets[curr_idx][:2]
-        pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
-        pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
-
-        d_dist = la.norm(pt1 - pt2)
-        n_pts_for_ls = 5
-        nn_def = 4
-        n_neigh_areas = 2 * (n_pts_for_ls - 1)
-        n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
-
-        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
-        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)              # the only place where pixel size is significant
-        x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)   # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
-
-        xx = np.round(np.linspace(pt1[0], pt2[0], n_pts_for_ls)).astype(np.int32)
-        yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
-
-        ph_arr_for_ls = np.array([ tr.calc_avg_neigh(curr_phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
-        aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
-
-        d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
-
-        # ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
-        # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
-        # d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
-
-        B_in_plane = B_coeff * d_phase
-        print('{0:.1f} nm'.format(d_dist * px_sz * 1e9))
-        print('{0:.2f} rad'.format(d_phase))
-        print('B = {0:.2f} T'.format(B_in_plane))
-
-    # calculate B from profile in PlotWidget
-    def calc_B_from_profile(self):
-        pt1, pt2 = self.plot_widget.markedPointsData
-        d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
-        d_phase = pt2[1] - pt1[1]       # consider sign of magnetic field
-        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
-        B_in_plane = (const.dirac_const / smpl_thck) * (d_phase / d_dist)
-        print('{0:.1f} nm'.format(d_dist * 1e9))
-        print('{0:.2f} rad'.format(d_phase))
-        print('B = {0:.2f} T'.format(B_in_plane))
-
     def gen_phase_stats(self):
         curr_img = self.display.image
         curr_phs = curr_img.amPh.ph
@@ -2507,33 +2539,33 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Min. = {0:.2f}\nMax. = {1:.2f}\nAvg. = {2:.2f}'.format(np.min(curr_phs), np.max(curr_phs), np.mean(curr_phs)))
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
 
-        if curr_img.prev is not None:
-            max_shift = const.corr_arr_max_shift
-            print('Calculating ({0}x{0}) correlation array between *curr* and *prev* phases...'.format(2 * max_shift))
-            prev_img = curr_img.prev
-            prev_phs = prev_img.amPh.ph
-            corr_arr = tr.calc_corr_array(prev_phs, curr_phs, max_shift)
-            ch, cw = corr_arr.shape
-            corr_img = imsup.ImageExp(ch, cw)
-            corr_img.LoadAmpData(corr_arr)
-            corr_img.LoadPhsData(corr_arr)
-            corr_img = rescale_image_buffer_to_window(corr_img, const.disp_dim)
-            corr_img.name = 'corr_arr_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
-            self.insert_img_after_curr(corr_img)
-
-            # single-value correlation coefficient
-            # p1 = prev_phs - np.mean(prev_phs)
-            # p2 = curr_phs - np.mean(curr_phs)
-            # corr_coef = np.sum(p1 * p2) / np.sqrt(np.sum(p1 * p1) * np.sum(p2 * p2))
-            # print('Corr. coef. between *curr* and *prev* phases = {0:.4f}'.format(corr_coef))
-
-            # Pearson correlation matrix
-            # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
-            # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
-            # corr_coef_img.amPh.ph = np.copy(corr_coef_arr)
-            # corr_coef_img = rescale_image_buffer_to_window(corr_coef_img, const.disp_dim)
-            # corr_coef_img.name = 'corr_coef_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
-            # self.insert_img_after_curr(corr_coef_img)
+        # if curr_img.prev is not None:
+        #     max_shift = const.corr_arr_max_shift
+        #     print('Calculating ({0}x{0}) correlation array between *curr* and *prev* phases...'.format(2 * max_shift))
+        #     prev_img = curr_img.prev
+        #     prev_phs = prev_img.amPh.ph
+        #     corr_arr = tr.calc_corr_array(prev_phs, curr_phs, max_shift)
+        #     ch, cw = corr_arr.shape
+        #     corr_img = imsup.ImageExp(ch, cw)
+        #     corr_img.LoadAmpData(corr_arr)
+        #     corr_img.LoadPhsData(corr_arr)
+        #     corr_img = rescale_image_buffer_to_window(corr_img, const.disp_dim)
+        #     corr_img.name = 'corr_arr_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
+        #     self.insert_img_after_curr(corr_img)
+        #
+        #     # # single-value correlation coefficient
+        #     # p1 = prev_phs - np.mean(prev_phs)
+        #     # p2 = curr_phs - np.mean(curr_phs)
+        #     # corr_coef = np.sum(p1 * p2) / np.sqrt(np.sum(p1 * p1) * np.sum(p2 * p2))
+        #     # print('Corr. coef. between *curr* and *prev* phases = {0:.4f}'.format(corr_coef))
+        #     #
+        #     # # Pearson correlation matrix
+        #     # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
+        #     # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
+        #     # corr_coef_img.amPh.ph = np.copy(corr_coef_arr)
+        #     # corr_coef_img = rescale_image_buffer_to_window(corr_coef_img, const.disp_dim)
+        #     # corr_coef_img.name = 'corr_coef_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
+        #     # self.insert_img_after_curr(corr_coef_img)
 
     def calc_mean_inner_potential(self):
         curr_img = self.display.image
@@ -2568,43 +2600,6 @@ class HolographyWidget(QtWidgets.QWidget):
         img_filtered = imsup.copy_am_ph_image(curr_img)
         img_filtered.amPh.ph = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
-
-    # def draw_image_with_arrows(self):
-    #     import GradientArrows as grad_arr
-    #     curr_img = self.display.image
-    #     arr = np.copy(curr_img.amPh.ph)
-    #     print('ble1')
-    #     grad_arr.draw_image_with_gradient_arrows(arr, 20)
-
-    # def plot_profile(self):
-    #     curr_img = self.display.image
-    #     curr_idx = curr_img.numInSeries - 1
-    #     px_sz = curr_img.px_dim
-    #     p1, p2 = self.point_sets[curr_idx][:2]
-    #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
-    #     p2 = disp_pt_to_real_cnt_pt(curr_img.width, p2)
-    #
-    #     x1, x2 = min(p1[0], p2[0]), max(p1[0], p2[0])
-    #     y1, y2 = min(p1[1], p2[1]), max(p1[1], p2[1])
-    #     x_dist = x2 - x1
-    #     y_dist = y2 - y1
-    #
-    #     if x_dist > y_dist:
-    #         x_range = list(range(x1, x2))
-    #         a_coeff = (p2[1] - p1[1]) / (p2[0] - p1[0])
-    #         b_coeff = p1[1] - a_coeff * p1[0]
-    #         y_range = [ int(a_coeff * x + b_coeff) for x in x_range ]
-    #     else:
-    #         y_range = list(range(y1, y2))
-    #         a_coeff = (p2[0] - p1[0]) / (p2[1] - p1[1])
-    #         b_coeff = p1[0] - a_coeff * p1[1]
-    #         x_range = [ int(a_coeff * y + b_coeff) for y in y_range ]
-    #
-    #     print(len(x_range), len(y_range))
-    #     profile = curr_img.amPh.am[x_range, y_range]
-    #     dists = np.arange(0, profile.shape[0], 1) * px_sz
-    #     dists *= 1e9
-    #     self.plot_widget.plot(dists, profile, 'Distance [nm]', 'Intensity [a.u.]')
 
 # --------------------------------------------------------
 
