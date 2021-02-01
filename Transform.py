@@ -177,7 +177,7 @@ def FindRotationCenter(pts1, pts2):
 
 #-------------------------------------------------------------------
 
-def RotatePoint(p1, angle):
+def rotate_point(p1, angle):
     z1 = np.complex(p1[0], p1[1])
     r = np.abs(z1)
     phi = np.angle(z1) + imsup.Radians(angle)
@@ -195,7 +195,7 @@ def find_dir_angle(p1, p2, orig=(0, 0)):
 
 #-------------------------------------------------------------------
 
-def LinLeastSquares(x_arr, y_arr):
+def lin_least_squares(x_arr, y_arr):
     n_pt = len(x_arr)
     sx = np.sum(x_arr)
     sy = np.sum(y_arr)
@@ -208,7 +208,7 @@ def LinLeastSquares(x_arr, y_arr):
 #-------------------------------------------------------------------
 
 # x_arr and y_arr must be numpy.arrays
-def LinLeastSquaresAlt(x_arr, y_arr):
+def lin_least_squares_alt(x_arr, y_arr):
     xm, ym = np.mean(x_arr), np.mean(y_arr)
     xm_arr = x_arr - xm
     ym_arr = y_arr - ym

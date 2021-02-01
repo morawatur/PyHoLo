@@ -2188,8 +2188,8 @@ class HolographyWidget(QtWidgets.QWidget):
         y_arr_for_ls = np.round(np.linspace(xy3[1], xy4[1], n_pts_for_ls)).astype(np.int32)
         phx_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x=x, y=xy1[1], nn=n_neigh_x) for x in x_arr_for_ls] )
         phy_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x=xy3[0], y=y, nn=n_neigh_y) for y in y_arr_for_ls] )
-        ax, bx = tr.LinLeastSquaresAlt(x_arr_for_ls, phx_arr_for_ls)
-        ay, by = tr.LinLeastSquaresAlt(y_arr_for_ls, phy_arr_for_ls)
+        ax, bx = tr.lin_least_squares_alt(x_arr_for_ls, phx_arr_for_ls)
+        ay, by = tr.lin_least_squares_alt(y_arr_for_ls, phy_arr_for_ls)
 
         X = np.arange(0, w, dtype=np.float32)
         Y = np.arange(0, h, dtype=np.float32)
@@ -2495,7 +2495,7 @@ class HolographyWidget(QtWidgets.QWidget):
         yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
 
         ph_arr_for_ls = np.array([ tr.calc_avg_neigh(curr_phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
-        aa, bb = tr.LinLeastSquaresAlt(x_arr_for_ls, ph_arr_for_ls)
+        aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
 
         d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
 
