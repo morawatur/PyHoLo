@@ -1611,7 +1611,7 @@ class HolographyWidget(QtWidgets.QWidget):
         total_shift = list(np.array(curr.shift) + np.array(shift))
 
         if curr.rot != 0:
-            tmp = tr.RotateImageSki(bckp, curr.rot)
+            tmp = tr.rotate_image_ski(bckp, curr.rot)
             shifted_img = imsup.shift_am_ph_image(tmp, total_shift)
         else:
             shifted_img = imsup.shift_am_ph_image(bckp, total_shift)
@@ -1638,9 +1638,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
         if curr.shift != [0, 0]:
             tmp = imsup.shift_am_ph_image(bckp, curr.shift)
-            rotated_img = tr.RotateImageSki(tmp, total_rot)
+            rotated_img = tr.rotate_image_ski(tmp, total_rot)
         else:
-            rotated_img = tr.RotateImageSki(bckp, total_rot)
+            rotated_img = tr.rotate_image_ski(bckp, total_rot)
 
         curr.amPh.am = np.copy(rotated_img.amPh.am)
         curr.amPh.ph = np.copy(rotated_img.amPh.ph)
@@ -1774,7 +1774,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def rerotate(self):
         print('Using rot. angle = {0:.2f} deg'.format(self.rot_angle))
         curr_img = self.display.image
-        rotated_img = tr.RotateImageSki(curr_img, self.rot_angle)
+        rotated_img = tr.rotate_image_ski(curr_img, self.rot_angle)
         rotated_img.name = curr_img.name + '_rot'
         self.insert_img_after_curr(rotated_img)
 
@@ -1834,7 +1834,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def rescale_image(self):
         print('Using scale factor = {0:.2f}x'.format(self.scale_factor))
         curr_img = self.display.image
-        mag_img = tr.RescaleImageSki(curr_img, self.scale_factor)
+        mag_img = tr.rescale_image_ski(curr_img, self.scale_factor)
         pad_sz = (mag_img.width - curr_img.width) // 2
 
         if pad_sz > 0:
@@ -1887,7 +1887,7 @@ class HolographyWidget(QtWidgets.QWidget):
         src = np.array(self.warp_points[0])
         dst = np.array(self.warp_points[1])
 
-        warped_img = tr.WarpImage(curr_img, src, dst)
+        warped_img = tr.warp_image_ski(curr_img, src, dst)
         self.insert_img_after_curr(warped_img)
         print('Image warped!')
 
@@ -2119,25 +2119,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.cos_phs_radio_button.setChecked(True)
         print('Added {0:.2f} rad to "{1}"'.format(radians, curr_img.name))
 
-    # def remove_phase_gradient(self):
-    #     curr_img = self.display.image
-    #     curr_idx = curr_img.numInSeries - 1
-    #     p1, p2, p3 = self.point_sets[curr_idx][:3]
-    #     p1.append(curr_img.amPh.ph[p1[1], p1[0]])
-    #     p2.append(curr_img.amPh.ph[p2[1], p2[0]])
-    #     p3.append(curr_img.amPh.ph[p3[1], p3[0]])
-    #     grad_plane = tr.Plane(0, 0, 0)
-    #     grad_plane.getFromThreePoints(p1, p2, p3)
-    #     # print(grad_plane.a, grad_plane.b, grad_plane.c)
-    #     grad_arr = grad_plane.fillPlane(curr_img.height, curr_img.width)
-    #     grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
-    #     grad_img.amPh.ph = np.copy(grad_arr)
-    #     # print(grad_arr[p1[1], p1[0]])
-    #     # print(grad_arr[p2[1], p2[0]])
-    #     # print(grad_arr[p3[1], p3[0]])
-    #     # print(p1[2], p2[2], p3[2])
-    #     self.insert_img_after_curr(grad_img)
-
     def remove_phase_tilt(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
@@ -2206,8 +2187,8 @@ class HolographyWidget(QtWidgets.QWidget):
         #
         # x_line = tr.Line(0, 0)
         # y_line = tr.Line(0, 0)
-        # x_line.getFromPoints(px1, px2)
-        # y_line.getFromPoints(py1, py2)
+        # x_line.get_from_2_points(px1, px2)
+        # y_line.get_from_2_points(py1, py2)
         #
         # X = np.arange(0, w, dtype=np.float32)
         # Y = np.arange(0, h, dtype=np.float32)
@@ -2224,7 +2205,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         new_phs_img = imsup.copy_am_ph_image(curr_img)
         new_phs_img.amPh.ph -= phs_grad_xy
-        new_phs_img.name = '{0}_minus_tilt'.format(curr_img.name)
+        new_phs_img.name = '{0}_--tilt'.format(curr_img.name)
 
         self.insert_img_after_curr(phs_grad_img)
         self.insert_img_after_curr(new_phs_img)
@@ -2308,7 +2289,7 @@ class HolographyWidget(QtWidgets.QWidget):
         img_shifted = imsup.shift_am_ph_image(curr_img, shift_to_rc)
 
         # rotate image by angle
-        img_rot = tr.RotateImageSki(img_shifted, dir_angle)
+        img_rot = tr.rotate_image_ski(img_shifted, dir_angle)
 
         # crop fragment (height = distance between two points)
         pt_diffs = points[0] - points[1]
@@ -2447,7 +2428,7 @@ class HolographyWidget(QtWidgets.QWidget):
         B_means = []
 
         for ang in angles:
-            frag_rot = tr.RotateImageSki(frag, -ang)
+            frag_rot = tr.rotate_image_ski(frag, -ang)
             dx, dy = np.gradient(frag_rot.amPh.ph, px_sz)
             B_mat = B_coeff * dx
             n_el = np.count_nonzero(B_mat)
@@ -2700,7 +2681,7 @@ def load_image_series_from_first_file(img_path):
 
 def rescale_image_buffer_to_window(img, win_dim):
     zoom_factor = win_dim / img.width
-    img_to_disp = tr.RescaleImageSki(img, zoom_factor)
+    img_to_disp = tr.rescale_image_ski(img, zoom_factor)
     img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
     img.buffer.am = np.copy(img_to_disp.amPh.am)
     img.buffer.ph = np.copy(img_to_disp.amPh.ph)

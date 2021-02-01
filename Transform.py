@@ -30,7 +30,7 @@ def rescale_pixel_dim(px_dim, old_dim, new_dim):
 
 #-------------------------------------------------------------------
 
-def RotateImageSki(img, angle, mode='constant'):
+def rotate_image_ski(img, angle, mode='constant'):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
@@ -53,7 +53,7 @@ def RotateImageSki(img, angle, mode='constant'):
 
 #-------------------------------------------------------------------
 
-def RescaleImageSki(img, factor):
+def rescale_image_ski(img, factor):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
@@ -75,7 +75,7 @@ def RescaleImageSki(img, factor):
 
 #-------------------------------------------------------------------
 
-def WarpImage(img, src_set, dst_set):
+def warp_image_ski(img, src_set, dst_set):
     dt = img.cmpRepr
     img.ReIm2AmPh()
 
@@ -97,8 +97,8 @@ def WarpImage(img, src_set, dst_set):
 
 #-------------------------------------------------------------------
 
-def DetermineCropCoordsAfterSkiRotation(oldDim, angle):
-    return imsup.DetermineCropCoordsAfterRotation(oldDim, oldDim, angle)
+def det_crop_coords_after_ski_rotation(old_dim, angle):
+    return imsup.DetermineCropCoordsAfterRotation(old_dim, old_dim, angle)
 
 #-------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ class Line:
         self.a = a_coeff
         self.b = b_coeff
 
-    def getFromPoints(self, p1, p2):
+    def get_from_2_points(self, p1, p2):
         if p1[0] != p2[0]:
             self.a = (p2[1] - p1[1]) / (p2[0] - p1[0])
             self.b = p1[1] - self.a * p1[0]
@@ -115,7 +115,7 @@ class Line:
             self.a = None
             self.b = None
 
-    def getFromDirCoeffAndPoint(self, a_coeff, p1):
+    def get_from_slope_and_point(self, a_coeff, p1):
         self.a = a_coeff
         self.b = p1[1] - self.a * p1[0]
 
@@ -127,8 +127,8 @@ class Plane:
         self.b = b_coeff
         self.c = c_coeff
 
-    # does not work properly
-    def getFromThreePoints(self, p1, p2, p3):
+    # doesn't work
+    def get_from_3_points(self, p1, p2, p3):
         dx1, dy1, dz1 = list(np.array(p1) - np.array(p2))
         dx2, dy2, dz2 = list(np.array(p3) - np.array(p2))
         a = dy1 * dz2 - dy2 * dz1
@@ -139,7 +139,7 @@ class Plane:
         self.b = -b / c
         self.c = -d / c
 
-    def fillPlane(self, w, h):
+    def fill_plane(self, w, h):
         arr = np.zeros((h, w), dtype=np.float32)
         for y in range(h):
             for x in range(w):
@@ -148,32 +148,32 @@ class Plane:
 
 # -------------------------------------------------------------------
 
-def FindPerpendicularLine(line, point):
-    linePerp = Line(-1 / line.a, 0)
-    linePerp.getFromDirCoeffAndPoint(linePerp.a, point)
-    return linePerp
+def find_perpendicular_line(line, point):
+    line_perp = Line(-1 / line.a, 0)
+    line_perp.get_from_slope_and_point(line_perp.a, point)
+    return line_perp
 
 #-------------------------------------------------------------------
 
-def FindRotationCenter(pts1, pts2):
+def find_rotation_center(pts1, pts2):
     A1, B1 = pts1
     A2, B2 = pts2
 
     Am = [np.average([A1[0], A2[0]]), np.average([A1[1], A2[1]])]
     Bm = [np.average([B1[0], B2[0]]), np.average([B1[1], B2[1]])]
 
-    aLine = Line(0, 0)
-    bLine = Line(0, 0)
-    aLine.getFromPoints(A1, A2)
-    bLine.getFromPoints(B1, B2)
+    a_line = Line(0, 0)
+    b_line = Line(0, 0)
+    a_line.get_from_2_points(A1, A2)
+    b_line.get_from_2_points(B1, B2)
 
-    aLinePerp = FindPerpendicularLine(aLine, Am)
-    bLinePerp = FindPerpendicularLine(bLine, Bm)
+    a_line_perp = find_perpendicular_line(a_line, Am)
+    b_line_perp = find_perpendicular_line(b_line, Bm)
 
-    rotCenterX = (bLinePerp.b - aLinePerp.b) / (aLinePerp.a - bLinePerp.a)
-    rotCenterY = aLinePerp.a * rotCenterX + aLinePerp.b
+    rot_center_x = (b_line_perp.b - a_line_perp.b) / (a_line_perp.a - b_line_perp.a)
+    rot_center_y = a_line_perp.a * rot_center_x + a_line_perp.b
 
-    return [rotCenterX, rotCenterY]
+    return [rot_center_x, rot_center_y]
 
 #-------------------------------------------------------------------
 
