@@ -28,6 +28,8 @@ from matplotlib.patches import Circle
 
 #-------------------------------------------------------------------
 
+# calculate B (magnetic flux density) using linear relation between
+# magnetic flux and difference of phases measured in two points on the sample
 def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
     B_coeff = const.dirac_const / (smpl_thck * d_dist_real)     # the only place where pixel size is significant
     d_phase = ph2 - ph1                                         # consider sign of magnetic field
