@@ -1322,6 +1322,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         del all_img_list[curr_idx]      # ImageList destructor updates and restrains links among the remaining images
         del self.point_sets[curr_idx]
+        self.update_curr_info_label()
 
     def toggle_lines(self):
         self.display.show_lines = not self.display.show_lines
