@@ -20,10 +20,72 @@
 import numpy as np
 
 import Constants as const
+import ImageSupport as imsup
 import Transform as tr
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+
+#-------------------------------------------------------------------
+
+def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
+    B_coeff = const.dirac_const / (smpl_thck * d_dist_real)     # the only place where pixel size is significant
+    d_phase = ph2 - ph1                                         # consider sign of magnetic field
+    B_val = B_coeff * d_phase
+    if print_msg:
+        print('{0:.1f} nm'.format(d_dist_real * 1e9))
+        print('{0:.2f} rad'.format(d_phase))
+        print('B = {0:.2f} T'.format(B_val))
+    return B_val
+
+#-------------------------------------------------------------------
+
+# calculate B from section on image
+def calc_B_from_section(img, pt1, pt2, smpl_thck):
+    from numpy import linalg as la
+    phs = img.amPh.ph
+
+    d_dist = la.norm(pt1 - pt2)
+    d_dist_real = d_dist * img.px_dim
+
+    n_pts_for_ls = 5
+    nn_def = 4
+    n_neigh_areas = 2 * (n_pts_for_ls - 1)
+    n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
+
+    xx = np.round(np.linspace(pt1[0], pt2[0], n_pts_for_ls)).astype(np.int32)
+    yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
+
+    x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)  # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
+    ph_arr_for_ls = np.array([tr.calc_avg_neigh(phs, x, y, nn=n_neigh) for x, y in zip(xx, yy)])
+    aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
+
+    ph1 = aa * x_arr_for_ls[0]
+    ph2 = aa * x_arr_for_ls[n_pts_for_ls - 1]
+    # ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
+    # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
+    calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=True)
+
+#-------------------------------------------------------------------
+
+def calc_Bxy_maps(img, smpl_thck):
+    B_coeff = const.dirac_const / smpl_thck
+
+    dx, dy = np.gradient(img.amPh.ph, img.px_dim)
+    # B_sign = np.sign(dx)
+    # B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
+    Bx = B_coeff * dx
+    By = B_coeff * dy
+
+    Bx_img = imsup.ImageExp(img.height, img.width)
+    Bx_img.amPh.ph = np.copy(Bx)
+    Bx_img.name = 'Bx_from_{0}'.format(img.name)
+
+    By_img = imsup.ImageExp(img.height, img.width)
+    By_img.amPh.ph = np.copy(By)
+    By_img.name = 'By_from_{0}'.format(img.name)
+
+    return Bx_img, By_img
 
 #-------------------------------------------------------------------
 
@@ -53,9 +115,9 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
 
     for r, r_idx in zip(r_values, range(n_r)):
         d_dist = r if orig_is_pt1 else 2 * r
+        d_dist_real = d_dist * px_sz
         n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
 
-        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)
         x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)
 
         for ang, a_idx in zip(angles[r_idx], range(n_ang)):
@@ -72,9 +134,12 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
             ph_arr_for_ls = np.array([ tr.calc_avg_neigh(phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
             aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
 
-            # d_phase = tr.calc_avg_neigh(phs, x2, y2, nn=n_neigh) - tr.calc_avg_neigh(phs, x1, y1, nn=n_neigh)
-            d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
-            B_val = B_coeff * d_phase
+            # ph1 = tr.calc_avg_neigh(phs, x1, y1, nn=n_neigh)
+            # ph2 = tr.calc_avg_neigh(phs, x2, y2, nn=n_neigh)
+            ph1 = aa * x_arr_for_ls[0]
+            ph2 = aa * x_arr_for_ls[n_pts_for_ls - 1]
+
+            B_val = calc_B(ph1, ph2, d_dist_real, smpl_thck)
             if B_val < 0: angles[r_idx][a_idx] += np.pi
             B_values[r_idx].append(np.abs(B_val))
 
@@ -152,3 +217,40 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
     # ---
 
     return orig_pts
+
+#-------------------------------------------------------------------
+
+def calc_B_polar_from_area(frag, smpl_thck):
+    px_sz = frag.px_dim
+
+    ang1, ang2 = 0.0, np.pi
+    n_ang = 60
+    angles = np.linspace(ang1, ang2, n_ang, dtype=np.float32)
+    min_cc = tr.det_crop_coords_after_ski_rotation(frag.width, 45)  # non-zero area is the smallest for image rotated by 45 deg
+
+    B_coeff = const.dirac_const / smpl_thck
+    B_means = []
+
+    for ang, a_idx in zip(angles, range(n_ang)):
+        frag_rot = tr.rotate_image_ski(frag, imsup.Degrees(ang))
+        roi_ph = np.copy(frag_rot.amPh.ph[min_cc[0]:min_cc[2], min_cc[1]:min_cc[3]])
+        dx, dy = np.gradient(roi_ph, px_sz)
+        B_mean = np.mean(B_coeff * dx)
+        if B_mean < 0: angles[a_idx] += np.pi
+        B_means.append(np.abs(B_mean))
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='polar')
+
+    B_lim1, B_lim2 = 0.0, np.max(B_means) + 0.1
+    ax.plot(angles, np.array(B_means), '.-', lw=1.0, ms=3.5)
+    ax.plot(np.array([ang1, ang2]), np.array([B_lim2, B_lim2]), 'g--', lw=0.8)  # boundary between positive and negative values of B
+    ax.set_ylim(B_lim1, B_lim2)
+    ax.grid(True)
+
+    ax.margins(0, 0)
+    fig.savefig('B_pol_{0}.png'.format(frag.name), dpi=300, bbox_inches='tight', pad_inches=0)
+    ax.cla()
+    fig.clf()
+    plt.close(fig)
+    print('B_pol_{0}.png exported!'.format(frag.name))

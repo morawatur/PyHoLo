@@ -2395,73 +2395,27 @@ class HolographyWidget(QtWidgets.QWidget):
 
     # calculate B from section on image
     def calc_B_from_section(self):
-        from numpy import linalg as la
         curr_img = self.display.image
-        curr_phs = curr_img.amPh.ph
         curr_idx = curr_img.numInSeries - 1
-        px_sz = curr_img.px_dim
 
         dpt1, dpt2 = self.point_sets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
         pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
 
-        d_dist = la.norm(pt1 - pt2)
-        n_pts_for_ls = 5
-        nn_def = 4
-        n_neigh_areas = 2 * (n_pts_for_ls - 1)
-        n_neigh = nn_def if d_dist >= n_neigh_areas * nn_def else int(d_dist // n_neigh_areas)
-
-        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
-        B_coeff = const.dirac_const / (smpl_thck * d_dist * px_sz)              # the only place where pixel size is significant
-        x_arr_for_ls = np.linspace(0, d_dist, n_pts_for_ls, dtype=np.float32)   # for lin. least squares calc. only the proportions between x values are important (px_sz can be skipped)
-
-        xx = np.round(np.linspace(pt1[0], pt2[0], n_pts_for_ls)).astype(np.int32)
-        yy = np.round(np.linspace(pt1[1], pt2[1], n_pts_for_ls)).astype(np.int32)
-
-        ph_arr_for_ls = np.array([ tr.calc_avg_neigh(curr_phs, x, y, nn=n_neigh) for x, y in zip(xx, yy) ])
-        aa, bb = tr.lin_least_squares_alt(x_arr_for_ls, ph_arr_for_ls)
-
-        d_phase = aa * (x_arr_for_ls[n_pts_for_ls - 1] - x_arr_for_ls[0])
-
-        # ph1_avg = tr.calc_avg_neigh(curr_phs, pt1[0], pt1[1], nn=10)
-        # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
-        # d_phase = ph2_avg - ph1_avg         # consider sign of magnetic field
-
-        B_in_plane = B_coeff * d_phase
-        print('{0:.1f} nm'.format(d_dist * px_sz * 1e9))
-        print('{0:.2f} rad'.format(d_phase))
-        print('B = {0:.2f} T'.format(B_in_plane))
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        mc.calc_B_from_section(curr_img, pt1, pt2, sample_thickness)
 
     # calculate B from profile in PlotWidget
     def calc_B_from_profile(self):
         pt1, pt2 = self.plot_widget.markedPointsData
-        d_dist = np.abs(pt1[0] - pt2[0]) * 1e-9
-        d_phase = pt2[1] - pt1[1]       # consider sign of magnetic field
-        smpl_thck = float(self.sample_thick_input.text()) * 1e-9
-        B_in_plane = (const.dirac_const / smpl_thck) * (d_phase / d_dist)
-        print('{0:.1f} nm'.format(d_dist * 1e9))
-        print('{0:.2f} rad'.format(d_phase))
-        print('B = {0:.2f} T'.format(B_in_plane))
+        d_dist_real = np.abs(pt1[0] - pt2[0]) * 1e-9
+        sample_thickness = float(self.sample_thick_input.text()) * 1e-9
+        mc.calc_B(pt1[1], pt2[1], d_dist_real, sample_thickness, print_msg=True)
 
     def calc_Bxy_maps(self):
         curr_img = self.display.image
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        B_coeff = const.dirac_const / sample_thickness
-
-        dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
-        # B_sign = np.sign(dx)
-        # B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
-        Bx = B_coeff * dx
-        By = B_coeff * dy
-
-        Bx_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        Bx_img.amPh.ph = np.copy(Bx)
-        Bx_img.name = 'Bx_from_{0}'.format(curr_img.name)
-
-        By_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        By_img.amPh.ph = np.copy(By)
-        By_img.name = 'By_from_{0}'.format(curr_img.name)
-
+        Bx_img, By_img = mc.calc_Bxy_maps(curr_img, sample_thickness)
         self.insert_img_after_curr(Bx_img)
         self.insert_img_after_curr(By_img)
 
@@ -2509,7 +2463,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
         curr_idx = curr_img.numInSeries - 1
-        px_sz = curr_img.px_dim
+
         if len(self.point_sets[curr_idx]) < 2:
             print('You have to mark two points!')
             return
@@ -2520,34 +2474,10 @@ class HolographyWidget(QtWidgets.QWidget):
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
         frag = zoom_fragment(curr_img, real_sq_coords)
+        frag.name = curr_img.name
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
-        B_coeff = const.dirac_const / sample_thickness
-        angles = np.arange(0, 361, 10, dtype=np.float32)
-        B_means = []
-
-        for ang in angles:
-            frag_rot = tr.rotate_image_ski(frag, -ang)
-            dx, dy = np.gradient(frag_rot.amPh.ph, px_sz)
-            B_mat = B_coeff * dx
-            n_el = np.count_nonzero(B_mat)
-            B_mean = np.sum(B_mat) / n_el
-            B_means.append(B_mean)
-
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='polar')
-        rad_angles = imsup.Radians(angles)
-        ax.plot(rad_angles, np.array(B_means))
-        ax.set_rmin(-0.5)
-        ax.set_rmax(0.5)
-        ax.grid(True)
-
-        ax.margins(0, 0)
-        fig.savefig('B_pol_{0}.png'.format(curr_img.name), dpi=300, bbox_inches='tight', pad_inches=0)
-        ax.cla()
-        fig.clf()
-        plt.close(fig)
-        print('B_pol_{0}.png exported!'.format(curr_img.name))
+        mc.calc_B_polar_from_area(frag, sample_thickness)
 
     def gen_phase_stats(self):
         curr_img = self.display.image
@@ -2718,7 +2648,6 @@ def cross_corr_images(img_list):
 
 def zoom_fragment(img, coords):
     crop_img = imsup.crop_am_ph_roi(img, coords)
-    crop_img.defocus = img.defocus
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
 
