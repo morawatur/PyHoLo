@@ -270,6 +270,7 @@ class PlotWidget(QtWidgets.QWidget):
         print('x={0:.2f}, y={1:.2f}'.format(event.xdata, event.ydata))
         self.markedPoints.append(pt)
         self.markedPointsData.append([event.xdata, event.ydata])
+        self.canvas.draw()
 
 # --------------------------------------------------------
 
