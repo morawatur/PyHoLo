@@ -265,8 +265,9 @@ class PlotWidget(QtWidgets.QWidget):
                 pt.remove()
             self.markedPoints = []
             self.markedPointsData = []
-        pt, = plt.plot(event.xdata, event.ydata, 'ro')
-        print(event.xdata, event.ydata)
+        ax = self.figure.axes[0]
+        pt, = ax.plot(event.xdata, event.ydata, 'ro')
+        print('x={0:.2f}, y={1:.2f}'.format(event.xdata, event.ydata))
         self.markedPoints.append(pt)
         self.markedPointsData.append([event.xdata, event.ydata])
 
@@ -2408,6 +2409,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
     # calculate B from profile in PlotWidget
     def calc_B_from_profile(self):
+        if len(self.plot_widget.markedPoints) < 2:
+            print('You have to mark two points on the profile!')
+            return
         pt1, pt2 = self.plot_widget.markedPointsData
         d_dist_real = np.abs(pt1[0] - pt2[0]) * 1e-9
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
