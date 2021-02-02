@@ -542,7 +542,7 @@ class HolographyWidget(QtWidgets.QWidget):
         unwrap_button = QtWidgets.QPushButton('Unwrap', self)
         wrap_button = QtWidgets.QPushButton('Wrap', self)
         norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
-        zoom_button = QtWidgets.QPushButton('Crop N ROIs', self)
+        crop_button = QtWidgets.QPushButton('Crop N ROIs', self)
         flip_button = QtWidgets.QPushButton('Flip', self)
         blank_area_button = QtWidgets.QPushButton('Blank area', self)
         export_button = QtWidgets.QPushButton('Export', self)
@@ -581,7 +581,7 @@ class HolographyWidget(QtWidgets.QWidget):
         export_group.addButton(self.export_npy_radio_button)
         export_group.addButton(self.export_raw_radio_button)
 
-        self.n_to_zoom_input = QtWidgets.QLineEdit('1', self)
+        self.n_to_crop_input = QtWidgets.QLineEdit('1', self)
 
         fname_label = QtWidgets.QLabel('File name', self)
         self.fname_input = QtWidgets.QLineEdit('', self)
@@ -589,7 +589,7 @@ class HolographyWidget(QtWidgets.QWidget):
         unwrap_button.clicked.connect(self.unwrap_img_phase)
         wrap_button.clicked.connect(self.wrap_img_phase)
         norm_phase_button.clicked.connect(self.norm_phase)
-        zoom_button.clicked.connect(self.zoom_n_fragments)
+        crop_button.clicked.connect(self.crop_n_fragments)
         flip_button.clicked.connect(self.flip_image_h)
         blank_area_button.clicked.connect(self.blank_area)
         export_button.clicked.connect(self.export_image)
@@ -615,8 +615,8 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_disp.addWidget(unwrap_button, 1, 3)
         grid_disp.addWidget(wrap_button, 2, 3)
         grid_disp.addWidget(norm_phase_button, 3, 3)
-        grid_disp.addWidget(zoom_button, 4, 1)
-        grid_disp.addWidget(self.n_to_zoom_input, 4, 2)
+        grid_disp.addWidget(crop_button, 4, 1)
+        grid_disp.addWidget(self.n_to_crop_input, 4, 2)
         grid_disp.addWidget(self.clear_prev_checkbox, 4, 3, 1, 2)
         grid_disp.addWidget(flip_button, 1, 4)
         grid_disp.addWidget(blank_area_button, 2, 4)
@@ -1617,10 +1617,10 @@ class HolographyWidget(QtWidgets.QWidget):
         export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
         print('Phases exported!')
 
-    def zoom_n_fragments(self):
+    def crop_n_fragments(self):
         curr_idx = self.display.image.numInSeries - 1
         if len(self.point_sets[curr_idx]) < 2:
-            print('You have to mark two points on the image in order to zoom!')
+            print('You have to select the area for cropping!')
             return
 
         curr_img = self.display.image
@@ -1633,18 +1633,18 @@ class HolographyWidget(QtWidgets.QWidget):
             real_sq_coords[2] += 1
             real_sq_coords[3] += 1
 
-        print(real_sq_coords)
+        print('ROI coords.: {0}'.format(real_sq_coords))
 
-        n_to_zoom = np.int(self.n_to_zoom_input.text())
+        n_to_crop = np.int(self.n_to_crop_input.text())
         first_img = imsup.GetFirstImage(curr_img)
-        insert_idx = curr_idx + n_to_zoom
+        insert_idx = curr_idx + n_to_crop
         img_list = imsup.CreateImageListFromFirstImage(first_img)
         img_list2 = img_list[curr_idx:insert_idx]
 
-        for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_zoom)):
-            frag = zoom_fragment(img, real_sq_coords)
+        for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_crop)):
+            frag = crop_fragment(img, real_sq_coords)
             frag.name = 'crop_from_{0}'.format(img.name)
-            print(frag.width, frag.height)
+            print('New dimensions: ({0}, {1}) px'.format(frag.width, frag.height))
             img_list.insert(n, frag)
             self.point_sets.insert(n, [])
 
@@ -1655,7 +1655,7 @@ class HolographyWidget(QtWidgets.QWidget):
             del self.point_sets[curr_idx:insert_idx]
 
         self.go_to_image(curr_idx)
-        print('Zooming complete!')
+        print('Cropping complete!')
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
@@ -2479,7 +2479,7 @@ class HolographyWidget(QtWidgets.QWidget):
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
-        frag = zoom_fragment(curr_img, real_sq_coords)
+        frag = crop_fragment(curr_img, real_sq_coords)
         frag.name = curr_img.name
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
@@ -2628,8 +2628,8 @@ def load_image_series_from_first_file(img_path):
 # --------------------------------------------------------
 
 def rescale_image_buffer_to_window(img, win_dim):
-    zoom_factor = win_dim / img.width
-    img_to_disp = tr.rescale_image_ski(img, zoom_factor)
+    scale_factor = win_dim / img.width
+    img_to_disp = tr.rescale_image_ski(img, scale_factor)
     img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
     img.buffer.am = np.copy(img_to_disp.amPh.am)
     img.buffer.ph = np.copy(img_to_disp.amPh.ph)
@@ -2652,7 +2652,7 @@ def cross_corr_images(img_list):
 
 # --------------------------------------------------------
 
-def zoom_fragment(img, coords):
+def crop_fragment(img, coords):
     crop_img = imsup.crop_am_ph_roi(img, coords)
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
