@@ -307,12 +307,13 @@ def SavePhaseImage(img, fPath, scale=True, log=False, color=False):
 # -------------------------------------------------------------------
 
 def crop_am_ph_roi(img, coords):
-    roi_h = coords[3] - coords[1]
-    roi_w = coords[2] - coords[0]
+    x1, y1, x2, y2 = coords
+    roi_w = x2 - x1
+    roi_h = y2 - y1
     roi = ImageExp(roi_h, roi_w, img.cmpRepr, px_dim_sz=img.px_dim)
 
-    roi.amPh.am[:] = img.amPh.am[coords[1]:coords[3], coords[0]:coords[2]]
-    roi.amPh.ph[:] = img.amPh.ph[coords[1]:coords[3], coords[0]:coords[2]]
+    roi.amPh.am[:] = img.amPh.am[y1:y2, x1:x2]
+    roi.amPh.ph[:] = img.amPh.ph[y1:y2, x1:x2]
     roi.UpdateBuffer()
 
     if img.cos_phase is not None:
@@ -322,27 +323,23 @@ def crop_am_ph_roi(img, coords):
 # -------------------------------------------------------------------
 
 def crop_img_roi_tl(img, tl_pt, roi_dims):
+    tl_x, tl_y = tl_pt
+    roi_w, roi_h = roi_dims
     dt = img.cmpRepr
     img.AmPh2ReIm()
-    roi = ImageExp(roi_dims[0], roi_dims[1], img.cmpRepr, px_dim_sz=img.px_dim)
-    roi.reIm = img.reIm[tl_pt[0]:tl_pt[0] + roi_dims[0], tl_pt[1]:tl_pt[1] + roi_dims[1]]
+    roi = ImageExp(roi_h, roi_w, img.cmpRepr, px_dim_sz=img.px_dim)
+    roi.reIm[:] = img.reIm[tl_y:tl_y + roi_h, tl_x:tl_x + roi_w]
     img.ChangeComplexRepr(dt)
     roi.ChangeComplexRepr(dt)
-    roi.defocus = img.defocus
     return roi
 
 # -------------------------------------------------------------------
 
 def crop_img_roi_mid(img, mid_pt, roi_dims):
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
-    roi = ImageExp(roi_dims[0], roi_dims[1], img.cmpRepr, px_dim_sz=img.px_dim)
-    half_dim1 = roi_dims[0] // 2
-    half_dim2 = roi_dims[1] // 2
-    roi.reIm = img.reIm[mid_pt[0] - half_dim1:mid_pt[0] + half_dim1, mid_pt[1] - half_dim2:mid_pt[1] + half_dim2]
-    img.ChangeComplexRepr(dt)
-    roi.ChangeComplexRepr(dt)
-    roi.defocus = img.defocus
+    mid_x, mid_y = mid_pt
+    roi_w, roi_h = roi_dims
+    tl_pt = [mid_x - roi_w // 2, mid_y - roi_h // 2]
+    roi = crop_img_roi_tl(img, tl_pt, roi_dims)
     return roi
 
 # -------------------------------------------------------------------
