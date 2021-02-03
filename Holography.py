@@ -96,7 +96,7 @@ def holo_fft(h_img):
 
 def holo_get_sideband(h_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
-    sband_ctr = imsup.ShiftImage(h_fft, list(px_shift.astype(np.int32)))
+    sband_ctr = imsup.shift_image(h_fft, list(px_shift.astype(np.int32)))
     if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
         sband_ctr = subpixel_shift(sband_ctr, list(subpx_shift))
     sband_ctr_ap = insert_aperture(sband_ctr, ap_rad)

@@ -98,7 +98,7 @@ def warp_image_ski(img, src_set, dst_set):
 #-------------------------------------------------------------------
 
 def det_crop_coords_after_ski_rotation(old_dim, angle):
-    return imsup.DetermineCropCoordsAfterRotation(old_dim, old_dim, angle)
+    return imsup.det_crop_coords_after_rotation(old_dim, old_dim, angle)
 
 #-------------------------------------------------------------------
 
@@ -180,7 +180,7 @@ def find_rotation_center(pts1, pts2):
 def rotate_point(p1, angle):
     z1 = np.complex(p1[0], p1[1])
     r = np.abs(z1)
-    phi = np.angle(z1) + imsup.Radians(angle)
+    phi = np.angle(z1) + imsup.radians(angle)
     p2 = [r * np.cos(phi), r * np.sin(phi)]
     return p2
 

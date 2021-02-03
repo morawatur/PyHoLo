@@ -234,7 +234,7 @@ def calc_B_polar_from_area(frag, smpl_thck):
     B_means = []
 
     for ang, a_idx in zip(angles, range(n_ang)):
-        frag_rot = tr.rotate_image_ski(frag, imsup.Degrees(ang))
+        frag_rot = tr.rotate_image_ski(frag, imsup.degrees(ang))
         roi_ph = np.copy(frag_rot.amPh.ph[min_cc[0]:min_cc[2], min_cc[1]:min_cc[3]])
         dx, dy = np.gradient(roi_ph, px_sz)
         B_mean = np.mean(B_coeff * dx)

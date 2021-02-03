@@ -23,6 +23,23 @@ from PIL import Image as im
 
 #-------------------------------------------------------------------
 
+def radians(angle):
+    return angle * np.pi / 180
+
+# -------------------------------------------------------------------
+
+def degrees(angle):
+    return angle * 180 / np.pi
+
+#-------------------------------------------------------------------
+
+def frange(x, y, jump):
+    while x < y:
+        yield x
+        x += jump
+
+#-------------------------------------------------------------------
+
 class ComplexAmPhMatrix:
     def __init__(self, height, width):
         self.am = np.zeros((height, width), dtype=np.float32)
@@ -170,7 +187,7 @@ class ImageList(list):
 
 #-------------------------------------------------------------------
 
-def am_ph_2_re_im_cpu(img):
+def amph_to_new_reim(img):
     img_ri = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CRI'])
     if img.cmpRepr == Image.cmp['CRI']:
         img_ri.reIm = np.copy(img.reIm)
@@ -180,7 +197,7 @@ def am_ph_2_re_im_cpu(img):
 
 # ---------------------------------------------------------------
 
-def re_im_2_am_ph_cpu(img):
+def reim_to_new_amph(img):
     img_ap = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CAP'])
     if img.cmpRepr == Image.cmp['CAP']:
         img_ap.amPh.am = np.copy(img.amPh.am)
@@ -192,63 +209,22 @@ def re_im_2_am_ph_cpu(img):
 
 #-------------------------------------------------------------------
 
-def PrepareImageMatrix(imgData, dimSize):
-    imgArray = np.asarray(imgData)
-    imgMatrix = np.reshape(imgArray, (-1, dimSize))
-    if len(imgMatrix[imgMatrix < 0]) > 0:
-        imgMatrix += np.abs(np.min(imgMatrix))
-    # imgMatrix = np.abs(imgMatrix)         # some pixels can have negative values
-    return imgMatrix
+def clear_image_data(img):
+    shape = img.reIm.shape
+    img.reIm = np.zeros(shape, dtype=np.complex64)
+    img.amPh.am = np.zeros(shape, dtype=np.float32)
+    img.amPh.ph = np.zeros(shape, dtype=np.float32)
 
 #-------------------------------------------------------------------
 
-def FileToImage(fPath):
-    import Dm3Reader as dm3
-    img_data, px_dims = dm3.ReadDm3File(fPath)
-    img_matrix = PrepareImageMatrix(img_data, img_data.shape[0])
-    img = ImageExp(img_data.shape[0], img_data.shape[1], Image.cmp['CAP'])
-    img.amPh.am = np.sqrt(img_matrix).astype(np.float32)
-    img.UpdateBuffer()
-    img.px_dim = px_dims[0]
-    Image.px_dim_default = px_dims[0]
-    return img
-
-#-------------------------------------------------------------------
-
-def ScaleImage(img, newMin, newMax):
-    # currMin = np.delete(img, np.argwhere(img==0)).min()
-    currMin = img.min()
-    currMax = img.max()
-    if currMin == currMax:
+def scale_image(img, new_min, new_max):
+    # curr_min = np.delete(img, np.argwhere(img==0)).min()
+    curr_min = img.min()
+    curr_max = img.max()
+    if curr_min == curr_max:
         return img
-    imgScaled = (img - currMin) * (newMax - newMin) / (currMax - currMin) + newMin
-    return imgScaled
-
-#-------------------------------------------------------------------
-
-def PrepareImageToDisplay(img, capVar, scale=True, log=False, color=False):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-    imgVar = img.amPh.am if capVar == Image.capVar['AM'] else img.amPh.ph
-    img.ChangeComplexRepr(dt)
-
-    if log:
-        if np.min(imgVar) < 0:
-            imgVar -= np.min(imgVar)
-        if np.min(imgVar) == 0:
-            imgVar += 1e-6
-        imgVar = np.log10(imgVar)
-
-    if scale:
-        imgVar = ScaleImage(imgVar, 0.0, 255.0)
-
-    if not color:
-        imgToDisp = im.fromarray(imgVar.astype(np.uint8))
-    else:
-        imgVarCol = grayscale_to_rgb(imgVar)
-        imgToDisp = im.fromarray(imgVarCol.astype(np.uint8), 'RGB')
-
-    return imgToDisp
+    img_scaled = (img - curr_min) * (new_max - new_min) / (curr_max - curr_min) + new_min
+    return img_scaled
 
 #-------------------------------------------------------------------
 
@@ -282,27 +258,29 @@ def grayscale_to_rgb(gs_arr):
 
 #-------------------------------------------------------------------
 
-def DisplayAmpImage(img, scale=True, log=False):
-    imgToDisp = PrepareImageToDisplay(img, Image.capVar['AM'], scale, log)
-    imgToDisp.show()
-
-# -------------------------------------------------------------------
-
-def SaveAmpImage(img, fPath, scale=True, log=False, color=False):
-    imgToSave = PrepareImageToDisplay(img, Image.capVar['AM'], scale, log, color)
-    imgToSave.save(fPath)
+def copy_re_im_image(img):
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
+                        px_dim_sz=img.px_dim)
+    img_copy.reIm = np.copy(img.amPh.reIm)
+    return img_copy
 
 #-------------------------------------------------------------------
 
-def DisplayPhaseImage(img, scale=True, log=False):
-    imgToDisp = PrepareImageToDisplay(img, Image.capVar['PH'], scale, log)
-    imgToDisp.show()
+def copy_am_ph_image(img):
+    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
+                        px_dim_sz=img.px_dim)
+    img_copy.amPh.am = np.copy(img.amPh.am)
+    img_copy.amPh.ph = np.copy(img.amPh.ph)
+    return img_copy
 
-# -------------------------------------------------------------------
+#-------------------------------------------------------------------
 
-def SavePhaseImage(img, fPath, scale=True, log=False, color=False):
-    imgToSave = PrepareImageToDisplay(img, Image.capVar['PH'], scale, log, color)
-    imgToSave.save(fPath)
+def copy_image(img):
+    if img.cmpRepr == Image.cmp['CRI']:
+        img_copy = copy_re_im_image(img)
+    else:
+        img_copy = copy_am_ph_image(img)
+    return img_copy
 
 # -------------------------------------------------------------------
 
@@ -344,7 +322,7 @@ def crop_img_roi_mid(img, mid_pt, roi_dims):
 
 # -------------------------------------------------------------------
 
-def DetermineCropCoords(width, height, shift):
+def det_crop_coords(width, height, shift):
     dx, dy = shift
     if dx >= 0 and dy >= 0:
         coords = [dy, dx, height, width]
@@ -358,24 +336,24 @@ def DetermineCropCoords(width, height, shift):
 
 #-------------------------------------------------------------------
 
-def DetermineCropCoordsAfterRotation(imgDim, rotDim, angle):
-    angleRad = Radians(angle % 90)
-    newDim = int((1 / np.sqrt(2)) * imgDim / np.cos(angleRad - Radians(45)))
-    origX = int(rotDim / 2 - newDim / 2)
-    cropCoords = [origX] * 2 + [origX + newDim] * 2
-    return cropCoords
+def det_crop_coords_after_rotation(img_dim, rot_dim, angle):
+    angle_rad = radians(angle % 90)
+    new_dim = int((1 / np.sqrt(2)) * img_dim / np.cos(angle_rad - radians(45)))
+    orig_x = int(rot_dim / 2 - new_dim / 2)
+    crop_coords = [orig_x] * 2 + [orig_x + new_dim] * 2
+    return crop_coords
 
 #-------------------------------------------------------------------
 
-def DetermineCropCoordsForNewDims(oldWidth, oldHeight, newWidth, newHeight):
-    origX = (oldWidth - newWidth) // 2
-    origY = (oldHeight - newHeight) // 2
-    cropCoords = [ origX, origY, origX + newWidth, origY + newHeight ]
-    return cropCoords
+def det_crop_coords_for_new_dims(old_width, old_height, new_width, new_height):
+    orig_x = (old_width - new_width) // 2
+    orig_y = (old_height - new_height) // 2
+    crop_coords = [ orig_x, orig_y, orig_x + new_width, orig_y + new_height ]
+    return crop_coords
 
 #-------------------------------------------------------------------
 
-def GetCommonArea(coords1, coords2):
+def get_common_area(coords1, coords2):
     # 1st way (lists)
     coords3 = []
     coords3[0:2] = [c1 if c1 > c2 else c2 for c1, c2 in zip(coords1[0:2], coords2[0:2])]
@@ -383,62 +361,28 @@ def GetCommonArea(coords1, coords2):
     return coords3
 
     # # 2nd way (numpy arrays)
-    # coords1Arr = np.array(coords1)
-    # coords2Arr = np.array(coords2)
-    # coords3Arr = np.zeros(4)
-    # coords3Arr[0:2] = np.fromiter((np.where(c1 > c2, c1, c2) for c1, c2 in zip(coords1Arr[0:2], coords2Arr[0:2])))
-    # coords3Arr[2:4] = np.fromiter((np.where(c1 > c2, c2, c1) for c1, c2 in zip(coords1Arr[2:4], coords2Arr[2:4])))
-    # return list(coords3Arr)
+    # coords1_arr = np.array(coords1)
+    # coords2_arr = np.array(coords2)
+    # coords3_arr = np.zeros(4)
+    # coords3_arr[0:2] = np.fromiter((np.where(c1 > c2, c1, c2) for c1, c2 in zip(coords1_arr[0:2], coords2_arr[0:2])))
+    # coords3_arr[2:4] = np.fromiter((np.where(c1 > c2, c2, c1) for c1, c2 in zip(coords1_arr[2:4], coords2_arr[2:4])))
+    # return list(coords3_arr)
 
 #-------------------------------------------------------------------
 
-def MakeSquareCoords(coords):
+def make_square_coords(coords):
     height = coords[3] - coords[1]
     width = coords[2] - coords[0]
-    halfDiff = abs(height - width) // 2
-    dimFix = 1 if (height + width) % 2 else 0
+    half_diff = abs(height - width) // 2
+    dim_fix = 1 if (height + width) % 2 else 0
 
     if height > width:
-        # squareCoords = [coords[1] + halfDiff + dimFix, coords[0], coords[3] - halfDiff, coords[2]]
-        squareCoords = [coords[0], coords[1] + halfDiff + dimFix, coords[2], coords[3] - halfDiff]
+        # square_coords = [coords[1] + half_diff + dim_fix, coords[0], coords[3] - half_diff, coords[2]]
+        square_coords = [coords[0], coords[1] + half_diff + dim_fix, coords[2], coords[3] - half_diff]
     else:
-        # squareCoords = [coords[1], coords[0] + halfDiff + dimFix, coords[3], coords[2] - halfDiff]
-        squareCoords = [coords[0] + halfDiff + dimFix, coords[1], coords[2] - halfDiff, coords[3]]
-    return squareCoords
-
-#-------------------------------------------------------------------
-
-def ClearImageData(img):
-    shape = img.reIm.shape
-    img.reIm = np.zeros(shape, dtype=np.complex64)
-    img.amPh.am = np.zeros(shape, dtype=np.float32)
-    img.amPh.ph = np.zeros(shape, dtype=np.float32)
-
-#-------------------------------------------------------------------
-
-def copy_re_im_image(img):
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
-                        px_dim_sz=img.px_dim)
-    img_copy.reIm = np.copy(img.amPh.reIm)
-    return img_copy
-
-#-------------------------------------------------------------------
-
-def copy_am_ph_image(img):
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
-                        px_dim_sz=img.px_dim)
-    img_copy.amPh.am = np.copy(img.amPh.am)
-    img_copy.amPh.ph = np.copy(img.amPh.ph)
-    return img_copy
-
-#-------------------------------------------------------------------
-
-def copy_image(img):
-    if img.cmpRepr == Image.cmp['CRI']:
-        img_copy = copy_re_im_image(img)
-    else:
-        img_copy = copy_am_ph_image(img)
-    return img_copy
+        # square_coords = [coords[1], coords[0] + half_diff + dim_fix, coords[3], coords[2] - half_diff]
+        square_coords = [coords[0] + half_diff + dim_fix, coords[1], coords[2] - half_diff, coords[3]]
+    return square_coords
 
 #-------------------------------------------------------------------
 
@@ -447,7 +391,7 @@ def create_imgexp_from_img(img):
 
 #-------------------------------------------------------------------
 
-def GetFirstImage(img):
+def get_first_image(img):
     first = img
     while first.prev is not None:
         first = first.prev
@@ -455,7 +399,7 @@ def GetFirstImage(img):
 
 #-------------------------------------------------------------------
 
-def GetLastImage(img):
+def get_last_image(img):
     last = img
     while last.next is not None:
         last = last.next
@@ -463,23 +407,23 @@ def GetLastImage(img):
 
 #-------------------------------------------------------------------
 
-def CreateImageListFromFirstImage(img):
-    imgList = ImageList()
-    imgList.append(img)
+def create_image_list_from_first_image(img):
+    img_list = ImageList()
+    img_list.append(img)
     while img.next is not None:
         img = img.next
-        imgList.append(img)
-    return imgList
+        img_list.append(img)
+    return img_list
 
 #-------------------------------------------------------------------
 
-def CreateImageListFromImage(img, howMany):
-    imgList = ImageList()
-    imgList.append(img)
-    for idx in range(howMany-1):
+def create_image_list_from_image(img, how_many):
+    img_list = ImageList()
+    img_list.append(img)
+    for idx in range(how_many-1):
         img = img.next
-        imgList.append(img)
-    return imgList
+        img_list.append(img)
+    return img_list
 
 #-------------------------------------------------------------------
 
@@ -536,45 +480,6 @@ def pad_img_from_ref(img, ref_width, pad_value):
     pad_array(img.amPh.ph, pad_img.amPh.ph, pads, pad_value)
 
     return pad_img
-
-#-------------------------------------------------------------------
-
-def Radians(angle):
-    return angle * np.pi / 180
-
-# -------------------------------------------------------------------
-
-def Degrees(angle):
-    return angle * 180 / np.pi
-
-#-------------------------------------------------------------------
-
-def FillImageWithValue(img, value):
-    img.ReIm2AmPh()
-    img.amPh.am.fill(value)
-
-#-------------------------------------------------------------------
-
-def RemovePixelArtifacts(img, minThreshold=0.7, maxThreshold=1.3):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-
-    arr = np.copy(img.amPh.am)
-    arrAvg = np.average(arr)
-
-    badPixels1 = np.where(arr >= (maxThreshold * arrAvg))
-    badPixels2 = np.where(arr <= (minThreshold * arrAvg))
-    arrCorr1 = arr * (arr < (maxThreshold * arrAvg))
-    arrCorr2 = arrCorr1 * (arrCorr1 > (minThreshold * arrAvg))
-
-    for y, x in zip(badPixels1[0], badPixels1[1]):
-        arrCorr2[y, x] = arrAvg
-    for y, x in zip(badPixels2[0], badPixels2[1]):
-        arrCorr2[y, x] = arrAvg
-
-    img.amPh.am = np.copy(arrCorr2)
-    img.buffer = np.copy(arrCorr2)
-    img.ChangeComplexRepr(dt)
 
 #-------------------------------------------------------------------
 
@@ -640,14 +545,7 @@ def Diff2FFT(diff):
 
 #-------------------------------------------------------------------
 
-def frange(x, y, jump):
-    while x < y:
-        yield x
-        x += jump
-
-#-------------------------------------------------------------------
-
-def CalcCrossCorrFun(img1, img2):
+def calc_cross_corr_fun(img1, img2):
     fft1 = FFT(img1)
     fft2 = FFT(img2)
 
@@ -673,13 +571,13 @@ def CalcCrossCorrFun(img1, img2):
 
 #-------------------------------------------------------------------
 
-def GetShift(ccf):
+def get_shift(ccf):
     dt = ccf.cmpRepr
     ccf.ReIm2AmPh()
 
-    ccfMidXY = np.array(ccf.amPh.am.shape) // 2
-    ccfMaxXY = np.array(np.unravel_index(np.argmax(ccf.amPh.am), ccf.amPh.am.shape))
-    shift = tuple(ccfMidXY - ccfMaxXY)[::-1]
+    ccf_mid_xy = np.array(ccf.amPh.am.shape) // 2
+    ccf_max_xy = np.array(np.unravel_index(np.argmax(ccf.amPh.am), ccf.amPh.am.shape))
+    shift = tuple(ccf_mid_xy - ccf_max_xy)[::-1]
 
     ccf.ChangeComplexRepr(dt)
     return shift
@@ -733,7 +631,7 @@ def shift_am_ph_image(img, shift):
 
 #-------------------------------------------------------------------
 
-def ShiftImage(img, shift):
+def shift_image(img, shift):
     dt = img.cmpRepr
     img.AmPh2ReIm()
     dx, dy = shift
@@ -761,7 +659,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
     # option 1 (c->b->g)
     # correct contrast
-    img_scaled = ScaleImage(img_src, Imin, Imax)
+    img_scaled = scale_image(img_src, Imin, Imax)
     # correct brightness
     img_scaled += brg
     img_scaled[img_scaled < 0.0] = 0.0
@@ -771,7 +669,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
     # # option 2 (c->g->b)
     # # correct contrast
-    # img_scaled = imsup.ScaleImage(img_src, Imin, Imax)
+    # img_scaled = scale_image(img_src, Imin, Imax)
     # img_scaled[img_scaled < 0.0] = 0.0
     # # correct gamma
     # img_scaled **= gam
@@ -794,3 +692,82 @@ def save_arr_as_tiff(data, fname, log, color, brg=0, cnt=255, gam=1.0):
     else:
         data_to_save = im.fromarray(data.astype(np.uint8))
     data_to_save.save('{0}.tif'.format(fname))
+
+#-------------------------------------------------------------------
+
+def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
+    dt = img.cmpRepr
+    img.ReIm2AmPh()
+    img_var = img.amPh.am if cap_var == Image.capVar['AM'] else img.amPh.ph
+    img.ChangeComplexRepr(dt)
+
+    if log:
+        if np.min(img_var) < 0:
+            img_var -= np.min(img_var)
+        if np.min(img_var) == 0:
+            img_var += 1e-6
+        img_var = np.log10(img_var)
+
+    if scale:
+        img_var = scale_image(img_var, 0.0, 255.0)
+
+    if not color:
+        img_to_disp = im.fromarray(img_var.astype(np.uint8))
+    else:
+        img_var_col = grayscale_to_rgb(img_var)
+        img_to_disp = im.fromarray(img_var_col.astype(np.uint8), 'RGB')
+
+    return img_to_disp
+
+#-------------------------------------------------------------------
+
+def display_amp_image(img, scale=True, log=False):
+    img_to_disp = prepare_image_to_display(img, Image.capVar['AM'], scale, log)
+    img_to_disp.show()
+
+# -------------------------------------------------------------------
+
+def save_amp_image(img, fpath, scale=True, log=False, color=False):
+    img_to_save = prepare_image_to_display(img, Image.capVar['AM'], scale, log, color)
+    img_to_save.save(fpath)
+
+#-------------------------------------------------------------------
+
+def display_phase_image(img, scale=True, log=False):
+    img_to_disp = prepare_image_to_display(img, Image.capVar['PH'], scale, log)
+    img_to_disp.show()
+
+# -------------------------------------------------------------------
+
+def save_phase_image(img, fpath, scale=True, log=False, color=False):
+    img_to_save = prepare_image_to_display(img, Image.capVar['PH'], scale, log, color)
+    img_to_save.save(fpath)
+
+#-------------------------------------------------------------------
+
+def fill_image_with_value(img, value):
+    img.ReIm2AmPh()
+    img.amPh.am.fill(value)
+
+#-------------------------------------------------------------------
+
+def remove_pixel_artifacts(img, min_threshold=0.7, max_threshold=1.3):
+    dt = img.cmpRepr
+    img.ReIm2AmPh()
+
+    arr = np.copy(img.amPh.am)
+    arr_avg = np.average(arr)
+
+    bad_pixels1 = np.where(arr >= (max_threshold * arr_avg))
+    bad_pixels2 = np.where(arr <= (min_threshold * arr_avg))
+    arr_corr1 = arr * (arr < (max_threshold * arr_avg))
+    arr_corr2 = arr_corr1 * (arr_corr1 > (min_threshold * arr_avg))
+
+    for y, x in zip(bad_pixels1[0], bad_pixels1[1]):
+        arr_corr2[y, x] = arr_avg
+    for y, x in zip(bad_pixels2[0], bad_pixels2[1]):
+        arr_corr2[y, x] = arr_avg
+
+    img.amPh.am = np.copy(arr_corr2)
+    img.buffer = np.copy(arr_corr2)
+    img.ChangeComplexRepr(dt)

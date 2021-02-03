@@ -79,7 +79,7 @@ class SimpleImageLabel(QtWidgets.QLabel):
         else:
             px_arr = np.copy(self.image.amPh.ph)
 
-        pixmap = imsup.ScaleImage(px_arr, 0.0, 255.0)
+        pixmap = imsup.scale_image(px_arr, 0.0, 255.0)
         q_image = QtGui.QImage(pixmap.astype(np.uint8), pixmap.shape[0], pixmap.shape[1], QtGui.QImage.Format_Indexed8)
         pixmap = QtGui.QPixmap(q_image)
         self.setPixmap(pixmap)
@@ -97,7 +97,6 @@ class LabelExt(QtWidgets.QLabel):
         self.show_labs = True
         self.rgb_cm = RgbColorTable_B2R()
 
-    # prowizorka - stałe liczbowe do poprawy
     def paintEvent(self, event):
         super(LabelExt, self).paintEvent(event)
         linePen = QtGui.QPen(QtCore.Qt.yellow)
@@ -135,7 +134,7 @@ class LabelExt(QtWidgets.QLabel):
             h = np.abs(pt2[1] - pt1[1])
             rect = QtCore.QRect(pt1[0], pt1[1], w, h)
             qp.drawRect(rect)
-            sq_coords = imsup.MakeSquareCoords(pt1 + pt2)
+            sq_coords = imsup.make_square_coords(pt1 + pt2)
             sq_pt1 = sq_coords[:2]
             sq_pt2 = sq_coords[2:]
             w = np.abs(sq_pt2[0]-sq_pt1[0])
@@ -183,7 +182,7 @@ class LabelExt(QtWidgets.QLabel):
                 px_arr = np.cos(px_arr)
 
         if not update_bcg:
-            pixmap_to_disp = imsup.ScaleImage(px_arr, 0.0, 255.0)
+            pixmap_to_disp = imsup.scale_image(px_arr, 0.0, 255.0)
         else:
             pixmap_to_disp = imsup.update_image_bright_cont_gamma(px_arr, brg=bright, cnt=cont, gam=gamma)
 
@@ -311,8 +310,8 @@ class ImgScrollArea(QtWidgets.QScrollArea):
             for i in reversed(range(n_items)):
                 self.scroll_layout.itemAt(i).widget().deleteLater()
 
-        first_img = imsup.GetFirstImage(any_img)
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(any_img)
+        img_list = imsup.create_image_list_from_first_image(first_img)
         if len(img_list) > 0:
             for img in img_list:
                 preview_img = create_preview_img(img, (64, 64))
@@ -1156,8 +1155,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def reset_image_names(self):
         curr_img = self.display.image
-        first_img = imsup.GetFirstImage(curr_img)
-        img_queue = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        img_queue = imsup.create_image_list_from_first_image(first_img)
         for img, idx in zip(img_queue, range(len(img_queue))):
             img.name = 'img_0{0}'.format(idx + 1) if idx < 9 else 'img_{0}'.format(idx + 1)
         self.update_curr_info_label()
@@ -1165,8 +1164,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.fname_input.setText(curr_img.name)
 
     def go_to_image(self, new_idx):
-        first_img = imsup.GetFirstImage(self.display.image)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(self.display.image)
+        imgs = imsup.create_image_list_from_first_image(first_img)
         if 0 > new_idx >= len(imgs):
             print('Image index out of range')
             return
@@ -1205,7 +1204,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def go_to_last_image(self):
         curr_img = self.display.image
-        last_img = imsup.GetLastImage(curr_img)
+        last_img = imsup.get_last_image(curr_img)
         curr_idx = curr_img.numInSeries - 1
         last_idx = last_img.numInSeries - 1
         if curr_idx < last_idx:
@@ -1213,8 +1212,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def insert_img_after_curr(self, new_img):
         curr_num = self.display.image.numInSeries
-        curr_img_list = imsup.CreateImageListFromFirstImage(self.display.image)
-        new_img_list = imsup.CreateImageListFromFirstImage(new_img)
+        curr_img_list = imsup.create_image_list_from_first_image(self.display.image)
+        new_img_list = imsup.create_image_list_from_first_image(new_img)
 
         curr_img_list[1:1] = new_img_list
         self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
@@ -1235,8 +1234,8 @@ class HolographyWidget(QtWidgets.QWidget):
             return
         curr_idx = curr_img.numInSeries - 1
 
-        first_img = imsup.GetFirstImage(curr_img)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        imgs = imsup.create_image_list_from_first_image(first_img)
         imgs[curr_idx - 1], imgs[curr_idx] = imgs[curr_idx], imgs[curr_idx - 1]
 
         imgs[0].prev = None
@@ -1254,8 +1253,8 @@ class HolographyWidget(QtWidgets.QWidget):
             return
         curr_idx = curr_img.numInSeries - 1
 
-        first_img = imsup.GetFirstImage(curr_img)
-        imgs = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        imgs = imsup.create_image_list_from_first_image(first_img)
         imgs[curr_idx], imgs[curr_idx + 1] = imgs[curr_idx + 1], imgs[curr_idx]
 
         imgs[0].prev = None
@@ -1316,8 +1315,8 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         curr_idx = curr_img.numInSeries - 1
-        first_img = imsup.GetFirstImage(curr_img)
-        all_img_list = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        all_img_list = imsup.create_image_list_from_first_image(first_img)
 
         new_idx = curr_idx - 1 if curr_img.prev is not None else curr_idx + 1
         self.go_to_image(new_idx)
@@ -1483,8 +1482,8 @@ class HolographyWidget(QtWidgets.QWidget):
         if n_points > 1:
             x2, y2 = pt_real[1]
 
-        first_img = imsup.GetFirstImage(curr_img)
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        img_list = imsup.create_image_list_from_first_image(first_img)
         for img in img_list:
             if n_points == 1:
                 norm_val = img.amPh.ph[y1, x1]
@@ -1563,7 +1562,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Saved log file: "{0}"'.format(log_fname))
 
     def export_all(self):
-        curr_img = imsup.GetFirstImage(self.display.image)
+        curr_img = imsup.get_first_image(self.display.image)
         self.display.image = curr_img
         self.export_image()
         while curr_img.next is not None:
@@ -1608,8 +1607,8 @@ class HolographyWidget(QtWidgets.QWidget):
         plt.close(fig)
 
     def export_glob_sc_phases(self):
-        first_img = imsup.GetFirstImage(self.display.image)
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(self.display.image)
+        img_list = imsup.create_image_list_from_first_image(first_img)
         is_arrows_checked = self.add_arrows_checkbox.isChecked()
         is_perpendicular_checked = self.perpendicular_arrows_checkbox.isChecked()
         arrow_size = int(self.arr_size_input.text())
@@ -1628,7 +1627,7 @@ class HolographyWidget(QtWidgets.QWidget):
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
-        real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
+        real_sq_coords = imsup.make_square_coords(real_tl_coords)
         if np.abs(real_sq_coords[2] - real_sq_coords[0]) % 2:
             real_sq_coords[2] += 1
             real_sq_coords[3] += 1
@@ -1636,9 +1635,9 @@ class HolographyWidget(QtWidgets.QWidget):
         print('ROI coords.: {0}'.format(real_sq_coords))
 
         n_to_crop = np.int(self.n_to_crop_input.text())
-        first_img = imsup.GetFirstImage(curr_img)
+        first_img = imsup.get_first_image(curr_img)
         insert_idx = curr_idx + n_to_crop
-        img_list = imsup.CreateImageListFromFirstImage(first_img)
+        img_list = imsup.create_image_list_from_first_image(first_img)
         img_list2 = img_list[curr_idx:insert_idx]
 
         for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_crop)):
@@ -1752,15 +1751,15 @@ class HolographyWidget(QtWidgets.QWidget):
         if curr_img.prev is None:
             print('There is no reference image!')
             return
-        img_list_to_cc = imsup.CreateImageListFromImage(curr_img.prev, 2)
+        img_list_to_cc = imsup.create_image_list_from_image(curr_img.prev, 2)
         img_aligned = cross_corr_images(img_list_to_cc)[0]
         self.insert_img_after_curr(img_aligned)
         self.go_to_next_image()
 
     def cross_corr_all(self):
         curr_img = self.display.image
-        first_img = imsup.GetFirstImage(curr_img)
-        all_img_list = imsup.CreateImageListFromFirstImage(first_img)
+        first_img = imsup.get_first_image(curr_img)
+        all_img_list = imsup.create_image_list_from_first_image(first_img)
         n_imgs = len(all_img_list)
         insert_idx = n_imgs
         img_align_list = cross_corr_images(all_img_list)
@@ -1829,7 +1828,7 @@ class HolographyWidget(QtWidgets.QWidget):
             p21, p22 = points2[2*l:2*(l+1)]
             ang1 = tr.find_dir_angle(p11, p12)
             ang2 = tr.find_dir_angle(p21, p22)
-            rot_angle = imsup.Degrees(ang2 - ang1)
+            rot_angle = imsup.degrees(ang2 - ang1)
             rot_angles.append(rot_angle)
             rot_angle_avg += rot_angle
 
@@ -2000,7 +1999,7 @@ class HolographyWidget(QtWidgets.QWidget):
         sbx, sby = sband_xy[0] - mid_x, sband_xy[1] - mid_x
         sb_xy_comp = np.complex(sbx * dx_dim, sby * dx_dim)
         R = np.abs(sb_xy_comp)
-        ang = imsup.Degrees(np.angle(sb_xy_comp))
+        ang = imsup.degrees(np.angle(sb_xy_comp))
         print('R = {0:.3f} um-1\nAng = {1:.2f} deg'.format(R * 1e-6, ang))
         # ------------------
 
@@ -2301,7 +2300,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # find direction (angle) of the line
         dir_info = FindDirectionAngles(points[0], points[1])
-        dir_angle = imsup.Degrees(dir_info[0])
+        dir_angle = imsup.degrees(dir_info[0])
         proj_dir = dir_info[2]
         print('dir. angle = {0:.2f} deg'.format(dir_angle))
 
@@ -2322,7 +2321,7 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             frag_width, frag_height = frag_dim2, frag_dim1
 
-        frag_coords = imsup.DetermineCropCoordsForNewDims(img_rot.width, img_rot.height, frag_width, frag_height)
+        frag_coords = imsup.det_crop_coords_for_new_dims(img_rot.width, img_rot.height, frag_width, frag_height)
         print('Frag. dims = {0}, {1}'.format(frag_width, frag_height))
         print('Frag. coords = {0}'.format(frag_coords))
         img_cropped = imsup.crop_am_ph_roi(img_rot, frag_coords)
@@ -2478,7 +2477,7 @@ class HolographyWidget(QtWidgets.QWidget):
         pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
-        real_sq_coords = imsup.MakeSquareCoords(real_tl_coords)
+        real_sq_coords = imsup.make_square_coords(real_tl_coords)
         frag = crop_fragment(curr_img, real_sq_coords)
         frag.name = curr_img.name
 
@@ -2547,7 +2546,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_img.update_cos_phase()
         conts = np.copy(curr_img.cos_phase)
-        conts_scaled = imsup.ScaleImage(conts, 0.0, 1.0)
+        conts_scaled = imsup.scale_image(conts, 0.0, 1.0)
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0.0
         img_filtered = imsup.copy_am_ph_image(curr_img)
@@ -2605,10 +2604,9 @@ def load_image_series_from_first_file(img_path):
         img.numInSeries = img_num
         img.name = imgs_info[img_idx, 1] if is_there_info else img_name_text
         img = rescale_image_buffer_to_window(img, const.disp_dim)
-
         # ---
-        # imsup.RemovePixelArtifacts(img, const.min_px_threshold, const.max_px_threshold)
-        # imsup.RemovePixelArtifacts(img, 0.7, 1.3)
+        # imsup.remove_pixel_artifacts(img, const.min_px_threshold, const.max_px_threshold)
+        # imsup.remove_pixel_artifacts(img, 0.7, 1.3)
         # img.UpdateBuffer()
         # ---
         img_list.append(img)
@@ -2641,8 +2639,8 @@ def cross_corr_images(img_list):
     img_align_list = imsup.ImageList()
     img_list[0].shift = [0, 0]
     for img in img_list[1:]:
-        mcf = imsup.CalcCrossCorrFun(img.prev, img)
-        new_shift = imsup.GetShift(mcf)
+        mcf = imsup.calc_cross_corr_fun(img.prev, img)
+        new_shift = imsup.get_shift(mcf)
         img.shift = [ sp + sn for sp, sn in zip(img.prev.shift, new_shift) ]
         # img.shift = list(np.array(img.shift) + np.array(new_shift))
         print('"{0}" was shifted by {1} px'.format(img.name, img.shift))
@@ -2772,14 +2770,14 @@ def CalcDistance(p1, p2):
 
 def CalcInnerAngle(a, b, c):
     alpha = np.arccos(np.abs((a*a + b*b - c*c) / (2*a*b)))
-    return imsup.Degrees(alpha)
+    return imsup.degrees(alpha)
 
 # --------------------------------------------------------
 
 def CalcOuterAngle(p1, p2):
     dist = CalcDistance(p1, p2)
     betha = np.arcsin(np.abs(p1[0] - p2[0]) / dist)
-    return imsup.Degrees(betha)
+    return imsup.degrees(betha)
 
 # --------------------------------------------------------
 
@@ -2795,7 +2793,7 @@ def CalcRotAngle(p1, p2):
     phi1 = np.angle(z1)
     phi2 = np.angle(z2)
     # rotAngle = np.abs(imsup.Degrees(phi2 - phi1))
-    rotAngle = imsup.Degrees(phi2 - phi1)
+    rotAngle = imsup.degrees(phi2 - phi1)
     if np.abs(rotAngle) > 180:
         rotAngle = -np.sign(rotAngle) * (360 - np.abs(rotAngle))
     return rotAngle
