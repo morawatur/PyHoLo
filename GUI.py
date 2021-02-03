@@ -92,22 +92,22 @@ class LabelExt(QtWidgets.QLabel):
         super(LabelExt, self).__init__(parent)
         blank_image = imsup.ImageExp(const.disp_dim, const.disp_dim, num=-1)
         self.image = image if image is not None else blank_image
-        self.setImage()
+        self.set_image()
         self.show_lines = True
         self.show_labs = True
         self.rgb_cm = RgbColorTable_B2R()
 
     def paintEvent(self, event):
         super(LabelExt, self).paintEvent(event)
-        linePen = QtGui.QPen(QtCore.Qt.yellow)
-        linePen.setCapStyle(QtCore.Qt.RoundCap)
-        linePen.setWidth(3)
+        line_pen = QtGui.QPen(QtCore.Qt.yellow)
+        line_pen.setCapStyle(QtCore.Qt.RoundCap)
+        line_pen.setWidth(3)
         qp = QtGui.QPainter()
         qp.begin(self)
         qp.setRenderHint(QtGui.QPainter.Antialiasing, True)
         img_idx = abs(self.image.numInSeries) - 1
         points = self.parent().point_sets[img_idx]
-        qp.setPen(linePen)
+        qp.setPen(line_pen)
         qp.setBrush(QtCore.Qt.yellow)
 
         for pt in points:
@@ -115,17 +115,17 @@ class LabelExt(QtWidgets.QLabel):
             # qp.drawArc(rect, 0, 16*360)
             qp.drawEllipse(pt[0]-3, pt[1]-3, 7, 7)
 
-        linePen.setWidth(2)
+        line_pen.setWidth(2)
         if self.show_lines:
-            qp.setPen(linePen)
+            qp.setPen(line_pen)
             for pt1, pt2 in zip(points, points[1:] + points[:1]):
                 line = QtCore.QLine(pt1[0], pt1[1], pt2[0], pt2[1])
                 qp.drawLine(line)
 
-        linePen.setStyle(QtCore.Qt.DashLine)
-        linePen.setColor(QtCore.Qt.yellow)
-        linePen.setCapStyle(QtCore.Qt.FlatCap)
-        qp.setPen(linePen)
+        line_pen.setStyle(QtCore.Qt.DashLine)
+        line_pen.setColor(QtCore.Qt.yellow)
+        line_pen.setCapStyle(QtCore.Qt.FlatCap)
+        qp.setPen(line_pen)
         qp.setBrush(QtCore.Qt.NoBrush)
         if len(points) == 2:
             pt1, pt2 = points
@@ -140,8 +140,8 @@ class LabelExt(QtWidgets.QLabel):
             w = np.abs(sq_pt2[0]-sq_pt1[0])
             h = np.abs(sq_pt2[1]-sq_pt1[1])
             square = QtCore.QRect(sq_pt1[0], sq_pt1[1], w, h)
-            linePen.setColor(QtCore.Qt.red)
-            qp.setPen(linePen)
+            line_pen.setColor(QtCore.Qt.red)
+            qp.setPen(line_pen)
             qp.drawRect(square)
         qp.end()
 
@@ -165,19 +165,19 @@ class LabelExt(QtWidgets.QLabel):
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
 
-    def setImage(self, dispAmp=True, dispPhs=False, logScale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
+    def set_image(self, disp_amp=True, disp_phs=False, log_scale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
         if self.image.buffer.am.shape[0] != const.disp_dim:
             self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
 
-        if dispAmp:
+        if disp_amp:
             px_arr = np.copy(self.image.buffer.am)
-            if logScale:
+            if log_scale:
                 buf_am = np.copy(px_arr)
                 buf_am[np.where(buf_am <= 0)] = 1e-5
                 px_arr = np.log(buf_am)
         else:
             px_arr = np.copy(self.image.buffer.ph)
-            if not dispPhs:
+            if not disp_phs:
                 self.image.update_cos_phase()
                 px_arr = np.cos(px_arr)
 
@@ -199,8 +199,8 @@ class LabelExt(QtWidgets.QLabel):
         self.repaint()
 
     def hide_labels(self):
-        labsToDel = self.children()
-        for child in labsToDel:
+        labs_to_del = self.children()
+        for child in labs_to_del:
             child.deleteLater()
 
     def show_labels(self):
@@ -236,39 +236,39 @@ class PlotWidget(QtWidgets.QWidget):
         self.figure = plt.figure()
         self.canvas = FigureCanvas(self.figure)
         self.toolbar = NavigationToolbar(self.canvas, self)
-        self.markedPoints = []
-        self.markedPointsData = []
-        self.canvas.mpl_connect('button_press_event', self.getXYDataOnClick)
+        self.marked_points = []
+        self.marked_points_data = []
+        self.canvas.mpl_connect('button_press_event', self.get_xy_data_on_click)
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    def plot(self, dataX, dataY, xlab='x', ylab='y'):
+    def plot(self, data_x, data_y, xlab='x', ylab='y'):
         self.figure.clf()
-        self.markedPoints = []
-        self.markedPointsData = []
+        self.marked_points = []
+        self.marked_points_data = []
         ax = self.figure.add_subplot(111)
-        ax.plot(dataX, dataY, '.-')
+        ax.plot(data_x, data_y, '.-')
         ax.set_xlabel(xlab)
         ax.set_ylabel(ylab)
-        ax.axis([min(dataX) - 0.5, max(dataX) + 0.5, min(dataY) - 0.5, max(dataY) + 0.5])
+        ax.axis([min(data_x) - 0.5, max(data_x) + 0.5, min(data_y) - 0.5, max(data_y) + 0.5])
         self.canvas.draw()
 
-    def getXYDataOnClick(self, event):
+    def get_xy_data_on_click(self, event):
         if event.xdata is None or event.ydata is None:
             return
-        if len(self.markedPoints) == 2:
-            for pt in self.markedPoints:
+        if len(self.marked_points) == 2:
+            for pt in self.marked_points:
                 pt.remove()
-            self.markedPoints = []
-            self.markedPointsData = []
+            self.marked_points = []
+            self.marked_points_data = []
         ax = self.figure.axes[0]
         pt, = ax.plot(event.xdata, event.ydata, 'ro')
         print('x={0:.2f}, y={1:.2f}'.format(event.xdata, event.ydata))
-        self.markedPoints.append(pt)
-        self.markedPointsData.append([event.xdata, event.ydata])
+        self.marked_points.append(pt)
+        self.marked_points_data.append([event.xdata, event.ydata])
         self.canvas.draw()
 
 # --------------------------------------------------------
@@ -1136,7 +1136,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def disable_manual_panel(self):
         if self.backup_image is not None:
-            self.reset_changes()
+            self.reset_changes_and_delete_backup()
         self.left_button.setEnabled(False)
         self.right_button.setEnabled(False)
         self.up_button.setEnabled(False)
@@ -1345,8 +1345,8 @@ class HolographyWidget(QtWidgets.QWidget):
         is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
-        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                              logScale=is_log_scale_checked, color=is_color_checked)
+        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked,
+                               log_scale=is_log_scale_checked, color=is_color_checked)
 
     def update_bcg(self):
         bright_val = int(self.bright_input.text())
@@ -1357,7 +1357,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.change_cont_slider_value()
         self.change_gamma_slider_value()
 
-        self.display.setImage(update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
+        self.display.set_image(update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
 
     def update_display_and_bcg(self):
         is_amp_checked = self.amp_radio_button.isChecked()
@@ -1373,9 +1373,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.change_cont_slider_value()
         self.change_gamma_slider_value()
 
-        self.display.setImage(dispAmp=is_amp_checked, dispPhs=is_phs_checked,
-                              logScale=is_log_scale_checked, color=is_color_checked,
-                              update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
+        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked,
+                               log_scale=is_log_scale_checked, color=is_color_checked,
+                               update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
 
     def disp_bright_value(self):
         self.bright_input.setText('{0:.0f}'.format(self.bright_slider.value()))
@@ -1661,7 +1661,7 @@ class HolographyWidget(QtWidgets.QWidget):
             self.backup_image = imsup.copy_am_ph_image(self.display.image)
             self.enable_manual_panel()
         else:
-            self.backup_image = None
+            self.reset_changes_and_delete_backup()
             self.disable_manual_panel()
 
     def move_left(self):
@@ -1695,7 +1695,6 @@ class HolographyWidget(QtWidgets.QWidget):
         curr.amPh.ph = np.copy(shifted_img.amPh.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.shift = total_shift
-        # self.display.setImage()
         self.update_display_and_bcg()
 
     def rot_left(self):
@@ -1720,8 +1719,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr.amPh.am = np.copy(rotated_img.amPh.am)
         curr.amPh.ph = np.copy(rotated_img.amPh.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
-        curr.rot = total_rot
-        # self.display.setImage()
+        self.display.image.rot = total_rot
         self.update_display_and_bcg()
 
     def zero_shift_rot(self):
@@ -1735,16 +1733,17 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def reset_changes(self):
         curr = self.display.image
-        self.zero_shift_rot()
         curr.amPh.am = np.copy(self.backup_image.amPh.am)
         curr.amPh.ph = np.copy(self.backup_image.amPh.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
-        self.backup_image = None
+        if curr.shift != [0, 0] or curr.rot != 0:
+            self.update_display_and_bcg()
+            print('Changes for {0} have been revoked'.format(self.display.image.name))
+        self.zero_shift_rot()
 
-    def reset_changes_and_update_display(self):
+    def reset_changes_and_delete_backup(self):
         self.reset_changes()
-        self.display.setImage()
-        print('Changes for {0} have been revoked'.format(self.display.image.name))
+        self.backup_image = None
 
     def cross_corr_with_prev(self):
         curr_img = self.display.image
@@ -2409,10 +2408,10 @@ class HolographyWidget(QtWidgets.QWidget):
 
     # calculate B from profile in PlotWidget
     def calc_B_from_profile(self):
-        if len(self.plot_widget.markedPoints) < 2:
+        if len(self.plot_widget.marked_points) < 2:
             print('You have to mark two points on the profile!')
             return
-        pt1, pt2 = self.plot_widget.markedPointsData
+        pt1, pt2 = self.plot_widget.marked_points_data
         d_dist_real = np.abs(pt1[0] - pt2[0]) * 1e-9
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         mc.calc_B(pt1[1], pt2[1], d_dist_real, sample_thickness, print_msg=True)
