@@ -973,7 +973,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ph3d_ang2_vbox.addWidget(self.ph3d_ang2_input)
 
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
-        export_img3d_button.clicked.connect(self.export_3d_image)
+        export_img3d_button.clicked.connect(self.export_3d_phase)
 
         self.tab_calc_2 = QtWidgets.QWidget()
         self.tab_calc_2.layout = QtWidgets.QGridLayout()
@@ -1571,7 +1571,7 @@ class HolographyWidget(QtWidgets.QWidget):
             curr_img = self.display.image
         print('All images saved')
 
-    def export_3d_image(self):
+    def export_3d_phase(self):
         from matplotlib import cm
         # from mpl_toolkits.mplot3d import Axes3D
 
