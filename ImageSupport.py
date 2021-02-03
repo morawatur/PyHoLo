@@ -353,6 +353,12 @@ def det_crop_coords_for_new_dims(old_width, old_height, new_width, new_height):
 
 #-------------------------------------------------------------------
 
+def calc_coords_from_new_center(p1, new_center):
+    p2 = [ px - cx for px, cx in zip(p1, new_center) ]
+    return p2
+
+#-------------------------------------------------------------------
+
 def get_common_area(coords1, coords2):
     # 1st way (lists)
     coords3 = []

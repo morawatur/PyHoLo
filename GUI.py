@@ -129,7 +129,7 @@ class LabelExt(QtWidgets.QLabel):
         qp.setBrush(QtCore.Qt.NoBrush)
         if len(points) == 2:
             pt1, pt2 = points
-            pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
+            pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
             w = np.abs(pt2[0] - pt1[0])
             h = np.abs(pt2[1] - pt1[1])
             rect = QtCore.QRect(pt1[0], pt1[1], w, h)
@@ -1624,7 +1624,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         curr_img = self.display.image
         pt1, pt2 = self.point_sets[curr_idx][:2]
-        pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
+        pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.make_square_coords(real_tl_coords)
@@ -1894,8 +1894,8 @@ class HolographyWidget(QtWidgets.QWidget):
         poly2_dists = []
         for i in range(len(poly1)):
             for j in range(i + 1, len(poly1)):
-                poly1_dists.append(CalcDistance(poly1[i], poly1[j]))
-                poly2_dists.append(CalcDistance(poly2[i], poly2[j]))
+                poly1_dists.append(tr.calc_distance(poly1[i], poly1[j]))
+                poly2_dists.append(tr.calc_distance(poly2[i], poly2[j]))
 
         scfs = [ dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists) ]
         scf_avg = np.average(scfs)
@@ -2299,7 +2299,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('rot. center = {0}'.format(rot_center))
 
         # find direction (angle) of the line
-        dir_info = FindDirectionAngles(points[0], points[1])
+        dir_info = tr.find_dir_angles(points[0], points[1])
         dir_angle = imsup.degrees(dir_info[0])
         proj_dir = dir_info[2]
         print('dir. angle = {0:.2f} deg'.format(dir_angle))
@@ -2474,7 +2474,7 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         pt1, pt2 = self.point_sets[curr_idx][:2]
-        pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
+        pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
         disp_crop_coords = pt1 + pt2
         real_tl_coords = disp_pt_to_real_tl_pt(curr_img.width, disp_crop_coords)
         real_sq_coords = imsup.make_square_coords(real_tl_coords)
@@ -2665,7 +2665,7 @@ def norm_phase_to_pt(phase, pt):
 # --------------------------------------------------------
 
 def norm_phase_to_area(phase, pt1, pt2):
-    # pt1, pt2 = convert_points_to_tl_br(pt1, pt2)
+    # pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
     x1, y1 = pt1
     x2, y2 = pt2
     phs_avg = np.average(phase[y1:y2, x1:x2])
@@ -2739,71 +2739,6 @@ def real_cnt_pt_to_disp_pt(img_width, real_pt):
 def real_cnt_pts_to_disp_pts(img_width, real_pts):
     disp_pts = [ real_cnt_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
     return disp_pts
-
-# --------------------------------------------------------
-
-def FindDirectionAngles(p1, p2):
-    lpt = p1[:] if p1[0] < p2[0] else p2[:]     # left point
-    rpt = p1[:] if p1[0] > p2[0] else p2[:]     # right point
-    dx = np.abs(rpt[0] - lpt[0])
-    dy = np.abs(rpt[1] - lpt[1])
-    sign = 1 if rpt[1] < lpt[1] else -1
-    projDir = 1         # projection on y axis
-    if dx > dy:
-        sign *= -1
-        projDir = 0     # projection on x axis
-    diff1 = dx if dx < dy else dy
-    diff2 = dx if dx > dy else dy
-    ang1 = np.arctan2(diff1, diff2)
-    ang2 = np.pi / 2 - ang1
-    ang1 *= sign
-    ang2 *= (-sign)
-    return ang1, ang2, projDir
-
-# --------------------------------------------------------
-
-def CalcDistance(p1, p2):
-    dist = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
-    return dist
-
-# --------------------------------------------------------
-
-def CalcInnerAngle(a, b, c):
-    alpha = np.arccos(np.abs((a*a + b*b - c*c) / (2*a*b)))
-    return imsup.degrees(alpha)
-
-# --------------------------------------------------------
-
-def CalcOuterAngle(p1, p2):
-    dist = CalcDistance(p1, p2)
-    betha = np.arcsin(np.abs(p1[0] - p2[0]) / dist)
-    return imsup.degrees(betha)
-
-# --------------------------------------------------------
-
-def CalcNewCoords(p1, newCenter):
-    p2 = [ px - cx for px, cx in zip(p1, newCenter) ]
-    return p2
-
-# --------------------------------------------------------
-
-def CalcRotAngle(p1, p2):
-    z1 = np.complex(p1[0], p1[1])
-    z2 = np.complex(p2[0], p2[1])
-    phi1 = np.angle(z1)
-    phi2 = np.angle(z2)
-    # rotAngle = np.abs(imsup.Degrees(phi2 - phi1))
-    rotAngle = imsup.degrees(phi2 - phi1)
-    if np.abs(rotAngle) > 180:
-        rotAngle = -np.sign(rotAngle) * (360 - np.abs(rotAngle))
-    return rotAngle
-
-# --------------------------------------------------------
-
-def convert_points_to_tl_br(p1, p2):
-    tl = list(np.amin([p1, p2], axis=0))
-    br = list(np.amax([p1, p2], axis=0))
-    return tl, br
 
 # --------------------------------------------------------
 

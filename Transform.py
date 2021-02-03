@@ -195,6 +195,65 @@ def find_dir_angle(p1, p2, orig=(0, 0)):
 
 #-------------------------------------------------------------------
 
+def find_dir_angles(p1, p2):
+    lpt = p1[:] if p1[0] < p2[0] else p2[:]     # left point
+    rpt = p1[:] if p1[0] > p2[0] else p2[:]     # right point
+    dx = np.abs(rpt[0] - lpt[0])
+    dy = np.abs(rpt[1] - lpt[1])
+    sign = 1 if rpt[1] < lpt[1] else -1
+    proj_dir = 1         # projection on y axis
+    if dx > dy:
+        sign *= -1
+        proj_dir = 0     # projection on x axis
+    diff1 = dx if dx < dy else dy
+    diff2 = dx if dx > dy else dy
+    ang1 = np.arctan2(diff1, diff2)
+    ang2 = np.pi / 2 - ang1
+    ang1 *= sign
+    ang2 *= (-sign)
+    return ang1, ang2, proj_dir
+
+#-------------------------------------------------------------------
+
+def calc_distance(p1, p2):
+    dist = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
+    return dist
+
+#-------------------------------------------------------------------
+
+def calc_inner_angle(a, b, c):
+    alpha = np.arccos(np.abs((a*a + b*b - c*c) / (2*a*b)))
+    return imsup.degrees(alpha)
+
+#-------------------------------------------------------------------
+
+def calc_outer_angle(p1, p2):
+    dist = calc_distance(p1, p2)
+    betha = np.arcsin(np.abs(p1[0] - p2[0]) / dist)
+    return imsup.degrees(betha)
+
+#-------------------------------------------------------------------
+
+def calc_rot_angle(p1, p2):
+    z1 = np.complex(p1[0], p1[1])
+    z2 = np.complex(p2[0], p2[1])
+    phi1 = np.angle(z1)
+    phi2 = np.angle(z2)
+    # rot_angle = np.abs(imsup.degrees(phi2 - phi1))
+    rot_angle = imsup.degrees(phi2 - phi1)
+    if np.abs(rot_angle) > 180:
+        rot_angle = -np.sign(rot_angle) * (360 - np.abs(rot_angle))
+    return rot_angle
+
+#-------------------------------------------------------------------
+
+def convert_points_to_tl_br(p1, p2):
+    tl = list(np.amin([p1, p2], axis=0))
+    br = list(np.amax([p1, p2], axis=0))
+    return tl, br
+
+#-------------------------------------------------------------------
+
 def lin_least_squares(x_arr, y_arr):
     n_pt = len(x_arr)
     sx = np.sum(x_arr)
