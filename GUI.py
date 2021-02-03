@@ -1601,7 +1601,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         ax.view_init(ang1, ang2)
         fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
-        print('3D image exported!')
+        print('3D phase image exported!')
         ax.cla()
         fig.clf()
         plt.close(fig)
