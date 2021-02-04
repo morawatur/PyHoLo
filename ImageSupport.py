@@ -651,6 +651,20 @@ def shift_image(img, shift):
 
 #-------------------------------------------------------------------
 
+def remove_pixel_outliers(arr, min_threshold=0.7, max_threshold=1.3):
+    arr_mean = np.mean(arr)
+    arr_corr = np.copy(arr)
+
+    bad_pixels1 = np.where(arr >= (max_threshold * arr_mean))
+    bad_pixels2 = np.where(arr <= (min_threshold * arr_mean))
+
+    arr_corr[bad_pixels1] = arr_mean
+    arr_corr[bad_pixels2] = arr_mean
+
+    return arr_corr
+
+#-------------------------------------------------------------------
+
 def det_Imin_Imax_from_contrast(dI, def_max=256.0):
     dImin = dI // 2 + 1
     dImax = dI - dImin
@@ -754,26 +768,3 @@ def save_phase_image(img, fpath, scale=True, log=False, color=False):
 def fill_image_with_value(img, value):
     img.ReIm2AmPh()
     img.amPh.am.fill(value)
-
-#-------------------------------------------------------------------
-
-def remove_pixel_artifacts(img, min_threshold=0.7, max_threshold=1.3):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-
-    arr = np.copy(img.amPh.am)
-    arr_avg = np.average(arr)
-
-    bad_pixels1 = np.where(arr >= (max_threshold * arr_avg))
-    bad_pixels2 = np.where(arr <= (min_threshold * arr_avg))
-    arr_corr1 = arr * (arr < (max_threshold * arr_avg))
-    arr_corr2 = arr_corr1 * (arr_corr1 > (min_threshold * arr_avg))
-
-    for y, x in zip(bad_pixels1[0], bad_pixels1[1]):
-        arr_corr2[y, x] = arr_avg
-    for y, x in zip(bad_pixels2[0], bad_pixels2[1]):
-        arr_corr2[y, x] = arr_avg
-
-    img.amPh.am = np.copy(arr_corr2)
-    img.buffer = np.copy(arr_corr2)
-    img.ChangeComplexRepr(dt)
