@@ -463,6 +463,8 @@ class HolographyWidget(QtWidgets.QWidget):
         last_button = QtWidgets.QPushButton('->>>', self)
         lswap_button = QtWidgets.QPushButton('L-Swap', self)
         rswap_button = QtWidgets.QPushButton('R-Swap', self)
+        make_first_button = QtWidgets.QPushButton('Make first', self)
+        make_last_button = QtWidgets.QPushButton('Make last')
         set_name_button = QtWidgets.QPushButton('Set name', self)
         reset_names_button = QtWidgets.QPushButton('Reset names', self)
         delete_button = QtWidgets.QPushButton('Delete', self)
@@ -492,6 +494,8 @@ class HolographyWidget(QtWidgets.QWidget):
         last_button.clicked.connect(self.go_to_last_image)
         lswap_button.clicked.connect(self.swap_left)
         rswap_button.clicked.connect(self.swap_right)
+        make_first_button.clicked.connect(self.make_image_first)
+        make_last_button.clicked.connect(self.make_image_last)
         set_name_button.clicked.connect(self.set_image_name)
         reset_names_button.clicked.connect(self.reset_image_names)
         delete_button.clicked.connect(self.delete_image)
@@ -517,8 +521,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_nav.layout.addWidget(prev_button, 1, 2)
         self.tab_nav.layout.addWidget(next_button, 1, 3)
         self.tab_nav.layout.addWidget(last_button, 1, 4)
-        self.tab_nav.layout.addWidget(lswap_button, 2, 1, 1, 2)
-        self.tab_nav.layout.addWidget(rswap_button, 2, 3, 1, 2)
+        self.tab_nav.layout.addWidget(make_first_button, 2, 1)
+        self.tab_nav.layout.addWidget(lswap_button, 2, 2)
+        self.tab_nav.layout.addWidget(rswap_button, 2, 3)
+        self.tab_nav.layout.addWidget(make_last_button, 2, 4)
         self.tab_nav.layout.addWidget(self.name_input, 3, 1, 1, 2)
         self.tab_nav.layout.addWidget(set_name_button, 4, 1)
         self.tab_nav.layout.addWidget(reset_names_button, 4, 2)
@@ -1228,43 +1234,36 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # self.preview_scroll.update_scroll_list(self.display.image)
 
-    def swap_left(self):
+    def move_image_to_pos(self, new_idx):
         curr_img = self.display.image
-        if curr_img.prev is None:
-            return
         curr_idx = curr_img.numInSeries - 1
+
+        if new_idx == curr_idx or new_idx < 0: return
 
         first_img = imsup.get_first_image(curr_img)
         imgs = imsup.create_image_list_from_first_image(first_img)
-        imgs[curr_idx - 1], imgs[curr_idx] = imgs[curr_idx], imgs[curr_idx - 1]
 
-        imgs[0].prev = None
-        imgs[len(imgs) - 1].next = None
-        imgs[curr_idx - 1].numInSeries = imgs[curr_idx].numInSeries
-        imgs.UpdateLinks()
+        if new_idx >= len(imgs): return
 
-        ps = self.point_sets
-        ps[curr_idx - 1], ps[curr_idx] = ps[curr_idx], ps[curr_idx - 1]
-        self.go_to_next_image()
+        imgs.insert(new_idx, imgs.pop(curr_idx))
+        self.point_sets.insert(new_idx, self.point_sets.pop(curr_idx))
+        imgs.UpdateAndRestrainLinks()
+        self.go_to_image(new_idx)
+
+    def swap_left(self):
+        prev_idx = self.display.image.numInSeries - 2
+        self.move_image_to_pos(prev_idx)
 
     def swap_right(self):
-        curr_img = self.display.image
-        if curr_img.next is None:
-            return
-        curr_idx = curr_img.numInSeries - 1
+        next_idx = self.display.image.numInSeries
+        self.move_image_to_pos(next_idx)
 
-        first_img = imsup.get_first_image(curr_img)
-        imgs = imsup.create_image_list_from_first_image(first_img)
-        imgs[curr_idx], imgs[curr_idx + 1] = imgs[curr_idx + 1], imgs[curr_idx]
+    def make_image_first(self):
+        self.move_image_to_pos(0)
 
-        imgs[0].prev = None
-        imgs[len(imgs) - 1].next = None
-        imgs[curr_idx].numInSeries = imgs[curr_idx + 1].numInSeries
-        imgs.UpdateLinks()
-
-        ps = self.point_sets
-        ps[curr_idx], ps[curr_idx + 1] = ps[curr_idx + 1], ps[curr_idx]
-        self.go_to_prev_image()
+    def make_image_last(self):
+        last_img = imsup.get_last_image(self.display.image)
+        self.move_image_to_pos(last_img.numInSeries - 1)
 
     def clear_image(self):
         labToDel = self.display.children()
