@@ -23,4 +23,4 @@
 
 import GUI as gui
 
-gui.RunHolographyWindow()
+gui.run_holography_window()

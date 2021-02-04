@@ -2812,7 +2812,7 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
 
 # --------------------------------------------------------
 
-def RunHolographyWindow():
+def run_holography_window():
     app = QtWidgets.QApplication(sys.argv)
     holo_window = HolographyWindow()
     sys.exit(app.exec_())
