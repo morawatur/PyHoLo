@@ -172,7 +172,7 @@ class LabelExt(QtWidgets.QLabel):
         if disp_amp:
             px_arr = np.copy(self.image.buffer.am)
             if hide_bad_px:
-                px_arr = imsup.remove_pixel_outliers(px_arr, const.min_px_threshold, const.max_px_threshold)
+                px_arr = imsup.remove_outlier_pixels(px_arr, const.min_px_threshold, const.max_px_threshold)
             if log_scale:
                 px_arr[np.where(px_arr <= 0)] = 1e-5
                 px_arr = np.log(px_arr)

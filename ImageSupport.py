@@ -651,7 +651,7 @@ def shift_image(img, shift):
 
 #-------------------------------------------------------------------
 
-def remove_pixel_outliers(arr, min_threshold=0.7, max_threshold=1.3):
+def remove_outlier_pixels(arr, min_threshold=0.7, max_threshold=1.3):
     arr_mean = np.mean(arr)
     arr_corr = np.copy(arr)
 
