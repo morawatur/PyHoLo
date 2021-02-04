@@ -31,67 +31,67 @@ def rescale_pixel_dim(px_dim, old_dim, new_dim):
 #-------------------------------------------------------------------
 
 def rotate_image_ski(img, angle, mode='constant'):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
+    dt = img.cmp_repr
+    img.reim_to_amph()
 
-    # amp_cval = (np.min(img.amPh.am) + np.max(img.amPh.am)) / 2.0
-    # phs_cval = (np.min(img.amPh.ph) + np.max(img.amPh.ph)) / 2.0
+    # amp_cval = (np.min(img.amph.am) + np.max(img.amph.am)) / 2.0
+    # phs_cval = (np.min(img.amph.ph) + np.max(img.amph.ph)) / 2.0
 
-    amp_rot = tr.rotate(img.amPh.am, angle, mode=mode, cval=0.0)
-    phs_rot = tr.rotate(img.amPh.ph, angle, mode=mode, cval=0.0)
+    amp_rot = tr.rotate(img.amph.am, angle, mode=mode, cval=0.0)
+    phs_rot = tr.rotate(img.amph.ph, angle, mode=mode, cval=0.0)
 
-    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
-    img_rot.LoadAmpData(amp_rot)
-    img_rot.LoadPhsData(phs_rot)
+    img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
+    img_rot.load_amp_data(amp_rot)
+    img_rot.load_phs_data(phs_rot)
     if img.cos_phase is not None:
         img_rot.update_cos_phase()
 
-    img.ChangeComplexRepr(dt)
-    img_rot.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_rot.change_complex_repr(dt)
 
     return img_rot
 
 #-------------------------------------------------------------------
 
 def rescale_image_ski(img, factor):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
+    dt = img.cmp_repr
+    img.reim_to_amph()
 
-    amp_mag = tr.rescale(img.amPh.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
-    phs_mag = tr.rescale(img.amPh.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
+    amp_mag = tr.rescale(img.amph.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
+    phs_mag = tr.rescale(img.amph.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
 
-    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
-    img_mag.LoadAmpData(amp_mag)
-    img_mag.LoadPhsData(phs_mag)
+    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
+    img_mag.load_amp_data(amp_mag)
+    img_mag.load_phs_data(phs_mag)
     if img.cos_phase is not None:
         img_mag.update_cos_phase()
 
     img_mag.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_mag.width)
 
-    img.ChangeComplexRepr(dt)
-    img_mag.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_mag.change_complex_repr(dt)
 
     return img_mag
 
 #-------------------------------------------------------------------
 
 def warp_image_ski(img, src_set, dst_set):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
+    dt = img.cmp_repr
+    img.reim_to_amph()
 
     tform3 = tr.ProjectiveTransform()
     tform3.estimate(src_set, dst_set)
-    amp_warp = tr.warp(img.amPh.am, tform3, output_shape=img.amPh.am.shape, mode='constant', cval=0.0)
-    phs_warp = tr.warp(img.amPh.ph, tform3, output_shape=img.amPh.ph.shape, mode='constant', cval=0.0)
+    amp_warp = tr.warp(img.amph.am, tform3, output_shape=img.amph.am.shape, mode='constant', cval=0.0)
+    phs_warp = tr.warp(img.amph.ph, tform3, output_shape=img.amph.ph.shape, mode='constant', cval=0.0)
 
-    img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], num=img.numInSeries, px_dim_sz=img.px_dim)
-    img_warp.LoadAmpData(amp_warp)
-    img_warp.LoadPhsData(phs_warp)
+    img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
+    img_warp.load_amp_data(amp_warp)
+    img_warp.load_phs_data(phs_warp)
     if img.cos_phase is not None:
         img_warp.update_cos_phase()
 
-    img.ChangeComplexRepr(dt)
-    img_warp.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_warp.change_complex_repr(dt)
 
     return img_warp
 

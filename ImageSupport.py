@@ -51,7 +51,7 @@ class ComplexAmPhMatrix:
 
 #-------------------------------------------------------------------
 
-def conj_am_ph_matrix(ap):
+def conj_amph_matrix(ap):
     ap_conj = ComplexAmPhMatrix(ap.am.shape[0], ap.am.shape[1])
     ap_conj.am = np.copy(ap.am)
     ap_conj.ph = -ap.ph
@@ -59,7 +59,7 @@ def conj_am_ph_matrix(ap):
 
 # -------------------------------------------------------------------
 
-def mult_am_ph_matrices(ap1, ap2):
+def mult_amph_matrices(ap1, ap2):
     ap3 = ComplexAmPhMatrix(ap1.am.shape[0], ap1.am.shape[1])
     ap3.am = ap1.am * ap2.am
     ap3.ph = ap1.ph + ap2.ph
@@ -69,20 +69,20 @@ def mult_am_ph_matrices(ap1, ap2):
 
 class Image:
     cmp = {'CRI': 0, 'CAP': 1}
-    capVar = {'AM': 0, 'PH': 1}
-    criVar = {'RE': 0, 'IM': 1}
+    cap_var = {'AM': 0, 'PH': 1}
+    cri_var = {'RE': 0, 'IM': 1}
     px_dim_default = 1.0
 
-    def __init__(self, height, width, cmpRepr=cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
+    def __init__(self, height, width, cmp_repr=cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
         self.width = width
         self.height = height
         self.size = width * height
         self.name = ''
-        self.reIm = np.zeros((height, width), dtype=np.complex64)
-        self.amPh = ComplexAmPhMatrix(height, width)
-        self.cmpRepr = cmpRepr
+        self.reim = np.zeros((height, width), dtype=np.complex64)
+        self.amph = ComplexAmPhMatrix(height, width)
+        self.cmp_repr = cmp_repr
         self.defocus = defocus
-        self.numInSeries = num
+        self.num_in_ser = num
         self.prev = None
         self.next = None
         self.px_dim = px_dim_sz
@@ -93,43 +93,42 @@ class Image:
             self.px_dim = self.px_dim_default
 
     def __del__(self):
-        self.reIm = None
-        self.amPh.am = None
-        self.amPh.ph = None
+        self.reim = None
+        self.amph.am = None
+        self.amph.ph = None
 
-    def ChangeComplexRepr(self, newRepr):
-        if newRepr == self.cmp['CAP']:
-            self.ReIm2AmPh()
-        elif newRepr == self.cmp['CRI']:
-            self.AmPh2ReIm()
+    def change_complex_repr(self, new_repr):
+        if new_repr == self.cmp['CAP']:
+            self.reim_to_amph()
+        elif new_repr == self.cmp['CRI']:
+            self.amph_to_reim()
 
-    def ReIm2AmPh(self):
-        if self.cmpRepr == self.cmp['CAP']:
+    def reim_to_amph(self):
+        if self.cmp_repr == self.cmp['CAP']:
             return
-        self.amPh.am = np.abs(self.reIm)
-        self.amPh.ph = np.angle(self.reIm)
-        # self.amPh.ph = np.arctan2(self.reIm.imag, self.reIm.real)
-        self.cmpRepr = self.cmp['CAP']
+        self.amph.am = np.abs(self.reim)
+        self.amph.ph = np.angle(self.reim)
+        # self.amph.ph = np.arctan2(self.reim.imag, self.reim.real)
+        self.cmp_repr = self.cmp['CAP']
 
-    def AmPh2ReIm(self):
-        if self.cmpRepr == self.cmp['CRI']:
+    def amph_to_reim(self):
+        if self.cmp_repr == self.cmp['CRI']:
             return
-        self.reIm = self.amPh.am * np.exp(1j * self.amPh.ph)
-        self.cmpRepr = self.cmp['CRI']
+        self.reim = self.amph.am * np.exp(1j * self.amph.ph)
+        self.cmp_repr = self.cmp['CRI']
 
     def get_num_in_series_from_prev(self):
         if self.prev is not None:
-            self.numInSeries = self.prev.numInSeries + 1
+            self.num_in_ser = self.prev.num_in_ser + 1
 
 # -------------------------------------------------------------------
 
 class ImageExp(Image):
-    def __init__(self, height, width, cmpRepr=Image.cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
-        super(ImageExp, self).__init__(height, width, cmpRepr, defocus, num, px_dim_sz)
+    def __init__(self, height, width, cmp_repr=Image.cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
+        super(ImageExp, self).__init__(height, width, cmp_repr, defocus, num, px_dim_sz)
         self.parent = super(ImageExp, self)
         self.shift = [0, 0]     # [dx, dy]
         self.rot = 0
-        self.amp_factor = 1.0
         self.cos_phase = None
         self.buffer = ComplexAmPhMatrix(height, width)
 
@@ -139,81 +138,81 @@ class ImageExp(Image):
         self.buffer.ph = None
         self.cos_phase = None
 
-    def LoadAmpData(self, ampData):
-        self.amPh.am = np.copy(ampData)
-        self.buffer.am = np.copy(ampData)
+    def load_amp_data(self, amp_data):
+        self.amph.am = np.copy(amp_data)
+        self.buffer.am = np.copy(amp_data)
 
-    def LoadPhsData(self, phsData):
-        self.amPh.ph = np.copy(phsData)
-        self.buffer.ph = np.copy(phsData)
+    def load_phs_data(self, phs_data):
+        self.amph.ph = np.copy(phs_data)
+        self.buffer.ph = np.copy(phs_data)
 
-    def UpdateBuffer(self):
-        self.buffer.am = np.copy(self.amPh.am)
-        self.buffer.ph = np.copy(self.amPh.ph)
+    def update_buffer(self):
+        self.buffer.am = np.copy(self.amph.am)
+        self.buffer.ph = np.copy(self.amph.ph)
 
-    def UpdateImageFromBuffer(self):
-        self.amPh.am = np.copy(self.buffer.am)
-        self.amPh.ph = np.copy(self.buffer.ph)
+    def update_image_from_buffer(self):
+        self.amph.am = np.copy(self.buffer.am)
+        self.amph.ph = np.copy(self.buffer.ph)
 
-    def ReIm2AmPh(self):
-        super(ImageExp, self).ReIm2AmPh()
-        self.UpdateBuffer()
+    def reim_to_amph(self):
+        super(ImageExp, self).reim_to_amph()
+        self.update_buffer()
 
     def update_cos_phase(self):
-        self.cos_phase = np.cos(self.amPh.ph)
+        self.cos_phase = np.cos(self.amph.ph)
 
 #-------------------------------------------------------------------
 
 class ImageList(list):
-    def __init__(self, imgList=[]):
-        super(ImageList, self).__init__(imgList)
-        self.UpdateLinks()
+    def __init__(self, img_list=[]):
+        super(ImageList, self).__init__(img_list)
+        self.update_links()
 
     def __delitem__(self, item):
         super(ImageList, self).__delitem__(item)
-        self.UpdateAndRestrainLinks()
+        self.update_and_restrain_links()
 
-    def UpdateLinks(self):
-        for imgPrev, imgNext in zip(self[:-1], self[1:]):
-            imgPrev.next = imgNext
-            imgNext.prev = imgPrev
-            imgNext.numInSeries = imgPrev.numInSeries + 1
+    def update_links(self):
+        for img_prev, img_next in zip(self[:-1], self[1:]):
+            img_prev.next = img_next
+            img_next.prev = img_prev
+            img_next.num_in_ser = img_prev.num_in_ser + 1
 
-    def UpdateAndRestrainLinks(self):
+    def update_and_restrain_links(self):
         self[0].prev = None
-        self[0].numInSeries = 1
+        self[0].num_in_ser = 1
         self[len(self)-1].next = None
-        self.UpdateLinks()
+        self.update_links()
 
 #-------------------------------------------------------------------
 
 def amph_to_new_reim(img):
-    img_ri = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CRI'])
-    if img.cmpRepr == Image.cmp['CRI']:
-        img_ri.reIm = np.copy(img.reIm)
+    img_ri = ImageExp(img.height, img.width, cmp_repr=Image.cmp['CRI'])
+    if img.cmp_repr == Image.cmp['CRI']:
+        img_ri.reim = np.copy(img.reim)
     else:
-        img_ri.reIm = img.amPh.am * np.exp(1j * img.amPh.ph)
+        img_ri.reim = img.amph.am * np.exp(1j * img.amph.ph)
     return img_ri
 
 # ---------------------------------------------------------------
 
 def reim_to_new_amph(img):
-    img_ap = ImageExp(img.height, img.width, cmpRepr=Image.cmp['CAP'])
-    if img.cmpRepr == Image.cmp['CAP']:
-        img_ap.amPh.am = np.copy(img.amPh.am)
-        img_ap.amPh.ph = np.copy(img.amPh.ph)
+    img_ap = ImageExp(img.height, img.width, cmp_repr=Image.cmp['CAP'])
+    if img.cmp_repr == Image.cmp['CAP']:
+        img_ap.amph.am = np.copy(img.amph.am)
+        img_ap.amph.ph = np.copy(img.amph.ph)
     else:
-        img_ap.amPh.am = np.abs(img.reIm)
-        img_ap.amPh.ph = np.angle(img.reIm)
+        img_ap.amph.am = np.abs(img.reim)
+        img_ap.amph.ph = np.angle(img.reim)
     return img_ap
 
 #-------------------------------------------------------------------
 
 def clear_image_data(img):
-    shape = img.reIm.shape
-    img.reIm = np.zeros(shape, dtype=np.complex64)
-    img.amPh.am = np.zeros(shape, dtype=np.float32)
-    img.amPh.ph = np.zeros(shape, dtype=np.float32)
+    shape = img.reim.shape
+    img.reim = np.zeros(shape, dtype=np.complex64)
+    img.amph.am = np.zeros(shape, dtype=np.float32)
+    img.amph.ph = np.zeros(shape, dtype=np.float32)
 
 #-------------------------------------------------------------------
 
@@ -258,41 +257,41 @@ def grayscale_to_rgb(gs_arr):
 
 #-------------------------------------------------------------------
 
-def copy_re_im_image(img):
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
+def copy_reim_image(img):
+    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
                         px_dim_sz=img.px_dim)
-    img_copy.reIm = np.copy(img.amPh.reIm)
+    img_copy.reim = np.copy(img.amph.reim)
     return img_copy
 
 #-------------------------------------------------------------------
 
-def copy_am_ph_image(img):
-    img_copy = ImageExp(img.height, img.width, cmpRepr=img.cmpRepr, defocus=img.defocus, num=img.numInSeries,
+def copy_amph_image(img):
+    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
                         px_dim_sz=img.px_dim)
-    img_copy.amPh.am = np.copy(img.amPh.am)
-    img_copy.amPh.ph = np.copy(img.amPh.ph)
+    img_copy.amph.am = np.copy(img.amph.am)
+    img_copy.amph.ph = np.copy(img.amph.ph)
     return img_copy
 
 #-------------------------------------------------------------------
 
 def copy_image(img):
-    if img.cmpRepr == Image.cmp['CRI']:
-        img_copy = copy_re_im_image(img)
+    if img.cmp_repr == Image.cmp['CRI']:
+        img_copy = copy_reim_image(img)
     else:
-        img_copy = copy_am_ph_image(img)
+        img_copy = copy_amph_image(img)
     return img_copy
 
 # -------------------------------------------------------------------
 
-def crop_am_ph_roi(img, coords):
+def crop_amph_roi(img, coords):
     x1, y1, x2, y2 = coords
     roi_w = x2 - x1
     roi_h = y2 - y1
-    roi = ImageExp(roi_h, roi_w, img.cmpRepr, px_dim_sz=img.px_dim)
+    roi = ImageExp(roi_h, roi_w, img.cmp_repr, px_dim_sz=img.px_dim)
 
-    roi.amPh.am[:] = img.amPh.am[y1:y2, x1:x2]
-    roi.amPh.ph[:] = img.amPh.ph[y1:y2, x1:x2]
-    roi.UpdateBuffer()
+    roi.amph.am[:] = img.amph.am[y1:y2, x1:x2]
+    roi.amph.ph[:] = img.amph.ph[y1:y2, x1:x2]
+    roi.update_buffer()
 
     if img.cos_phase is not None:
         roi.update_cos_phase()
@@ -303,12 +302,12 @@ def crop_am_ph_roi(img, coords):
 def crop_img_roi_tl(img, tl_pt, roi_dims):
     tl_x, tl_y = tl_pt
     roi_w, roi_h = roi_dims
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
-    roi = ImageExp(roi_h, roi_w, img.cmpRepr, px_dim_sz=img.px_dim)
-    roi.reIm[:] = img.reIm[tl_y:tl_y + roi_h, tl_x:tl_x + roi_w]
-    img.ChangeComplexRepr(dt)
-    roi.ChangeComplexRepr(dt)
+    dt = img.cmp_repr
+    img.amph_to_reim()
+    roi = ImageExp(roi_h, roi_w, img.cmp_repr, px_dim_sz=img.px_dim)
+    roi.reim[:] = img.reim[tl_y:tl_y + roi_h, tl_x:tl_x + roi_w]
+    img.change_complex_repr(dt)
+    roi.change_complex_repr(dt)
     return roi
 
 # -------------------------------------------------------------------
@@ -450,14 +449,14 @@ def pad_img_with_buf(img, buf_sz, pad_value, dirs):
     pads = [ buf_sz if d in 'tblr' else 0 for d in dirs ]
     p_height = img.height + pads[0] + pads[1]
     p_width = img.width + pads[2] + pads[3]
-    img.ReIm2AmPh()
+    img.reim_to_amph()
 
-    pad_img = ImageExp(p_height, p_width, img.cmpRepr, num=img.numInSeries, px_dim_sz=img.px_dim)
-    pad_img.amPh.am = pad_img.amPh.am.astype(img.amPh.am.dtype)
-    pad_img.amPh.ph = pad_img.amPh.ph.astype(img.amPh.ph.dtype)
+    pad_img = ImageExp(p_height, p_width, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
+    pad_img.amph.am = pad_img.amph.am.astype(img.amph.am.dtype)
+    pad_img.amph.ph = pad_img.amph.ph.astype(img.amph.ph.dtype)
 
-    pad_array(img.amPh.am, pad_img.amPh.am, pads, pad_value)
-    pad_array(img.amPh.ph, pad_img.amPh.ph, pads, pad_value)
+    pad_array(img.amph.am, pad_img.amph.am, pads, pad_value)
+    pad_array(img.amph.ph, pad_img.amph.ph, pads, pad_value)
 
     return pad_img
 
@@ -476,116 +475,116 @@ def pad_img_from_ref(img, ref_width, pad_value):
 
     p_height = img.height + pads[0] + pads[1]
     p_width = img.width + pads[2] + pads[3]
-    img.ReIm2AmPh()
+    img.reim_to_amph()
 
-    pad_img = ImageExp(p_height, p_width, img.cmpRepr, num=img.numInSeries, px_dim_sz=img.px_dim)
-    pad_img.amPh.am = pad_img.amPh.am.astype(img.amPh.am.dtype)
-    pad_img.amPh.ph = pad_img.amPh.ph.astype(img.amPh.ph.dtype)
+    pad_img = ImageExp(p_height, p_width, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
+    pad_img.amph.am = pad_img.amph.am.astype(img.amph.am.dtype)
+    pad_img.amph.ph = pad_img.amph.ph.astype(img.amph.ph.dtype)
 
-    pad_array(img.amPh.am, pad_img.amPh.am, pads, pad_value)
-    pad_array(img.amPh.ph, pad_img.amPh.ph, pads, pad_value)
+    pad_array(img.amph.am, pad_img.amph.am, pads, pad_value)
+    pad_array(img.amph.ph, pad_img.amph.ph, pads, pad_value)
 
     return pad_img
 
 #-------------------------------------------------------------------
 
 def flip_image_h(img):
-    img.amPh.am = np.fliplr(img.amPh.am)
-    img.amPh.ph = np.fliplr(img.amPh.ph)
+    img.amph.am = np.fliplr(img.amph.am)
+    img.amph.ph = np.fliplr(img.amph.ph)
 
 #-------------------------------------------------------------------
 
 def flip_image_v(img):
-    img.amPh.am = np.flipud(img.amPh.am)
-    img.amPh.ph = np.flipud(img.amPh.ph)
+    img.amph.am = np.flipud(img.amph.am)
+    img.amph.ph = np.flipud(img.amph.ph)
 
 #-------------------------------------------------------------------
 
-def FFT(img):
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
+def calc_fft(img):
+    dt = img.cmp_repr
+    img.amph_to_reim()
 
     fft = ImageExp(img.height, img.width, Image.cmp['CRI'])
-    fft.reIm = np.fft.fft2(img.reIm)
+    fft.reim = np.fft.fft2(img.reim)
 
-    img.ChangeComplexRepr(dt)
-    fft.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    fft.change_complex_repr(dt)
     return fft
 
 #-------------------------------------------------------------------
 
-def IFFT(fft):
-    dt = fft.cmpRepr
-    fft.AmPh2ReIm()
+def calc_ifft(fft):
+    dt = fft.cmp_repr
+    fft.amph_to_reim()
 
     ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
-    ifft.reIm = np.fft.ifft2(fft.reIm)
-    # ifft.reIm = sp.fft.ifft2(fft.reIm)
-    # ifft.reIm = sp.fftpack.ifft2(fft.reIm)        # legacy
+    ifft.reim = np.fft.ifft2(fft.reim)
+    # ifft.reim = sp.fft.ifft2(fft.reim)
+    # ifft.reim = sp.fftpack.ifft2(fft.reim)        # legacy
 
-    fft.ChangeComplexRepr(dt)
-    ifft.ChangeComplexRepr(dt)
+    fft.change_complex_repr(dt)
+    ifft.change_complex_repr(dt)
     return ifft
 
 #-------------------------------------------------------------------
 
-def FFT2Diff(fft):
-    dt = fft.cmpRepr
-    fft.AmPh2ReIm()
+def fft_to_diff(fft):
+    dt = fft.cmp_repr
+    fft.amph_to_reim()
 
-    diff = ImageExp(fft.height, fft.width, cmpRepr=Image.cmp['CRI'])
+    diff = ImageExp(fft.height, fft.width, cmp_repr=Image.cmp['CRI'])
     mid = diff.width // 2
-    diff.reIm[:mid, :mid] = fft.reIm[mid:, mid:]
-    diff.reIm[:mid, mid:] = fft.reIm[mid:, :mid]
-    diff.reIm[mid:, :mid] = fft.reIm[:mid, mid:]
-    diff.reIm[mid:, mid:] = fft.reIm[:mid, :mid]
+    diff.reim[:mid, :mid] = fft.reim[mid:, mid:]
+    diff.reim[:mid, mid:] = fft.reim[mid:, :mid]
+    diff.reim[mid:, :mid] = fft.reim[:mid, mid:]
+    diff.reim[mid:, mid:] = fft.reim[:mid, :mid]
 
-    fft.ChangeComplexRepr(dt)
-    diff.ChangeComplexRepr(dt)
+    fft.change_complex_repr(dt)
+    diff.change_complex_repr(dt)
     return diff
 
 #-------------------------------------------------------------------
 
-def Diff2FFT(diff):
-    return FFT2Diff(diff)
+def diff_to_fft(diff):
+    return fft_to_diff(diff)
 
 #-------------------------------------------------------------------
 
 def calc_cross_corr_fun(img1, img2):
-    fft1 = FFT(img1)
-    fft2 = FFT(img2)
+    fft1 = calc_fft(img1)
+    fft2 = calc_fft(img2)
 
-    fft1.ReIm2AmPh()
-    fft2.ReIm2AmPh()
+    fft1.reim_to_amph()
+    fft2.reim_to_amph()
 
     fft3 = ImageExp(fft1.height, fft1.width, Image.cmp['CAP'])
-    fft1.amPh = conj_am_ph_matrix(fft1.amPh)
-    fft3.amPh = mult_am_ph_matrices(fft1.amPh, fft2.amPh)
-    fft3.amPh.am = np.sqrt(fft3.amPh.am)			# mcf ON
+    fft1.amph = conj_amph_matrix(fft1.amph)
+    fft3.amph = mult_amph_matrices(fft1.amph, fft2.amph)
+    fft3.amph.am = np.sqrt(fft3.amph.am)			# mcf ON
 
     # ---- ccf ----
-    # fft3.amPh.am = fft1.amPh.am * fft2.amPh.am
-    # fft3.amPh.ph = -fft1.amPh.ph + fft2.amPh.ph
+    # fft3.amph.am = fft1.amph.am * fft2.amph.am
+    # fft3.amph.ph = -fft1.amph.ph + fft2.amph.ph
     # ---- mcf ----
-    # fft3.amPh.am = np.sqrt(fft1.amPh.am * fft2.amPh.am)
-    # fft3.amPh.ph = -fft1.amPh.ph + fft2.amPh.ph
+    # fft3.amph.am = np.sqrt(fft1.amph.am * fft2.amph.am)
+    # fft3.amph.ph = -fft1.amph.ph + fft2.amph.ph
 
-    ccf = IFFT(fft3)
-    ccf = FFT2Diff(ccf)
-    ccf.ReIm2AmPh()
+    ccf = calc_ifft(fft3)
+    ccf = fft_to_diff(ccf)
+    ccf.reim_to_amph()
     return ccf
 
 #-------------------------------------------------------------------
 
 def get_shift(ccf):
-    dt = ccf.cmpRepr
-    ccf.ReIm2AmPh()
+    dt = ccf.cmp_repr
+    ccf.reim_to_amph()
 
-    ccf_mid_xy = np.array(ccf.amPh.am.shape) // 2
-    ccf_max_xy = np.array(np.unravel_index(np.argmax(ccf.amPh.am), ccf.amPh.am.shape))
+    ccf_mid_xy = np.array(ccf.amph.am.shape) // 2
+    ccf_max_xy = np.array(np.unravel_index(np.argmax(ccf.amph.am), ccf.amph.am.shape))
     shift = tuple(ccf_mid_xy - ccf_max_xy)[::-1]
 
-    ccf.ChangeComplexRepr(dt)
+    ccf.change_complex_repr(dt)
     return shift
 
 #-------------------------------------------------------------------
@@ -623,12 +622,12 @@ def shift_array(arr, dx, dy, fval=0.0):
 
 #-------------------------------------------------------------------
 
-def shift_am_ph_image(img, shift):
+def shift_amph_image(img, shift):
     dx, dy = shift
-    img_shifted = ImageExp(img.height, img.width, img.cmpRepr, px_dim_sz=img.px_dim)
+    img_shifted = ImageExp(img.height, img.width, img.cmp_repr, px_dim_sz=img.px_dim)
 
-    img_shifted.amPh.am = shift_array(img.amPh.am, dx, dy)
-    img_shifted.amPh.ph = shift_array(img.amPh.ph, dx, dy)
+    img_shifted.amph.am = shift_array(img.amph.am, dx, dy)
+    img_shifted.amph.ph = shift_array(img.amph.ph, dx, dy)
 
     if img.cos_phase is not None:
         img_shifted.update_cos_phase()
@@ -638,15 +637,15 @@ def shift_am_ph_image(img, shift):
 #-------------------------------------------------------------------
 
 def shift_image(img, shift):
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
+    dt = img.cmp_repr
+    img.amph_to_reim()
     dx, dy = shift
 
-    img_shifted = ImageExp(img.height, img.width, img.cmpRepr, px_dim_sz=img.px_dim)
-    img_shifted.reIm = shift_array(img.reIm, dx, dy)
+    img_shifted = ImageExp(img.height, img.width, img.cmp_repr, px_dim_sz=img.px_dim)
+    img_shifted.reim = shift_array(img.reim, dx, dy)
 
-    img.ChangeComplexRepr(dt)
-    img_shifted.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_shifted.change_complex_repr(dt)
     return img_shifted
 
 #-------------------------------------------------------------------
@@ -716,10 +715,10 @@ def save_arr_as_tiff(data, fname, log, color, brg=0, cnt=255, gam=1.0):
 #-------------------------------------------------------------------
 
 def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-    img_var = img.amPh.am if cap_var == Image.capVar['AM'] else img.amPh.ph
-    img.ChangeComplexRepr(dt)
+    dt = img.cmp_repr
+    img.reim_to_amph()
+    img_var = img.amph.am if cap_var == Image.cap_var['AM'] else img.amph.ph
+    img.change_complex_repr(dt)
 
     if log:
         if np.min(img_var) < 0:
@@ -742,29 +741,29 @@ def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
 #-------------------------------------------------------------------
 
 def display_amp_image(img, scale=True, log=False):
-    img_to_disp = prepare_image_to_display(img, Image.capVar['AM'], scale, log)
+    img_to_disp = prepare_image_to_display(img, Image.cap_var['AM'], scale, log)
     img_to_disp.show()
 
 # -------------------------------------------------------------------
 
 def save_amp_image(img, fpath, scale=True, log=False, color=False):
-    img_to_save = prepare_image_to_display(img, Image.capVar['AM'], scale, log, color)
+    img_to_save = prepare_image_to_display(img, Image.cap_var['AM'], scale, log, color)
     img_to_save.save(fpath)
 
 #-------------------------------------------------------------------
 
 def display_phase_image(img, scale=True, log=False):
-    img_to_disp = prepare_image_to_display(img, Image.capVar['PH'], scale, log)
+    img_to_disp = prepare_image_to_display(img, Image.cap_var['PH'], scale, log)
     img_to_disp.show()
 
 # -------------------------------------------------------------------
 
 def save_phase_image(img, fpath, scale=True, log=False, color=False):
-    img_to_save = prepare_image_to_display(img, Image.capVar['PH'], scale, log, color)
+    img_to_save = prepare_image_to_display(img, Image.cap_var['PH'], scale, log, color)
     img_to_save.save(fpath)
 
 #-------------------------------------------------------------------
 
 def fill_image_with_value(img, value):
-    img.ReIm2AmPh()
-    img.amPh.am.fill(value)
+    img.reim_to_amph()
+    img.amph.am.fill(value)

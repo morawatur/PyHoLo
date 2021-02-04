@@ -48,48 +48,48 @@ def find_img_max(img):
 #-------------------------------------------------------------------
 
 def insert_aperture(img, ap):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-    img_ap = imsup.copy_am_ph_image(img)
+    dt = img.cmp_repr
+    img.reim_to_amph()
+    img_ap = imsup.copy_amph_image(img)
 
     n = img_ap.width
     c = n // 2
     y, x = np.ogrid[-c:n - c, -c:n - c]
     mask = x * x + y * y > ap * ap
 
-    img_ap.amPh.am[mask] = 0.0
-    img_ap.amPh.ph[mask] = 0.0
+    img_ap.amph.am[mask] = 0.0
+    img_ap.amph.ph[mask] = 0.0
 
-    img.ChangeComplexRepr(dt)
-    img_ap.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_ap.change_complex_repr(dt)
     return img_ap
 
 # -------------------------------------------------------------------
 
 def mult_by_hann_window(img, N=100):
-    dt = img.cmpRepr
-    img.ReIm2AmPh()
-    new_img = imsup.copy_am_ph_image(img)
+    dt = img.cmp_repr
+    img.reim_to_amph()
+    new_img = imsup.copy_amph_image(img)
 
     hann = np.hanning(N)
     hann_2d = np.sqrt(np.outer(hann, hann))
 
-    hann_win = imsup.ImageExp(N, N, cmpRepr=imsup.Image.cmp['CAP'])
-    hann_win.LoadAmpData(hann_2d)
+    hann_win = imsup.ImageExp(N, N, cmp_repr=imsup.Image.cmp['CAP'])
+    hann_win.load_amp_data(hann_2d)
 
     hmin, hmax = (img.width - N) // 2, (img.width + N) // 2
-    new_img.amPh.am[hmin:hmax, hmin:hmax] *= hann_2d
-    new_img.amPh.ph[hmin:hmax, hmin:hmax] *= hann_2d
+    new_img.amph.am[hmin:hmax, hmin:hmax] *= hann_2d
+    new_img.amph.ph[hmin:hmax, hmin:hmax] *= hann_2d
 
-    img.ChangeComplexRepr(dt)
-    new_img.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    new_img.change_complex_repr(dt)
     return new_img
 
 #-------------------------------------------------------------------
 
 def holo_fft(h_img):
-    h_fft = imsup.FFT(h_img)
-    h_fft = imsup.FFT2Diff(h_fft)
+    h_fft = imsup.calc_fft(h_img)
+    h_fft = imsup.fft_to_diff(h_fft)
     return h_fft
 
 #-------------------------------------------------------------------
@@ -106,8 +106,8 @@ def holo_get_sideband(h_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win
 #-------------------------------------------------------------------
 
 def holo_ifft(h_fft):
-    h_fft = imsup.Diff2FFT(h_fft)
-    h_ifft = imsup.IFFT(h_fft)
+    h_fft = imsup.diff_to_fft(h_fft)
+    h_ifft = imsup.calc_ifft(h_fft)
     return h_ifft
 
 #-------------------------------------------------------------------
@@ -115,8 +115,8 @@ def holo_ifft(h_fft):
 def calc_phase_sum(img1, img2):
     # complex multiplication
     phs_sum = imsup.ImageExp(img1.height, img1.width)
-    phs_sum.amPh.am = img1.amPh.am * img2.amPh.am
-    phs_sum.amPh.ph = img1.amPh.ph + img2.amPh.ph
+    phs_sum.amph.am = img1.amph.am * img2.amph.am
+    phs_sum.amph.ph = img1.amph.ph + img2.amph.ph
     return phs_sum
 
 #-------------------------------------------------------------------
@@ -124,9 +124,9 @@ def calc_phase_sum(img1, img2):
 def calc_phase_diff(img1, img2):
     # complex division
     phs_diff = imsup.ImageExp(img1.height, img1.width)
-    img1.amPh.am[np.where(img1.amPh.am == 0.0)] = 1.0
-    phs_diff.amPh.am = img2.amPh.am / img1.amPh.am
-    phs_diff.amPh.ph = img2.amPh.ph - img1.amPh.ph
+    img1.amph.am[np.where(img1.amph.am == 0.0)] = 1.0
+    phs_diff.amph.am = img2.amph.am / img1.amph.am
+    phs_diff.amph.ph = img2.amph.ph - img1.amph.ph
     return phs_diff
 
 #-------------------------------------------------------------------
@@ -166,15 +166,15 @@ def find_sideband_center(sband, orig=(0, 0), subpx=False):
 #-------------------------------------------------------------------
 
 def subpixel_shift(img, subpx_sh):
-    dt = img.cmpRepr
-    img.AmPh2ReIm()
-    h, w = img.reIm.shape
-    img_sh = imsup.ImageExp(h, w, img.cmpRepr)
+    dt = img.cmp_repr
+    img.amph_to_reim()
+    h, w = img.reim.shape
+    img_sh = imsup.ImageExp(h, w, img.cmp_repr)
 
     dx, dy = subpx_sh
     wx = np.abs(dx)
     wy = np.abs(dy)
-    arr = np.copy(img.reIm)
+    arr = np.copy(img.reim)
 
     arr_shx_1px = np.zeros((h, w), dtype=np.complex64)
     arr_shy_1px = np.zeros((h, w), dtype=np.complex64)
@@ -194,25 +194,25 @@ def subpixel_shift(img, subpx_sh):
         arr_shy_1px[:h-1, :] = arr_shx[1:, :]
 
     arr_shy = wy * arr_shy_1px + (1.0-wy) * arr_shx
-    img_sh.reIm = np.copy(arr_shy)
+    img_sh.reim = np.copy(arr_shy)
 
-    img.ChangeComplexRepr(dt)
-    img_sh.ChangeComplexRepr(dt)
+    img.change_complex_repr(dt)
+    img_sh.change_complex_repr(dt)
     return img_sh
 
 #-------------------------------------------------------------------
 
 # def subpixel_shift(img, subpx_sh):
-#     dt = img.cmpRepr
-#     img.ReIm2AmPh()
-#     h, w = img.amPh.am.shape
-#     img_sh = imsup.ImageExp(h, w, img.cmpRepr)
+#     dt = img.cmp_repr
+#     img.reim_to_amph()
+#     h, w = img.amph.am.shape
+#     img_sh = imsup.ImageExp(h, w, img.cmp_repr)
 #
 #     dx, dy = subpx_sh
 #     wx = np.abs(dx)
 #     wy = np.abs(dy)
-#     amp = np.copy(img.amPh.am)
-#     phs = np.copy(img.amPh.ph)
+#     amp = np.copy(img.amph.am)
+#     phs = np.copy(img.amph.ph)
 #
 #     amp_shx_1px = np.zeros((h, w), dtype=np.float32)
 #     amp_shy_1px = np.zeros((h, w), dtype=np.float32)
@@ -241,10 +241,10 @@ def subpixel_shift(img, subpx_sh):
 #     amp_shy = wy * amp_shy_1px + (1.0-wy) * amp_shx
 #     phs_shy = wy * phs_shy_1px + (1.0-wy) * phs_shx
 #
-#     img_sh.amPh.am = np.copy(amp_shy)
-#     img_sh.amPh.ph = np.copy(phs)
-#     img_sh.amPh.ph = np.copy(phs_shy)
+#     img_sh.amph.am = np.copy(amp_shy)
+#     img_sh.amph.ph = np.copy(phs)
+#     img_sh.amph.ph = np.copy(phs_shy)
 #
-#     img.ChangeComplexRepr(dt)
-#     img_sh.ChangeComplexRepr(dt)
+#     img.change_complex_repr(dt)
+#     img_sh.change_complex_repr(dt)
 #     return img_sh

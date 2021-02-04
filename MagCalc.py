@@ -45,7 +45,7 @@ def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
 # calculate B from section on image
 def calc_B_from_section(img, pt1, pt2, smpl_thck):
     from numpy import linalg as la
-    phs = img.amPh.ph
+    phs = img.amph.ph
 
     d_dist = la.norm(pt1 - pt2)
     d_dist_real = d_dist * img.px_dim
@@ -73,18 +73,18 @@ def calc_B_from_section(img, pt1, pt2, smpl_thck):
 def calc_Bxy_maps(img, smpl_thck):
     B_coeff = const.dirac_const / smpl_thck
 
-    dx, dy = np.gradient(img.amPh.ph, img.px_dim)
+    dx, dy = np.gradient(img.amph.ph, img.px_dim)
     # B_sign = np.sign(dx)
     # B_field = B_sign * np.sqrt(dx * dx + dy * dy) * B_coeff
     Bx = B_coeff * dx
     By = B_coeff * dy
 
     Bx_img = imsup.ImageExp(img.height, img.width)
-    Bx_img.amPh.ph = np.copy(Bx)
+    Bx_img.amph.ph = np.copy(Bx)
     Bx_img.name = 'Bx_from_{0}'.format(img.name)
 
     By_img = imsup.ImageExp(img.height, img.width)
-    By_img.amPh.ph = np.copy(By)
+    By_img.amph.ph = np.copy(By)
     By_img.name = 'By_from_{0}'.format(img.name)
 
     return Bx_img, By_img
@@ -92,7 +92,7 @@ def calc_Bxy_maps(img, smpl_thck):
 #-------------------------------------------------------------------
 
 def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang0=0.0, n_r=3, addn_str=''):
-    phs = img.amPh.ph
+    phs = img.amph.ph
     px_sz = img.px_dim
 
     min_xy = [x - n_r * r1 for x in orig_xy]
@@ -196,7 +196,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
 
     # export phase image with max. B vectors
     fig, ax = plt.subplots()
-    im = ax.imshow(img.amPh.ph, cmap=plt.cm.get_cmap('jet'))
+    im = ax.imshow(img.amph.ph, cmap=plt.cm.get_cmap('jet'))
     cbar = fig.colorbar(im)
     cbar.set_label('phase shift [rad]')
 
@@ -235,7 +235,7 @@ def calc_B_polar_from_area(frag, smpl_thck):
 
     for ang, a_idx in zip(angles, range(n_ang)):
         frag_rot = tr.rotate_image_ski(frag, imsup.degrees(ang))
-        roi_ph = np.copy(frag_rot.amPh.ph[min_cc[0]:min_cc[2], min_cc[1]:min_cc[3]])
+        roi_ph = np.copy(frag_rot.amph.ph[min_cc[0]:min_cc[2], min_cc[1]:min_cc[3]])
         dx, dy = np.gradient(roi_ph, px_sz)
         B_mean = np.mean(B_coeff * dx)
         if B_mean < 0: angles[a_idx] += np.pi

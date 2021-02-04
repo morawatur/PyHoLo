@@ -75,9 +75,9 @@ class SimpleImageLabel(QtWidgets.QLabel):
 
     def set_image(self, disp_amp=True):
         if disp_amp:
-            px_arr = np.copy(self.image.amPh.am)
+            px_arr = np.copy(self.image.amph.am)
         else:
-            px_arr = np.copy(self.image.amPh.ph)
+            px_arr = np.copy(self.image.amph.ph)
 
         pixmap = imsup.scale_image(px_arr, 0.0, 255.0)
         q_image = QtGui.QImage(pixmap.astype(np.uint8), pixmap.shape[0], pixmap.shape[1], QtGui.QImage.Format_Indexed8)
@@ -105,7 +105,7 @@ class LabelExt(QtWidgets.QLabel):
         qp = QtGui.QPainter()
         qp.begin(self)
         qp.setRenderHint(QtGui.QPainter.Antialiasing, True)
-        img_idx = abs(self.image.numInSeries) - 1
+        img_idx = abs(self.image.num_in_ser) - 1
         points = self.parent().point_sets[img_idx]
         qp.setPen(line_pen)
         qp.setBrush(QtCore.Qt.yellow)
@@ -148,7 +148,7 @@ class LabelExt(QtWidgets.QLabel):
     def mouseReleaseEvent(self, QMouseEvent):
         pos = QMouseEvent.pos()
         curr_pos = [pos.x(), pos.y()]
-        img_idx = abs(self.image.numInSeries) - 1
+        img_idx = abs(self.image.num_in_ser) - 1
         points = self.parent().point_sets[img_idx]
         points.append(curr_pos)
         self.repaint()
@@ -157,7 +157,7 @@ class LabelExt(QtWidgets.QLabel):
         real_x, real_y = disp_pt_to_real_tl_pt(self.image.width, curr_pos)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
-        print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(self.image.amPh.am[real_y, real_x], self.image.amPh.ph[real_y, real_x]))
+        print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(self.image.amph.am[real_y, real_x], self.image.amph.ph[real_y, real_x]))
 
         if self.show_labs:
             lab = QtWidgets.QLabel('{0}'.format(pt_idx), self)
@@ -205,7 +205,7 @@ class LabelExt(QtWidgets.QLabel):
             child.deleteLater()
 
     def show_labels(self):
-        img_idx = self.image.numInSeries - 1
+        img_idx = self.image.num_in_ser - 1
         points = self.parent().point_sets[img_idx]
         n_pt = len(points)
         for pt, idx in zip(points, range(1, n_pt+1)):
@@ -215,7 +215,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def show_last_label(self):
-        img_idx = abs(self.image.numInSeries) - 1
+        img_idx = abs(self.image.num_in_ser) - 1
         points = self.parent().point_sets[img_idx]
         pt_idx = len(points) - 1
         last_pt = points[pt_idx]
@@ -324,8 +324,8 @@ class ImgScrollArea(QtWidgets.QScrollArea):
 def create_preview_img(full_img, new_sz):
     sx, sy = new_sz
     preview = imsup.ImageExp(sx, sy, full_img.cmp)
-    preview.amPh.am = np.copy(full_img.amPh.am[:sx, :sy])
-    preview.amPh.ph = np.copy(full_img.amPh.ph[:sx, :sy])
+    preview.amph.am = np.copy(full_img.amph.am[:sx, :sy])
+    preview.amph.ph = np.copy(full_img.amph.ph[:sx, :sy])
     return preview
 
 # --------------------------------------------------------
@@ -394,9 +394,9 @@ class HolographyWindow(QtWidgets.QMainWindow):
 
                 new_img = imsup.ImageExp(h, w, imsup.Image.cmp['CAP'])
                 if img_type == 'amp':
-                    new_img.LoadAmpData(new_img_arr)
+                    new_img.load_amp_data(new_img_arr)
                 else:
-                    new_img.LoadPhsData(new_img_arr)
+                    new_img.load_phs_data(new_img_arr)
             else:
                 print('Could not load the image. It must be in dm3 or npy format...')
                 return
@@ -1114,7 +1114,7 @@ class HolographyWidget(QtWidgets.QWidget):
         disp_name = curr_img.name[:const.disp_name_max_len]
         if len(curr_img.name) > const.disp_name_max_len:
             disp_name = disp_name[:-3] + '...'
-        self.curr_info_label.setText('{0}: {1}, dim = {2} px'.format(curr_img.numInSeries, disp_name, curr_img.width))
+        self.curr_info_label.setText('{0}: {1}, dim = {2} px'.format(curr_img.num_in_ser, disp_name, curr_img.width))
 
     def enable_tabs(self):
         # self.tab_nav.setEnabled(True)
@@ -1199,38 +1199,38 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         if curr_img.prev is None:
             return
-        prev_idx = curr_img.prev.numInSeries - 1
+        prev_idx = curr_img.prev.num_in_ser - 1
         self.go_to_image(prev_idx)
 
     def go_to_next_image(self):
         curr_img = self.display.image
         if curr_img.next is None:
             return
-        next_idx = curr_img.next.numInSeries - 1
+        next_idx = curr_img.next.num_in_ser - 1
         self.go_to_image(next_idx)
 
     def go_to_first_image(self):
-        curr_idx = self.display.image.numInSeries - 1
+        curr_idx = self.display.image.num_in_ser - 1
         if curr_idx > 0:
             self.go_to_image(0)
 
     def go_to_last_image(self):
         curr_img = self.display.image
         last_img = imsup.get_last_image(curr_img)
-        curr_idx = curr_img.numInSeries - 1
-        last_idx = last_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
+        last_idx = last_img.num_in_ser - 1
         if curr_idx < last_idx:
             self.go_to_image(last_idx)
 
     def insert_img_after_curr(self, new_img):
-        curr_num = self.display.image.numInSeries
+        curr_num = self.display.image.num_in_ser
         curr_img_list = imsup.create_image_list_from_first_image(self.display.image)
         new_img_list = imsup.create_image_list_from_first_image(new_img)
 
         curr_img_list[1:1] = new_img_list
         self.point_sets[abs(curr_num):abs(curr_num)] = [[] for _ in range(len(new_img_list))]
 
-        curr_img_list.UpdateLinks()
+        curr_img_list.update_links()
         self.go_to_image(abs(curr_num))
 
         if curr_num == -1:  # starting (blank) image is identified by specific number (-1)
@@ -1242,7 +1242,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def move_image_to_pos(self, new_idx):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         if new_idx == curr_idx or new_idx < 0: return
 
@@ -1253,15 +1253,15 @@ class HolographyWidget(QtWidgets.QWidget):
 
         imgs.insert(new_idx, imgs.pop(curr_idx))
         self.point_sets.insert(new_idx, self.point_sets.pop(curr_idx))
-        imgs.UpdateAndRestrainLinks()
+        imgs.update_and_restrain_links()
         self.go_to_image(new_idx)
 
     def swap_left(self):
-        prev_idx = self.display.image.numInSeries - 2
+        prev_idx = self.display.image.num_in_ser - 2
         self.move_image_to_pos(prev_idx)
 
     def swap_right(self):
-        next_idx = self.display.image.numInSeries
+        next_idx = self.display.image.num_in_ser
         self.move_image_to_pos(next_idx)
 
     def make_image_first(self):
@@ -1269,18 +1269,18 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def make_image_last(self):
         last_img = imsup.get_last_image(self.display.image)
-        self.move_image_to_pos(last_img.numInSeries - 1)
+        self.move_image_to_pos(last_img.num_in_ser - 1)
 
     def clear_image(self):
         labToDel = self.display.children()
         for child in labToDel:
             child.deleteLater()
-        curr_idx = abs(self.display.image.numInSeries) - 1
+        curr_idx = abs(self.display.image.num_in_ser) - 1
         self.point_sets[curr_idx][:] = []
         self.display.repaint()
 
     def remove_last_point(self):
-        curr_idx = abs(self.display.image.numInSeries) - 1
+        curr_idx = abs(self.display.image.num_in_ser) - 1
         if len(self.point_sets[curr_idx]) == 0:
             return
         all_labels = self.display.children()
@@ -1292,7 +1292,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def add_marker_at_xy(self):
         curr_img = self.display.image
-        curr_idx = abs(curr_img.numInSeries) - 1
+        curr_idx = abs(curr_img.num_in_ser) - 1
         curr_pos = [int(self.marker_x_input.text()), int(self.marker_y_input.text())]
         if 0 <= curr_pos[0] < const.disp_dim and 0 <= curr_pos[1] < const.disp_dim:
             # --- to be removed later ---
@@ -1309,8 +1309,8 @@ class HolographyWidget(QtWidgets.QWidget):
             real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
             print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
             print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
-            print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amPh.am[real_y, real_x],
-                                                        curr_img.amPh.ph[real_y, real_x]))
+            print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amph.am[real_y, real_x],
+                                                        curr_img.amph.ph[real_y, real_x]))
         else:
             print('Wrong marker coordinates!')
 
@@ -1319,7 +1319,7 @@ class HolographyWidget(QtWidgets.QWidget):
         if curr_img.prev is None and curr_img.next is None:
             return
 
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
         first_img = imsup.get_first_image(curr_img)
         all_img_list = imsup.create_image_list_from_first_image(first_img)
 
@@ -1441,26 +1441,26 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def unwrap_img_phase(self):
         curr_img = self.display.image
-        new_phs = tr.unwrap_phase(curr_img.amPh.ph)
-        curr_img.amPh.ph = np.copy(new_phs)
+        new_phs = tr.unwrap_phase(curr_img.amph.ph)
+        curr_img.amph.ph = np.copy(new_phs)
         self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)
         self.update_display()
 
     def wrap_img_phase(self):
         curr_img = self.display.image
-        uw_min = np.min(curr_img.amPh.ph)
+        uw_min = np.min(curr_img.amph.ph)
 
         if uw_min > 0:
             uw_min = 0
-        new_phs = (curr_img.amPh.ph - uw_min) % (2 * np.pi) - np.pi
+        new_phs = (curr_img.amph.ph - uw_min) % (2 * np.pi) - np.pi
 
-        curr_img.amPh.ph = np.copy(new_phs)
+        curr_img.amph.ph = np.copy(new_phs)
         self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)
         self.update_display()
 
     def blank_area(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
             print('Mark the area by selecting two points!')
@@ -1470,16 +1470,16 @@ class HolographyWidget(QtWidgets.QWidget):
         p1 = disp_pt_to_real_tl_pt(curr_img.width, p1)
         p2 = disp_pt_to_real_tl_pt(curr_img.width, p2)
 
-        blanked_img = imsup.copy_am_ph_image(curr_img)
-        blanked_img.amPh.am[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
-        blanked_img.amPh.ph[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
+        blanked_img = imsup.copy_amph_image(curr_img)
+        blanked_img.amph.am[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
+        blanked_img.amph.ph[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
 
         blanked_img.name = '{0}_b'.format(curr_img.name)
         self.insert_img_after_curr(blanked_img)
 
     def norm_phase(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
         n_points = len(self.point_sets[curr_idx])
         if n_points == 0:
             print('Mark reference point (or area) on the image')
@@ -1497,10 +1497,10 @@ class HolographyWidget(QtWidgets.QWidget):
         img_list = imsup.create_image_list_from_first_image(first_img)
         for img in img_list:
             if n_points == 1:
-                norm_val = img.amPh.ph[y1, x1]
+                norm_val = img.amph.ph[y1, x1]
             else:
-                norm_val = np.average(img.amPh.ph[y1:y2, x1:x2])
-            img.amPh.ph -= norm_val
+                norm_val = np.average(img.amph.ph[y1:y2, x1:x2])
+            img.amph.ph -= norm_val
             img.update_cos_phase()
             img.name += '_-' if norm_val > 0.0 else '_+'
             img.name += '{0:.2f}rad'.format(abs(norm_val))
@@ -1517,7 +1517,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.update_display()
 
     def export_image(self):
-        curr_num = self.display.image.numInSeries
+        curr_num = self.display.image.num_in_ser
         curr_img = self.display.image
         is_amp_checked = self.amp_radio_button.isChecked()
         is_phs_checked = self.phs_radio_button.isChecked()
@@ -1531,11 +1531,11 @@ class HolographyWidget(QtWidgets.QWidget):
                 fname = 'cos_phs{0}'.format(curr_num)
 
         if is_amp_checked:
-            data_to_export = np.copy(curr_img.amPh.am)
+            data_to_export = np.copy(curr_img.amph.am)
         elif is_phs_checked:
-            data_to_export = np.copy(curr_img.amPh.ph)
+            data_to_export = np.copy(curr_img.amph.ph)
         else:
-            data_to_export = np.cos(curr_img.amPh.ph)
+            data_to_export = np.cos(curr_img.amph.ph)
 
         # numpy array file (new)
         if self.export_npy_radio_button.isChecked():
@@ -1597,7 +1597,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # X = np.arange(0, img_dim, step, dtype=np.float32)
         # Y = np.arange(0, img_dim, step, dtype=np.float32)
-        # phs_to_disp = np.copy(curr_img.amPh.ph[0:img_dim:step, 0:img_dim:step])
+        # phs_to_disp = np.copy(curr_img.amph.ph[0:img_dim:step, 0:img_dim:step])
 
         X = np.arange(0, img_dim, dtype=np.float32)
         Y = np.arange(0, img_dim, dtype=np.float32)
@@ -1607,8 +1607,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rstride=step, cstride=step)    # mesh step (dist. between rows/cols used)
-        # ax.plot_surface(X, Y, curr_img.amPh.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
+        ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rstride=step, cstride=step)    # mesh step (dist. between rows/cols used)
+        # ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
         ax.view_init(ang1, ang2)
@@ -1629,7 +1629,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Phases exported!')
 
     def crop_n_fragments(self):
-        curr_idx = self.display.image.numInSeries - 1
+        curr_idx = self.display.image.num_in_ser - 1
         if len(self.point_sets[curr_idx]) < 2:
             print('You have to select the area for cropping!')
             return
@@ -1659,7 +1659,7 @@ class HolographyWidget(QtWidgets.QWidget):
             img_list.insert(n, frag)
             self.point_sets.insert(n, [])
 
-        img_list.UpdateLinks()
+        img_list.update_links()
 
         if self.clear_prev_checkbox.isChecked():
             del img_list[curr_idx:insert_idx]
@@ -1670,7 +1670,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
-            self.backup_image = imsup.copy_am_ph_image(self.display.image)
+            self.backup_image = imsup.copy_amph_image(self.display.image)
             self.enable_manual_panel()
         else:
             self.reset_changes_and_delete_backup()
@@ -1699,12 +1699,12 @@ class HolographyWidget(QtWidgets.QWidget):
 
         if curr.rot != 0:
             tmp = tr.rotate_image_ski(bckp, curr.rot)
-            shifted_img = imsup.shift_am_ph_image(tmp, total_shift)
+            shifted_img = imsup.shift_amph_image(tmp, total_shift)
         else:
-            shifted_img = imsup.shift_am_ph_image(bckp, total_shift)
+            shifted_img = imsup.shift_amph_image(bckp, total_shift)
 
-        curr.amPh.am = np.copy(shifted_img.amPh.am)
-        curr.amPh.ph = np.copy(shifted_img.amPh.ph)
+        curr.amph.am = np.copy(shifted_img.amph.am)
+        curr.amph.ph = np.copy(shifted_img.amph.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.shift = total_shift
         self.update_display_and_bcg()
@@ -1723,13 +1723,13 @@ class HolographyWidget(QtWidgets.QWidget):
         total_rot = curr.rot + rot
 
         if curr.shift != [0, 0]:
-            tmp = imsup.shift_am_ph_image(bckp, curr.shift)
+            tmp = imsup.shift_amph_image(bckp, curr.shift)
             rotated_img = tr.rotate_image_ski(tmp, total_rot)
         else:
             rotated_img = tr.rotate_image_ski(bckp, total_rot)
 
-        curr.amPh.am = np.copy(rotated_img.amPh.am)
-        curr.amPh.ph = np.copy(rotated_img.amPh.ph)
+        curr.amph.am = np.copy(rotated_img.amph.am)
+        curr.amph.ph = np.copy(rotated_img.amph.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.rot = total_rot
         self.update_display_and_bcg()
@@ -1740,13 +1740,13 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def apply_changes(self):
         self.zero_shift_rot()
-        self.backup_image = imsup.copy_am_ph_image(self.display.image)
+        self.backup_image = imsup.copy_amph_image(self.display.image)
         print('Changes for {0} have been applied'.format(self.display.image.name))
 
     def reset_changes(self):
         curr = self.display.image
-        curr.amPh.am = np.copy(self.backup_image.amPh.am)
-        curr.amPh.ph = np.copy(self.backup_image.amPh.ph)
+        curr.amph.am = np.copy(self.backup_image.amph.am)
+        curr.amph.ph = np.copy(self.backup_image.amph.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         if curr.shift != [0, 0] or curr.rot != 0:
             self.update_display_and_bcg()
@@ -1775,19 +1775,19 @@ class HolographyWidget(QtWidgets.QWidget):
         insert_idx = n_imgs
         img_align_list = cross_corr_images(all_img_list)
 
-        ref_img = imsup.copy_am_ph_image(first_img)
+        ref_img = imsup.copy_amph_image(first_img)
         img_align_list.insert(0, ref_img)
         all_img_list += img_align_list
         for i in range(n_imgs):
             self.point_sets.append([])
-        all_img_list.UpdateAndRestrainLinks()
+        all_img_list.update_and_restrain_links()
 
         self.go_to_image(insert_idx)
         print('Cross-correlation done!')
 
     def auto_shift_image(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
         img_width = curr_img.width
 
         points1 = self.point_sets[curr_idx - 1]
@@ -1812,7 +1812,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def auto_rot_image(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         points1 = self.point_sets[curr_idx-1]
         points2 = self.point_sets[curr_idx]
@@ -1853,7 +1853,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def reshift(self):
         print('Shifting by [dx, dy] = {0} px'.format(self.shift))
         curr_img = self.display.image
-        shifted_img = imsup.shift_am_ph_image(curr_img, self.shift)
+        shifted_img = imsup.shift_amph_image(curr_img, self.shift)
         shifted_img.name = curr_img.name + '_sh'
         self.insert_img_after_curr(shifted_img)
 
@@ -1878,7 +1878,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def scale_image(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
         img_width = curr_img.width
 
         points2 = self.point_sets[curr_idx]
@@ -1925,7 +1925,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         if pad_sz > 0:
             crop_coords = 2 * [pad_sz] + 2 * [pad_sz + curr_img.width]
-            resc_img = imsup.crop_am_ph_roi(mag_img, crop_coords)
+            resc_img = imsup.crop_amph_roi(mag_img, crop_coords)
         else:
             resc_img = imsup.pad_img_from_ref(mag_img, curr_img.width, 0.0)
 
@@ -1935,7 +1935,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
-        curr_idx = self.display.image.numInSeries - 1
+        curr_idx = self.display.image.num_in_ser - 1
         real_points1 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx-1])
         real_points2 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx])
         user_points1 = real_cnt_pts_to_tl_pts(curr_img.width, real_points1)
@@ -1993,13 +1993,13 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Hologram reconstruction (no reference hologram)')
         print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(h_fft.name))
 
-        [pt1, pt2] = self.point_sets[h_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[h_fft.num_in_ser - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
 
-        sband = np.copy(h_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
+        sband = np.copy(h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2040,13 +2040,13 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
-        [pt1, pt2] = self.point_sets[ref_h_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[ref_h_fft.num_in_ser - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
         rpt2 = rpts[2:] # x, y
 
-        sband = np.copy(ref_h_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
+        sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2090,13 +2090,13 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
-        [pt1, pt2] = self.point_sets[ref_h_fft.numInSeries - 1][:2]
+        [pt1, pt2] = self.point_sets[ref_h_fft.num_in_ser - 1][:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2]  # x, y
         rpt2 = rpts[2:]  # x, y
 
-        sband = np.copy(ref_h_fft.amPh.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
+        sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
@@ -2115,10 +2115,10 @@ class HolographyWidget(QtWidgets.QWidget):
         rec_obj = holo.holo_ifft(obj_sband_ctr_ap)
 
         # unwrapping
-        new_ref_phs = tr.unwrap_phase(rec_ref.amPh.ph)
-        new_obj_phs = tr.unwrap_phase(rec_obj.amPh.ph)
-        rec_ref.amPh.ph = np.copy(new_ref_phs)
-        rec_obj.amPh.ph = np.copy(new_obj_phs)
+        new_ref_phs = tr.unwrap_phase(rec_ref.amph.ph)
+        new_obj_phs = tr.unwrap_phase(rec_obj.amph.ph)
+        rec_ref.amph.ph = np.copy(new_ref_phs)
+        rec_obj.amph.ph = np.copy(new_obj_phs)
 
         rec_obj_corr = holo.calc_phase_diff(rec_ref, rec_obj)
         rec_obj_corr = rescale_image_buffer_to_window(rec_obj_corr, const.disp_dim)
@@ -2161,8 +2161,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         amp_factor = float(self.amp_factor_input.text())
 
-        phs_amplified = imsup.copy_am_ph_image(curr_img)
-        phs_amplified.amPh.ph *= amp_factor
+        phs_amplified = imsup.copy_amph_image(curr_img)
+        phs_amplified.amph.ph *= amp_factor
         phs_amplified.update_cos_phase()
 
         n_dec = '0' if amp_factor.is_integer() else '1'
@@ -2176,8 +2176,8 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         radians = float(self.radians2add_input.text())
 
-        new_phs_img = imsup.copy_am_ph_image(curr_img)
-        new_phs_img.amPh.ph += radians
+        new_phs_img = imsup.copy_amph_image(curr_img)
+        new_phs_img.amph.ph += radians
         new_phs_img.update_cos_phase()
 
         name_app = '_-' if radians < 0.0 else '_+'
@@ -2191,9 +2191,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def remove_phase_tilt(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
-        h, w = curr_img.amPh.am.shape
-        phs = np.copy(curr_img.amPh.ph)
+        curr_idx = curr_img.num_in_ser - 1
+        h, w = curr_img.amph.am.shape
+        phs = np.copy(curr_img.amph.ph)
 
         # default points
         xy1 = [0, h//2]
@@ -2270,11 +2270,11 @@ class HolographyWidget(QtWidgets.QWidget):
         phs_grad_xy = phs_grad_x + phs_grad_y
 
         phs_grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        phs_grad_img.LoadPhsData(phs_grad_xy)
+        phs_grad_img.load_phs_data(phs_grad_xy)
         phs_grad_img.name = '{0}_tilt'.format(curr_img.name)
 
-        new_phs_img = imsup.copy_am_ph_image(curr_img)
-        new_phs_img.amPh.ph -= phs_grad_xy
+        new_phs_img = imsup.copy_amph_image(curr_img)
+        new_phs_img.amph.ph -= phs_grad_xy
         new_phs_img.name = '{0}_--tilt'.format(curr_img.name)
 
         self.insert_img_after_curr(phs_grad_img)
@@ -2300,7 +2300,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def plot_profile(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
         px_sz = curr_img.px_dim
 
         points = self.point_sets[curr_idx][:2]
@@ -2318,7 +2318,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # shift image by -center
         shift_to_rc = list(-rot_center)
-        img_shifted = imsup.shift_am_ph_image(curr_img, shift_to_rc)
+        img_shifted = imsup.shift_amph_image(curr_img, shift_to_rc)
 
         # rotate image by angle
         img_rot = tr.rotate_image_ski(img_shifted, dir_angle)
@@ -2336,16 +2336,16 @@ class HolographyWidget(QtWidgets.QWidget):
         frag_coords = imsup.det_crop_coords_for_new_dims(img_rot.width, img_rot.height, frag_width, frag_height)
         print('Frag. dims = {0}, {1}'.format(frag_width, frag_height))
         print('Frag. coords = {0}'.format(frag_coords))
-        img_cropped = imsup.crop_am_ph_roi(img_rot, frag_coords)
+        img_cropped = imsup.crop_amph_roi(img_rot, frag_coords)
 
         # calculate projection of intensity
         if self.amp_radio_button.isChecked():
-            int_matrix = np.copy(img_cropped.amPh.am)
+            int_matrix = np.copy(img_cropped.amph.am)
         elif self.phs_radio_button.isChecked():
-            # ph_min = np.min(img_cropped.amPh.ph)
+            # ph_min = np.min(img_cropped.amph.ph)
             # ph_fix = -ph_min if ph_min < 0 else 0
-            # img_cropped.amPh.ph += ph_fix
-            int_matrix = np.copy(img_cropped.amPh.ph)
+            # img_cropped.amph.ph += ph_fix
+            int_matrix = np.copy(img_cropped.amph.ph)
         else:
             # cos_ph_min = np.min(img_cropped.cos_phase)
             # cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
@@ -2360,7 +2360,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     # def plot_profile_alt(self):
     #     curr_img = self.display.image
-    #     curr_idx = curr_img.numInSeries - 1
+    #     curr_idx = curr_img.num_in_ser - 1
     #     px_sz = curr_img.px_dim
     #     p1, p2 = self.point_sets[curr_idx][:2]
     #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
@@ -2383,7 +2383,7 @@ class HolographyWidget(QtWidgets.QWidget):
     #         x_range = [ int(a_coeff * y + b_coeff) for y in y_range ]
     #
     #     print(len(x_range), len(y_range))
-    #     profile = curr_img.amPh.am[x_range, y_range]
+    #     profile = curr_img.amph.am[x_range, y_range]
     #     dists = np.arange(0, profile.shape[0], 1) * px_sz
     #     dists *= 1e9
     #     self.plot_widget.plot(dists, profile, 'Distance [nm]', 'Intensity [a.u.]')
@@ -2394,12 +2394,12 @@ class HolographyWidget(QtWidgets.QWidget):
         dy_img = imsup.ImageExp(curr_img.height, curr_img.width)
         grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
         print('Calculating gradient for sample distance = {0:.2f} nm'.format(curr_img.px_dim * 1e9))
-        dx, dy = np.gradient(curr_img.amPh.ph, curr_img.px_dim)
+        dx, dy = np.gradient(curr_img.amph.ph, curr_img.px_dim)
         dr = np.sqrt(dx * dx + dy * dy)
         # dphi = np.arctan2(dy, dx)
-        dx_img.amPh.ph = np.copy(dx)
-        dy_img.amPh.ph = np.copy(dy)
-        grad_img.amPh.ph = np.copy(dr)
+        dx_img.amph.ph = np.copy(dx)
+        dy_img.amph.ph = np.copy(dy)
+        grad_img.amph.ph = np.copy(dr)
         dx_img.name = 'gradX_of_{0}'.format(curr_img.name)
         dy_img.name = 'gradY_of_{0}'.format(curr_img.name)
         grad_img.name = 'gradM_of_{0}'.format(curr_img.name)
@@ -2410,7 +2410,7 @@ class HolographyWidget(QtWidgets.QWidget):
     # calculate B from section on image
     def calc_B_from_section(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         dpt1, dpt2 = self.point_sets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
@@ -2440,7 +2440,7 @@ class HolographyWidget(QtWidgets.QWidget):
         from numpy import linalg as la
 
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
             print('You must select two point on the image!')
@@ -2479,7 +2479,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
-        curr_idx = curr_img.numInSeries - 1
+        curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
             print('You have to mark two points!')
@@ -2498,7 +2498,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def gen_phase_stats(self):
         curr_img = self.display.image
-        curr_phs = curr_img.amPh.ph
+        curr_phs = curr_img.amph.ph
         print('STATISTICS for phase of "{0}":'.format(curr_img.name))
         print('Min. = {0:.2f}\nMax. = {1:.2f}\nAvg. = {2:.2f}'.format(np.min(curr_phs), np.max(curr_phs), np.mean(curr_phs)))
         print('Med. = {0:.2f}\nStd. dev. = {1:.2f}\nVar. = {2:.2f}'.format(np.median(curr_phs), np.std(curr_phs), np.var(curr_phs)))
@@ -2507,12 +2507,12 @@ class HolographyWidget(QtWidgets.QWidget):
         #     max_shift = const.corr_arr_max_shift
         #     print('Calculating ({0}x{0}) correlation array between *curr* and *prev* phases...'.format(2 * max_shift))
         #     prev_img = curr_img.prev
-        #     prev_phs = prev_img.amPh.ph
+        #     prev_phs = prev_img.amph.ph
         #     corr_arr = tr.calc_corr_array(prev_phs, curr_phs, max_shift)
         #     ch, cw = corr_arr.shape
         #     corr_img = imsup.ImageExp(ch, cw)
-        #     corr_img.LoadAmpData(corr_arr)
-        #     corr_img.LoadPhsData(corr_arr)
+        #     corr_img.load_amp_data(corr_arr)
+        #     corr_img.load_phs_data(corr_arr)
         #     corr_img = rescale_image_buffer_to_window(corr_img, const.disp_dim)
         #     corr_img.name = 'corr_arr_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
         #     self.insert_img_after_curr(corr_img)
@@ -2526,14 +2526,14 @@ class HolographyWidget(QtWidgets.QWidget):
         #     # # Pearson correlation matrix
         #     # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
         #     # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
-        #     # corr_coef_img.amPh.ph = np.copy(corr_coef_arr)
+        #     # corr_coef_img.amph.ph = np.copy(corr_coef_arr)
         #     # corr_coef_img = rescale_image_buffer_to_window(corr_coef_img, const.disp_dim)
         #     # corr_coef_img.name = 'corr_coef_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
         #     # self.insert_img_after_curr(corr_coef_img)
 
     def calc_mean_inner_potential(self):
         curr_img = self.display.image
-        curr_phs = curr_img.amPh.ph
+        curr_phs = curr_img.amph.ph
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         Ua = float(self.acc_voltage_input.text()) * 1e3
@@ -2548,9 +2548,9 @@ class HolographyWidget(QtWidgets.QWidget):
         C_E = (2 * np.pi / ew_lambda) * (Ua + U0) / (Ua * (Ua + 2 * U0))
         mip = curr_phs / (C_E * sample_thickness)
 
-        mean_inner_pot_img = imsup.copy_am_ph_image(curr_img)
-        mean_inner_pot_img.amPh.am *= 0
-        mean_inner_pot_img.amPh.ph = np.copy(mip)
+        mean_inner_pot_img = imsup.copy_amph_image(curr_img)
+        mean_inner_pot_img.amph.am *= 0
+        mean_inner_pot_img.amph.ph = np.copy(mip)
         mean_inner_pot_img.name = 'MIP_from_{0}'.format(curr_img.name)
         self.insert_img_after_curr(mean_inner_pot_img)
 
@@ -2561,8 +2561,8 @@ class HolographyWidget(QtWidgets.QWidget):
         conts_scaled = imsup.scale_image(conts, 0.0, 1.0)
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0.0
-        img_filtered = imsup.copy_am_ph_image(curr_img)
-        img_filtered.amPh.ph = np.copy(conts_scaled)
+        img_filtered = imsup.copy_amph_image(curr_img)
+        img_filtered.amph.ph = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
 
 # --------------------------------------------------------
@@ -2575,9 +2575,9 @@ def open_dm3_file(file_path, img_type='amp'):
     if img_type == 'amp':
         # amp_data = np.sqrt(np.abs(img_data))
         amp_data = np.copy(img_data)
-        new_img.LoadAmpData(amp_data.astype(np.float32))
+        new_img.load_amp_data(amp_data.astype(np.float32))
     else:
-        new_img.LoadPhsData(img_data.astype(np.float32))
+        new_img.load_phs_data(img_data.astype(np.float32))
 
     return new_img
 
@@ -2613,7 +2613,7 @@ def load_image_series_from_first_file(img_path):
         img_type = imgs_info[img_idx, 2] if is_there_info else 'amp'
 
         img = open_dm3_file(img_path, img_type)
-        img.numInSeries = img_num
+        img.num_in_ser = img_num
         img.name = imgs_info[img_idx, 1] if is_there_info else img_name_text
         img = rescale_image_buffer_to_window(img, const.disp_dim)
         img_list.append(img)
@@ -2626,8 +2626,8 @@ def load_image_series_from_first_file(img_path):
         img_path = rreplace(img_path, img_num_text, img_num_text_new, 1)
         img_num_text = img_num_text_new
 
-    img_list.UpdateLinks()
-    # img_list.UpdateAndRestrainLinks()
+    img_list.update_links()
+    # img_list.update_and_restrain_links()
     return img_list[0]
 
 # --------------------------------------------------------
@@ -2636,8 +2636,8 @@ def rescale_image_buffer_to_window(img, win_dim):
     scale_factor = win_dim / img.width
     img_to_disp = tr.rescale_image_ski(img, scale_factor)
     img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
-    img.buffer.am = np.copy(img_to_disp.amPh.am)
-    img.buffer.ph = np.copy(img_to_disp.amPh.ph)
+    img.buffer.am = np.copy(img_to_disp.amph.am)
+    img.buffer.ph = np.copy(img_to_disp.amph.ph)
     return img
 
 # --------------------------------------------------------
@@ -2651,14 +2651,14 @@ def cross_corr_images(img_list):
         img.shift = [ sp + sn for sp, sn in zip(img.prev.shift, new_shift) ]
         # img.shift = list(np.array(img.shift) + np.array(new_shift))
         print('"{0}" was shifted by {1} px'.format(img.name, img.shift))
-        img_shifted = imsup.shift_am_ph_image(img, img.shift)
+        img_shifted = imsup.shift_amph_image(img, img.shift)
         img_align_list.append(img_shifted)
     return img_align_list
 
 # --------------------------------------------------------
 
 def crop_fragment(img, coords):
-    crop_img = imsup.crop_am_ph_roi(img, coords)
+    crop_img = imsup.crop_amph_roi(img, coords)
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
 
@@ -2775,7 +2775,7 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
     global_limits = [1e5, 0]
 
     for img in img_list:
-        limits = [np.min(img.amPh.ph), np.max(img.amPh.ph)]
+        limits = [np.min(img.amph.ph), np.max(img.amph.ph)]
         if limits[0] < global_limits[0]:
             global_limits[0] = limits[0]
         if limits[1] > global_limits[1]:
@@ -2783,19 +2783,19 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
 
     fig, ax = plt.subplots()
     for img, idx in zip(img_list, range(1, len(img_list)+1)):
-        im = ax.imshow(img.amPh.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
+        im = ax.imshow(img.amph.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
 
         if idx == len(img_list):
             cbar = fig.colorbar(im)
             cbar.set_label(cbar_lab)
 
         if add_arrows:
-            width, height = img.amPh.ph.shape
+            width, height = img.amph.ph.shape
             xv, yv = np.meshgrid(np.arange(0, width, float(arr_dist)), np.arange(0, height, float(arr_dist)))
             xv += arr_dist / 2.0
             yv += arr_dist / 2.0
 
-            phd = img.amPh.ph[0:height:arr_dist, 0:width:arr_dist]
+            phd = img.amph.ph[0:height:arr_dist, 0:width:arr_dist]
             yd, xd = np.gradient(phd)
 
             # arrows along magnetic contours
