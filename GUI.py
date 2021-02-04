@@ -165,16 +165,17 @@ class LabelExt(QtWidgets.QLabel):
             lab.move(pos.x()+4, pos.y()+4)
             lab.show()
 
-    def set_image(self, disp_amp=True, disp_phs=False, log_scale=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
+    def set_image(self, disp_amp=True, disp_phs=False, log_scale=False, hide_bad_px=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
         if self.image.buffer.am.shape[0] != const.disp_dim:
             self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
 
         if disp_amp:
             px_arr = np.copy(self.image.buffer.am)
+            if hide_bad_px:
+                px_arr = imsup.remove_pixel_outliers(px_arr, const.min_px_threshold, const.max_px_threshold)
             if log_scale:
-                buf_am = np.copy(px_arr)
-                buf_am[np.where(buf_am <= 0)] = 1e-5
-                px_arr = np.log(buf_am)
+                px_arr[np.where(px_arr <= 0)] = 1e-5
+                px_arr = np.log(px_arr)
         else:
             px_arr = np.copy(self.image.buffer.ph)
             if not disp_phs:
@@ -563,7 +564,11 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.log_scale_checkbox = QtWidgets.QCheckBox('Log scale', self)
         self.log_scale_checkbox.setChecked(False)
-        self.log_scale_checkbox.toggled.connect(self.update_display)
+        self.log_scale_checkbox.toggled.connect(self.update_display_and_bcg)
+
+        self.hide_bad_px_checkbox = QtWidgets.QCheckBox('Hide bad pixels', self)
+        self.hide_bad_px_checkbox.setChecked(False)
+        self.hide_bad_px_checkbox.toggled.connect(self.update_display_and_bcg)
 
         self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
         self.clear_prev_checkbox.setChecked(False)
@@ -617,6 +622,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_disp.addWidget(self.log_scale_checkbox, 3, 1)
         grid_disp.addWidget(self.gray_radio_button, 1, 2)
         grid_disp.addWidget(self.color_radio_button, 2, 2)
+        grid_disp.addWidget(self.hide_bad_px_checkbox, 3, 2)
         grid_disp.addWidget(unwrap_button, 1, 3)
         grid_disp.addWidget(wrap_button, 2, 3)
         grid_disp.addWidget(norm_phase_button, 3, 3)
@@ -1337,15 +1343,20 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def toggle_log_scale(self):
         self.log_scale_checkbox.setChecked(not self.log_scale_checkbox.isChecked())
-        self.update_display()
+        self.update_display_and_bcg()
+
+    def toggle_hide_bad_pixels(self):
+        self.hide_bad_px_checkbox.setChecked(not self.hide_bad_px_checkbox.isChecked())
+        self.update_display_and_bcg()
 
     def update_display(self):
         is_amp_checked = self.amp_radio_button.isChecked()
         is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
+        is_hide_bad_px_checked = self.hide_bad_px_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
-        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked,
-                               log_scale=is_log_scale_checked, color=is_color_checked)
+        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked, log_scale=is_log_scale_checked,
+                               hide_bad_px=is_hide_bad_px_checked, color=is_color_checked)
 
     def update_bcg(self):
         bright_val = int(self.bright_input.text())
@@ -1362,6 +1373,7 @@ class HolographyWidget(QtWidgets.QWidget):
         is_amp_checked = self.amp_radio_button.isChecked()
         is_phs_checked = self.phs_radio_button.isChecked()
         is_log_scale_checked = self.log_scale_checkbox.isChecked()
+        is_hide_bad_px_checked = self.hide_bad_px_checkbox.isChecked()
         is_color_checked = self.color_radio_button.isChecked()
 
         bright_val = int(self.bright_input.text())
@@ -1372,8 +1384,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.change_cont_slider_value()
         self.change_gamma_slider_value()
 
-        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked,
-                               log_scale=is_log_scale_checked, color=is_color_checked,
+        self.display.set_image(disp_amp=is_amp_checked, disp_phs=is_phs_checked, log_scale=is_log_scale_checked,
+                               hide_bad_px=is_hide_bad_px_checked, color=is_color_checked,
                                update_bcg=True, bright=bright_val, cont=cont_val, gamma=gamma_val)
 
     def disp_bright_value(self):
@@ -1969,6 +1981,7 @@ class HolographyWidget(QtWidgets.QWidget):
         h_img = self.display.image
         h_fft = holo.holo_fft(h_img)
         h_fft.name = 'fft_of_{0}'.format(h_img.name)
+        self.hide_bad_px_checkbox.setChecked(False)
         self.insert_img_after_curr(h_fft)
         self.log_scale_checkbox.setChecked(True)
 
@@ -2603,11 +2616,6 @@ def load_image_series_from_first_file(img_path):
         img.numInSeries = img_num
         img.name = imgs_info[img_idx, 1] if is_there_info else img_name_text
         img = rescale_image_buffer_to_window(img, const.disp_dim)
-        # ---
-        # imsup.remove_pixel_artifacts(img, const.min_px_threshold, const.max_px_threshold)
-        # imsup.remove_pixel_artifacts(img, 0.7, 1.3)
-        # img.UpdateBuffer()
-        # ---
         img_list.append(img)
 
         img_idx += 1
