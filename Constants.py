@@ -27,8 +27,8 @@ disp_name_max_len = 60
 input_dir = 'input/'
 results_dir = 'results/'
 
-aperture = 32                       # radius of aperture
-hann_win = 72                       # edge of Hann. window
+aperture = 64                       # aperture diameter
+hann_win = 72                       # side length of Hann. window
 min_COM_roi_hlf_edge = 5
 
 ew_lambda = 1.968749e-12            # m (300kV)

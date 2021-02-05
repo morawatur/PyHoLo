@@ -789,14 +789,14 @@ class HolographyWidget(QtWidgets.QWidget):
         self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift (in dev.)', self)
         self.subpixel_shift_checkbox.setChecked(False)
 
-        aperture_label = QtWidgets.QLabel('Aperture rad. [px]', self)
+        aperture_label = QtWidgets.QLabel('Aperture diam. [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
 
-        hann_win_label = QtWidgets.QLabel('Hann win. [px]', self)
+        hann_win_label = QtWidgets.QLabel('Hann window [px]', self)
         self.hann_win_input = QtWidgets.QLineEdit(str(const.hann_win), self)
 
         self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
-        self.radians2add_input = QtWidgets.QLineEdit('3.14', self)
+        self.radians_to_add_input = QtWidgets.QLineEdit('3.14', self)
 
         sideband_xy_label = QtWidgets.QLabel('Sideband xy-coords:')
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
@@ -840,7 +840,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(amplify_button, 3, 3)
         self.tab_holo.layout.addWidget(self.amp_factor_input, 3, 4)
         self.tab_holo.layout.addWidget(add_radians_button, 4, 3)
-        self.tab_holo.layout.addWidget(self.radians2add_input, 4, 4)
+        self.tab_holo.layout.addWidget(self.radians_to_add_input, 4, 4)
         self.tab_holo.layout.addWidget(sideband_xy_label, 5, 3)
         self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 4)
         self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 4)
@@ -2015,13 +2015,13 @@ class HolographyWidget(QtWidgets.QWidget):
         print('R = {0:.3f} um-1\nAng = {1:.2f} deg'.format(R * 1e-6, ang))
         # ------------------
 
-        ap_radius = int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
+        aper_diam = int(self.aperture_input.text())
+        hann_win_dim = int(self.hann_win_input.text())
 
         mid = h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
 
         self.log_scale_checkbox.setChecked(True)
@@ -2050,16 +2050,16 @@ class HolographyWidget(QtWidgets.QWidget):
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
-        ap_radius = int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
+        aper_diam = int(self.aperture_input.text())
+        hann_win_dim = int(self.hann_win_input.text())
 
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
 
         obj_h_fft = holo.holo_fft(obj_h_img)
-        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
 
         ref_sband_ctr_ap.name = 'ref_sband'
         obj_sband_ctr_ap.name = 'obj_sband'
@@ -2100,16 +2100,16 @@ class HolographyWidget(QtWidgets.QWidget):
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
 
-        ap_radius = int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
+        aper_diam = int(self.aperture_input.text())
+        hann_win_dim = int(self.hann_win_input.text())
 
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
 
         obj_h_fft = holo.holo_fft(obj_h_img)
-        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
 
         rec_ref = holo.holo_ifft(ref_sband_ctr_ap)
         rec_obj = holo.holo_ifft(obj_sband_ctr_ap)
@@ -2174,7 +2174,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def add_radians(self):
         curr_img = self.display.image
-        radians = float(self.radians2add_input.text())
+        radians = float(self.radians_to_add_input.text())
 
         new_phs_img = imsup.copy_amph_image(curr_img)
         new_phs_img.amph.ph += radians
@@ -2289,10 +2289,10 @@ class HolographyWidget(QtWidgets.QWidget):
         mid = h_fft.width // 2
         shift = [mid - sbx, mid - sby]
 
-        ap_radius= int(self.aperture_input.text())
-        hann_window = int(self.hann_win_input.text())
+        aper_diam = int(self.aperture_input.text())
+        hann_win_dim = int(self.hann_win_input.text())
 
-        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_rad=ap_radius, N_hann=hann_window)
+        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
 
         self.log_scale_checkbox.setChecked(True)

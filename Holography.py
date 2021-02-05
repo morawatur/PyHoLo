@@ -47,15 +47,17 @@ def find_img_max(img):
 
 #-------------------------------------------------------------------
 
-def insert_aperture(img, ap):
+def insert_aperture(img, ap_dia):
     dt = img.cmp_repr
     img.reim_to_amph()
     img_ap = imsup.copy_amph_image(img)
 
     n = img_ap.width
     c = n // 2
-    y, x = np.ogrid[-c:n - c, -c:n - c]
-    mask = x * x + y * y > ap * ap
+    ap_r = ap_dia // 2
+
+    y, x = np.ogrid[-c:n-c, -c:n-c]
+    mask = x * x + y * y > ap_r * ap_r
 
     img_ap.amph.am[mask] = 0.0
     img_ap.amph.ph[mask] = 0.0
@@ -66,18 +68,18 @@ def insert_aperture(img, ap):
 
 # -------------------------------------------------------------------
 
-def mult_by_hann_window(img, N=100):
+def mult_by_hann_window(img, hw_dim):
     dt = img.cmp_repr
     img.reim_to_amph()
     new_img = imsup.copy_amph_image(img)
 
-    hann = np.hanning(N)
+    hann = np.hanning(hw_dim)
     hann_2d = np.sqrt(np.outer(hann, hann))
 
-    hann_win = imsup.ImageExp(N, N, cmp_repr=imsup.Image.cmp['CAP'])
+    hann_win = imsup.ImageExp(hw_dim, hw_dim, cmp_repr=imsup.Image.cmp['CAP'])
     hann_win.load_amp_data(hann_2d)
 
-    hmin, hmax = (img.width - N) // 2, (img.width + N) // 2
+    hmin, hmax = (img.width - hw_dim) // 2, (img.width + hw_dim) // 2
     new_img.amph.am[hmin:hmax, hmin:hmax] *= hann_2d
     new_img.amph.ph[hmin:hmax, hmin:hmax] *= hann_2d
 
@@ -94,13 +96,13 @@ def holo_fft(h_img):
 
 #-------------------------------------------------------------------
 
-def holo_get_sideband(h_fft, shift, ap_rad=const.aperture, N_hann=const.hann_win):
+def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, hann_dim=const.hann_win):
     subpx_shift, px_shift = np.modf(shift)
     sband_ctr = imsup.shift_image(h_fft, list(px_shift.astype(np.int32)))
     if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
         sband_ctr = subpixel_shift(sband_ctr, list(subpx_shift))
-    sband_ctr_ap = insert_aperture(sband_ctr, ap_rad)
-    sband_ctr_ap = mult_by_hann_window(sband_ctr_ap, N=N_hann)
+    sband_ctr_ap = insert_aperture(sband_ctr, ap_dia)
+    sband_ctr_ap = mult_by_hann_window(sband_ctr_ap, hann_dim)
     return sband_ctr_ap
 
 #-------------------------------------------------------------------
