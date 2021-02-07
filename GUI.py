@@ -789,6 +789,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift (in dev.)', self)
         self.subpixel_shift_checkbox.setChecked(False)
 
+        self.assign_rec_ph_to_obj_h_checkbox = QtWidgets.QCheckBox('(Rec. H+R) Assign rec. phase to object hologram', self)
+        self.assign_rec_ph_to_obj_h_checkbox.setChecked(False)
+
         aperture_label = QtWidgets.QLabel('Aperture diam. [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
 
@@ -823,7 +826,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.setColumnStretch(4, 1)
         self.tab_holo.layout.setColumnStretch(5, 1)
         self.tab_holo.layout.setRowStretch(0, 1)
-        self.tab_holo.layout.setRowStretch(7, 1)
+        self.tab_holo.layout.setRowStretch(8, 1)
         self.tab_holo.layout.addWidget(holo_fft_button, 1, 1)
         self.tab_holo.layout.addWidget(holo_sband_button, 1, 2)
         self.tab_holo.layout.addWidget(holo_ifft_button, 2, 1)
@@ -845,6 +848,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_holo.layout.addWidget(self.sideband_x_input, 5, 4)
         self.tab_holo.layout.addWidget(self.sideband_y_input, 6, 4)
         self.tab_holo.layout.addWidget(get_sideband_from_xy_button, 6, 3)
+        self.tab_holo.layout.addWidget(self.assign_rec_ph_to_obj_h_checkbox, 7, 1, 1, 4)
         self.tab_holo.setLayout(self.tab_holo.layout)
 
         # ------------------------------
@@ -2121,15 +2125,24 @@ class HolographyWidget(QtWidgets.QWidget):
         rec_obj.amph.ph = np.copy(new_obj_phs)
 
         rec_obj_corr = holo.calc_phase_diff(rec_ref, rec_obj)
-        rec_obj_corr = rescale_image_buffer_to_window(rec_obj_corr, const.disp_dim)
-        rec_obj_corr.name = 'ph_from_{0}'.format(obj_h_img.name)
 
         self.log_scale_checkbox.setChecked(False)
-        self.insert_img_after_curr(rec_obj_corr)
-        self.phs_radio_button.setChecked(True)
 
-        print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_obj_corr.name))
+        if self.assign_rec_ph_to_obj_h_checkbox.isChecked():
+            # obj_h_img.amph.ph[:] = rec_obj_corr.amph.ph
+            obj_h_img.amph.ph = np.copy(rec_obj_corr.amph.ph)
+            obj_h_img = rescale_image_buffer_to_window(obj_h_img, const.disp_dim)
+            obj_h_img.name += '_rec'
+            self.go_to_next_image()
+            print('Output:\n"{0}" -- object hologram (amplitude) with reconstructed phase'.format(obj_h_img.name))
+        else:
+            rec_obj_corr = rescale_image_buffer_to_window(rec_obj_corr, const.disp_dim)
+            rec_obj_corr.name = 'ph_from_{0}'.format(obj_h_img.name)
+            self.insert_img_after_curr(rec_obj_corr)
+            print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_obj_corr.name))
+
         print('--------------------------')
+        self.phs_radio_button.setChecked(True)
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev
