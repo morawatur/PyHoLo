@@ -472,6 +472,7 @@ class HolographyWidget(QtWidgets.QWidget):
         clear_button = QtWidgets.QPushButton('Clear', self)
         undo_button = QtWidgets.QPushButton('Undo', self)
         add_marker_at_xy_button = QtWidgets.QPushButton('Add marker', self)
+        transfer_phs_to_img_button = QtWidgets.QPushButton('Transfer current phase to image No. -->', self)
 
         self.amp_radio_button = QtWidgets.QRadioButton('Amplitude', self)
         self.phs_radio_button = QtWidgets.QRadioButton('Phase', self)
@@ -489,6 +490,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.marker_x_input = QtWidgets.QLineEdit('0', self)
         self.marker_y_input = QtWidgets.QLineEdit('0', self)
 
+        self.img_num_for_phs_transfer_input = QtWidgets.QLineEdit('1', self)
+
         prev_button.clicked.connect(self.go_to_prev_image)
         next_button.clicked.connect(self.go_to_next_image)
         first_button.clicked.connect(self.go_to_first_image)
@@ -503,6 +506,7 @@ class HolographyWidget(QtWidgets.QWidget):
         clear_button.clicked.connect(self.clear_image)
         undo_button.clicked.connect(self.remove_last_point)
         add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
+        transfer_phs_to_img_button.clicked.connect(self.transfer_phase_to_image)
 
         self.amp_radio_button.toggled.connect(self.update_display_and_bcg)
         self.phs_radio_button.toggled.connect(self.update_display_and_bcg)
@@ -517,7 +521,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_nav.layout.setColumnStretch(4, 1)
         self.tab_nav.layout.setColumnStretch(5, 1)
         self.tab_nav.layout.setRowStretch(0, 1)
-        self.tab_nav.layout.setRowStretch(8, 1)
+        self.tab_nav.layout.setRowStretch(9, 1)
         self.tab_nav.layout.addWidget(first_button, 1, 1)
         self.tab_nav.layout.addWidget(prev_button, 1, 2)
         self.tab_nav.layout.addWidget(next_button, 1, 3)
@@ -539,6 +543,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_nav.layout.addWidget(add_marker_at_xy_button, 7, 3)
         self.tab_nav.layout.addWidget(self.marker_x_input, 6, 4)
         self.tab_nav.layout.addWidget(self.marker_y_input, 7, 4)
+        self.tab_nav.layout.addWidget(transfer_phs_to_img_button, 8, 1, 1, 3)
+        self.tab_nav.layout.addWidget(self.img_num_for_phs_transfer_input, 8, 4)
         self.tab_nav.setLayout(self.tab_nav.layout)
 
         # ------------------------------
@@ -789,7 +795,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.subpixel_shift_checkbox = QtWidgets.QCheckBox('Subpixel shift (in dev.)', self)
         self.subpixel_shift_checkbox.setChecked(False)
 
-        self.assign_rec_ph_to_obj_h_checkbox = QtWidgets.QCheckBox('(Rec. H+R) Assign rec. phase to object hologram', self)
+        self.assign_rec_ph_to_obj_h_checkbox = QtWidgets.QCheckBox('(Rec. H+R) Assign reconstructed phase to object hologram', self)
         self.assign_rec_ph_to_obj_h_checkbox.setChecked(False)
 
         aperture_label = QtWidgets.QLabel('Aperture diam. [px]', self)
@@ -1246,7 +1252,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def move_image_to_pos(self, new_idx):
         curr_img = self.display.image
-        curr_idx = curr_img.num_in_ser - 1
+        curr_idx = abs(curr_img.num_in_ser) - 1
 
         if new_idx == curr_idx or new_idx < 0: return
 
@@ -1333,6 +1339,31 @@ class HolographyWidget(QtWidgets.QWidget):
         del all_img_list[curr_idx]      # ImageList destructor updates and restrains links among the remaining images
         del self.point_sets[curr_idx]
         self.update_curr_info_label()
+
+    def transfer_phase_to_image(self):
+        curr_img = self.display.image
+        curr_idx = abs(curr_img.num_in_ser) - 1
+        to_idx = int(self.img_num_for_phs_transfer_input.text()) - 1
+
+        if to_idx == curr_idx:
+            print('Choose another image')
+            return
+
+        first_img = imsup.get_first_image(curr_img)
+        imgs = imsup.create_image_list_from_first_image(first_img)
+
+        if to_idx < 0 or to_idx >= len(imgs):
+            print('Image index out of range')
+            return
+
+        if imgs[to_idx].amph.ph.shape != curr_img.amph.ph.shape:
+            print('Transfer not possible: images have different sizes')
+            return
+
+        imgs[to_idx].amph.ph = np.copy(curr_img.amph.ph)
+        imgs[to_idx] = rescale_image_buffer_to_window(imgs[to_idx], const.disp_dim)
+        self.go_to_image(to_idx)
+        print('Phase transferred: {0} --> {1}'.format(curr_idx + 1, to_idx + 1))
 
     def toggle_lines(self):
         self.display.show_lines = not self.display.show_lines
