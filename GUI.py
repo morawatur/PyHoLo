@@ -179,7 +179,7 @@ class LabelExt(QtWidgets.QLabel):
         else:
             px_arr = np.copy(self.image.buffer.ph)
             if not disp_phs:
-                self.image.update_cos_phase()
+                if self.image.cos_phase is None: self.image.update_cos_phase()
                 px_arr = np.cos(px_arr)
 
         if not update_bcg:
