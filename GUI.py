@@ -174,13 +174,12 @@ class LabelExt(QtWidgets.QLabel):
             if hide_bad_px:
                 px_arr = imsup.remove_outlier_pixels(px_arr, const.min_px_threshold, const.max_px_threshold)
             if log_scale:
-                px_arr[np.where(px_arr <= 0)] = 1e-5
-                px_arr = np.log(px_arr)
-        else:
+                px_arr = imsup.prep_img_and_calc_log(px_arr)
+        elif disp_phs:
             px_arr = np.copy(self.image.buffer.ph)
-            if not disp_phs:
-                if self.image.cos_phase is None: self.image.update_cos_phase()
-                px_arr = np.cos(px_arr)
+        else:
+            if self.image.cos_phase is None: self.image.update_cos_phase()
+            px_arr = np.cos(self.image.buffer.ph)
 
         if not update_bcg:
             pixmap_to_disp = imsup.scale_image(px_arr, 0.0, 255.0)
@@ -370,7 +369,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
         file_paths = file_dialog.getOpenFileNames(self, 'Open image files', curr_dir, 'Image files (*.dm3 *.npy)')[0]
 
         if len(file_paths) == 0:
-            print('No images to read. Exiting...')
+            print('No images to read...')
             return
 
         img_type = 'amp' if self.holo_widget.amp_radio_button.isChecked() else 'phs'
@@ -418,7 +417,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
         file_path = file_dialog.getOpenFileName(self, 'Open dm3 series', curr_dir, 'Image files (*.dm3)')[0]
 
         if file_path == '':
-            print('No images to read. Exiting...')
+            print('No images to read...')
             return
         if not file_path.endswith('.dm3'):
             print('Could not load the starting image. It must be in dm3 format...')
@@ -951,7 +950,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # Magnetic calculations panel #2 (7)
         # ------------------------------
 
-        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colmaps', self)
+        export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colormaps', self)
         export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
 
         self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
@@ -1587,14 +1586,19 @@ class HolographyWidget(QtWidgets.QWidget):
         # TIF file
         else:
             fname_ext = '.tif'
-            log = True if self.log_scale_checkbox.isChecked() else False
+            log_scale = True if is_amp_checked and self.log_scale_checkbox.isChecked() else False
+            hide_bad_px = True if is_amp_checked and self.hide_bad_px_checkbox.isChecked() else False
             color = True if self.color_radio_button.isChecked() else False
             bright = int(self.bright_input.text())
             cont = int(self.cont_input.text())
             gamma = float(self.gamma_input.text())
 
-            imsup.save_arr_as_tiff(data_to_export, fname, log, color, brg=bright, cnt=cont, gam=gamma)
+            imsup.save_arr_as_tiff(data_to_export, fname, log_scale, color, bright, cont, gamma,
+                                   hide_bad_px, const.min_px_threshold, const.max_px_threshold)
+
             print('Saved image as "{0}.tif"'.format(fname))
+            # if log_scale: print('Warning: Logarithmic scale is on')
+            # if hide_bad_px: print('Warning: Outlier pixels are hidden')
 
         # save log file
         log_fname = '{0}_log.txt'.format(fname)
@@ -2009,6 +2013,7 @@ class HolographyWidget(QtWidgets.QWidget):
         dst = np.array(self.warp_points[1])
 
         warped_img = tr.warp_image_ski(curr_img, src, dst)
+        warped_img.name = curr_img.name + '_warp'
         self.insert_img_after_curr(warped_img)
         print('Image warped!')
 
