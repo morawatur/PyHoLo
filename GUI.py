@@ -429,6 +429,12 @@ class HolographyWindow(QtWidgets.QMainWindow):
         if not self.holo_widget.tab_disp.isEnabled():
             self.holo_widget.enable_tabs()
 
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_A:
+            self.holo_widget.go_to_prev_image()
+        elif event.key() == QtCore.Qt.Key_D:
+            self.holo_widget.go_to_next_image()
+
 # --------------------------------------------------------
 
 class HolographyWidget(QtWidgets.QWidget):
