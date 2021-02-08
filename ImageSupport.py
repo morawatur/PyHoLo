@@ -654,11 +654,11 @@ def remove_outlier_pixels(arr, min_threshold=0.2, max_threshold=1.8):
     arr_mean = np.mean(arr)
     arr_corr = np.copy(arr)
 
-    bad_pixels1 = np.where(arr > (max_threshold * arr_mean))
-    bad_pixels2 = np.where(arr < (min_threshold * arr_mean))
+    outliers1 = np.where(arr > (max_threshold * arr_mean))
+    outliers2 = np.where(arr < (min_threshold * arr_mean))
 
-    arr_corr[bad_pixels1] = arr_mean
-    arr_corr[bad_pixels2] = arr_mean
+    arr_corr[outliers1] = arr_mean
+    arr_corr[outliers2] = arr_mean
 
     return arr_corr
 
