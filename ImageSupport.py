@@ -664,6 +664,15 @@ def remove_outlier_pixels(arr, min_threshold=0.7, max_threshold=1.3):
 
 #-------------------------------------------------------------------
 
+def prep_img_and_calc_log(arr, eps=1e-5):
+    # arr_min = np.min(arr)
+    # if arr_min <= 0: arr -= (arr_min - eps)
+    arr[np.where(arr <= 0)] = eps
+    arr = np.log(arr)
+    return arr
+
+#-------------------------------------------------------------------
+
 def det_Imin_Imax_from_contrast(dI, def_max=256.0):
     dImin = dI // 2 + 1
     dImax = dI - dImin
@@ -700,10 +709,11 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
 #-------------------------------------------------------------------
 
-def save_arr_as_tiff(data, fname, log, color, brg=0, cnt=255, gam=1.0):
+def save_arr_as_tiff(data, fname, log=False, color=False, brg=0, cnt=255, gam=1.0, rm_out_px=False, min_px=0.2, max_px=1.8):
+    if rm_out_px:
+        data = remove_outlier_pixels(data, min_px, max_px)
     if log:
-        data[np.where(data <= 0)] = 1e-5
-        data = np.log(data)
+        data = prep_img_and_calc_log(data)
     data = update_image_bright_cont_gamma(data, brg, cnt, gam)
     if color:
         data = grayscale_to_rgb(data)
