@@ -664,10 +664,27 @@ def remove_outlier_pixels(arr, min_threshold=0.2, max_threshold=1.8):
 
 #-------------------------------------------------------------------
 
+def remove_outlier_pixels_ip(arr, min_threshold=0.2, max_threshold=1.8):
+    arr_mean = np.mean(arr)
+
+    outliers1 = np.where(arr > (max_threshold * arr_mean))
+    outliers2 = np.where(arr < (min_threshold * arr_mean))
+
+    arr[outliers1] = arr_mean
+    arr[outliers2] = arr_mean
+
+#-------------------------------------------------------------------
+
 def prep_img_and_calc_log(arr):
     arr_corr = np.copy(arr)
     arr_corr[np.where(arr <= 0)] = np.min(arr[np.where(arr > 0)])
     return np.log(arr_corr)
+
+#-------------------------------------------------------------------
+
+def prep_img_and_calc_log_ip(arr):
+    arr[np.where(arr <= 0)] = np.min(arr[np.where(arr > 0)])
+    arr[:] = np.log(arr)
 
 #-------------------------------------------------------------------
 
@@ -709,9 +726,9 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
 def save_arr_as_tiff(data, fname, log=False, color=False, brg=0, cnt=255, gam=1.0, rm_out_px=False, min_px=0.2, max_px=1.8):
     if rm_out_px:
-        data = remove_outlier_pixels(data, min_px, max_px)
+        remove_outlier_pixels_ip(data, min_px, max_px)
     if log:
-        data = prep_img_and_calc_log(data)
+        prep_img_and_calc_log_ip(data)
     data = update_image_bright_cont_gamma(data, brg, cnt, gam)
     if color:
         data = grayscale_to_rgb(data)
