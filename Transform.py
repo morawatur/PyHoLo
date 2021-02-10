@@ -30,15 +30,15 @@ def rescale_pixel_dim(px_dim, old_dim, new_dim):
 
 #-------------------------------------------------------------------
 
-def rotate_image_ski(img, angle, mode='constant'):
+def rotate_image_ski(img, angle, resize=False, mode='constant'):
     dt = img.cmp_repr
     img.reim_to_amph()
 
     # amp_cval = (np.min(img.amph.am) + np.max(img.amph.am)) / 2.0
     # phs_cval = (np.min(img.amph.ph) + np.max(img.amph.ph)) / 2.0
 
-    amp_rot = tr.rotate(img.amph.am, angle, mode=mode, cval=0.0)
-    phs_rot = tr.rotate(img.amph.ph, angle, mode=mode, cval=0.0)
+    amp_rot = tr.rotate(img.amph.am, angle, resize=resize, mode=mode, cval=0.0)
+    phs_rot = tr.rotate(img.amph.ph, angle, resize=resize, mode=mode, cval=0.0)
 
     img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_rot.load_amp_data(amp_rot)
