@@ -195,26 +195,6 @@ def find_dir_angle(p1, p2, orig=(0, 0)):
 
 #-------------------------------------------------------------------
 
-def find_dir_angles(p1, p2):
-    lpt = p1[:] if p1[0] < p2[0] else p2[:]     # left point
-    rpt = p1[:] if p1[0] > p2[0] else p2[:]     # right point
-    dx = np.abs(rpt[0] - lpt[0])
-    dy = np.abs(rpt[1] - lpt[1])
-    sign = 1 if rpt[1] < lpt[1] else -1
-    proj_dir = 1         # projection on y axis
-    if dx > dy:
-        sign *= -1
-        proj_dir = 0     # projection on x axis
-    diff1 = dx if dx < dy else dy
-    diff2 = dx if dx > dy else dy
-    ang1 = np.arctan2(diff1, diff2)
-    ang2 = np.pi / 2 - ang1
-    ang1 *= sign
-    ang2 *= (-sign)
-    return ang1, ang2, proj_dir
-
-#-------------------------------------------------------------------
-
 def calc_distance(p1, p2):
     dist = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return dist
