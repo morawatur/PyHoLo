@@ -44,10 +44,9 @@ def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
 
 # calculate B from section on image
 def calc_B_from_section(img, pt1, pt2, smpl_thck):
-    from numpy import linalg as la
     phs = img.amph.ph
 
-    d_dist = la.norm(pt1 - pt2)
+    d_dist = np.linalg.norm(pt1 - pt2)
     d_dist_real = d_dist * img.px_dim
 
     n_pts_for_ls = 5

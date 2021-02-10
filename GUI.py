@@ -2450,8 +2450,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(By_img)
 
     def calc_B_polar_from_section(self, gen_multiple_plots=False):
-        from numpy import linalg as la
-
         curr_img = self.display.image
         curr_idx = curr_img.num_in_ser - 1
 
@@ -2462,7 +2460,7 @@ class HolographyWidget(QtWidgets.QWidget):
         dpt1, dpt2 = self.point_sets[curr_idx][:2]
         pt1 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt1))
         pt2 = np.array(disp_pt_to_real_tl_pt(curr_img.width, dpt2))
-        d_dist = la.norm(pt1 - pt2)
+        d_dist = np.linalg.norm(pt1 - pt2)
 
         sample_thickness = float(self.sample_thick_input.text()) * 1e-9
         orig_is_pt1 = self.orig_in_pt1_radio_button.isChecked()
