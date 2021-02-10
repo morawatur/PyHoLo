@@ -885,8 +885,8 @@ class HolographyWidget(QtWidgets.QWidget):
         orig_B_pol_group.addButton(self.orig_in_pt1_radio_button)
         orig_B_pol_group.addButton(self.orig_in_mid_radio_button)
 
-        int_width_label = QtWidgets.QLabel('Profile width [px]', self)
-        self.int_width_input = QtWidgets.QLineEdit('1', self)
+        prof_width_label = QtWidgets.QLabel('Profile width [px]', self)
+        self.prof_width_input = QtWidgets.QLineEdit('1', self)
 
         sample_thick_label = QtWidgets.QLabel('Sample thickness [nm]', self)
         self.sample_thick_input = QtWidgets.QLineEdit('30', self)
@@ -933,8 +933,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(calc_B_prof_button, 5, 1, 1, 2)
         self.tab_calc.layout.addWidget(calc_Bxy_maps_button, 6, 1, 1, 2)
         self.tab_calc.layout.addWidget(gen_phase_stats_button, 7, 1, 1, 2)
-        self.tab_calc.layout.addWidget(int_width_label, 1, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.int_width_input, 2, 3, 1, 2)
+        self.tab_calc.layout.addWidget(prof_width_label, 1, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.prof_width_input, 2, 3, 1, 2)
         self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
         self.tab_calc.layout.addWidget(calc_B_pol_button, 4, 3, 1, 2)
         self.tab_calc.layout.addWidget(calc_B_pol_sectors_button, 5, 3, 1, 2)
@@ -2374,11 +2374,15 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # rotate image by the direction angle
         rot_angle = imsup.degrees(dir_angle)
-        img_rotated = tr.rotate_image_ski(img_shifted, rot_angle)
+        img_rotated = tr.rotate_image_ski(img_shifted, rot_angle, resize=True)
 
-        # crop fragment (width = distance between two points, height = integration width)
+        # crop fragment (width = distance between two points, height = profile width)
         frag_w = int(np.linalg.norm(rpt1 - rpt2))
-        frag_h = int(self.int_width_input.text())
+        frag_h = int(self.prof_width_input.text())
+
+        if frag_h <= 0 or frag_h > img_rotated.height:
+            print('Incorrect profile width')
+            return
 
         frag_coords = imsup.det_crop_coords_for_new_dims(img_rotated.width, img_rotated.height, frag_w, frag_h)
         img_cropped = imsup.crop_amph_roi(img_rotated, frag_coords)
