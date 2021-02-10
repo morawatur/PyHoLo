@@ -2358,86 +2358,44 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.num_in_ser - 1
         px_sz = curr_img.px_dim
 
-        points = self.point_sets[curr_idx][:2]
-        points = np.array(disp_pts_to_real_ctr_pts(curr_img.width, points))
+        dpts = self.point_sets[curr_idx][:2]
+        rpts = np.array(disp_pts_to_real_ctr_pts(curr_img.width, dpts))
+        rpt1, rpt2 = rpts
 
         # find rotation center of the section
-        rot_center = np.average(points, 0).astype(np.int32)
+        rot_center = np.average(rpts, 0).astype(np.int32)
 
-        # find direction (angle) of the section
-        dir_info = tr.find_dir_angles(points[0], points[1])
-        dir_angle = imsup.degrees(dir_info[0])
-        proj_dir = dir_info[2]
+        # find direction angle of the section
+        dir_angle = tr.find_dir_angle(rpt1, rpt2)
 
-        # shift image by -center
+        # shift rotation center to the image center
         shift_to_rc = list(-rot_center)
         img_shifted = imsup.shift_amph_image(curr_img, shift_to_rc)
 
-        # rotate image by angle
-        img_rot = tr.rotate_image_ski(img_shifted, dir_angle)
+        # rotate image by the direction angle
+        rot_angle = imsup.degrees(dir_angle)
+        img_rotated = tr.rotate_image_ski(img_shifted, rot_angle)
 
-        # crop fragment (height = distance between two points)
-        pt_diffs = points[0] - points[1]
-        frag_dim1 = int(np.sqrt(pt_diffs[0] ** 2 + pt_diffs[1] ** 2))
-        frag_dim2 = int(self.int_width_input.text())
+        # crop fragment (width = distance between two points, height = integration width)
+        frag_w = int(np.linalg.norm(rpt1 - rpt2))
+        frag_h = int(self.int_width_input.text())
 
-        if proj_dir == 0:
-            frag_width, frag_height = frag_dim1, frag_dim2
-        else:
-            frag_width, frag_height = frag_dim2, frag_dim1
-
-        frag_coords = imsup.det_crop_coords_for_new_dims(img_rot.width, img_rot.height, frag_width, frag_height)
-        img_cropped = imsup.crop_amph_roi(img_rot, frag_coords)
+        frag_coords = imsup.det_crop_coords_for_new_dims(img_rotated.width, img_rotated.height, frag_w, frag_h)
+        img_cropped = imsup.crop_amph_roi(img_rotated, frag_coords)
 
         # calculate projection of intensity
         if self.amp_radio_button.isChecked():
             int_matrix = np.copy(img_cropped.amph.am)
         elif self.phs_radio_button.isChecked():
-            # ph_min = np.min(img_cropped.amph.ph)
-            # ph_fix = -ph_min if ph_min < 0 else 0
-            # img_cropped.amph.ph += ph_fix
             int_matrix = np.copy(img_cropped.amph.ph)
         else:
-            # cos_ph_min = np.min(img_cropped.cos_phase)
-            # cos_ph_fix = -cos_ph_min if cos_ph_min < 0 else 0
-            # img_cropped.cos_phase += cos_ph_fix
             int_matrix = np.copy(img_cropped.cos_phase)
 
-        int_profile = np.sum(int_matrix, proj_dir) / frag_dim2  # 0 - horizontal projection, 1 - vertical projection
+        int_profile = np.sum(int_matrix, 0) / frag_h    # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
         dists *= 1e9
 
         self.plot_widget.plot(dists, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
-
-    # def plot_profile_alt(self):
-    #     curr_img = self.display.image
-    #     curr_idx = curr_img.num_in_ser - 1
-    #     px_sz = curr_img.px_dim
-    #     p1, p2 = self.point_sets[curr_idx][:2]
-    #     p1 = disp_pt_to_real_ctr_pt(curr_img.width, p1)
-    #     p2 = disp_pt_to_real_ctr_pt(curr_img.width, p2)
-    #
-    #     x1, x2 = min(p1[0], p2[0]), max(p1[0], p2[0])
-    #     y1, y2 = min(p1[1], p2[1]), max(p1[1], p2[1])
-    #     x_dist = x2 - x1
-    #     y_dist = y2 - y1
-    #
-    #     if x_dist > y_dist:
-    #         x_range = list(range(x1, x2))
-    #         a_coeff = (p2[1] - p1[1]) / (p2[0] - p1[0])
-    #         b_coeff = p1[1] - a_coeff * p1[0]
-    #         y_range = [ int(a_coeff * x + b_coeff) for x in x_range ]
-    #     else:
-    #         y_range = list(range(y1, y2))
-    #         a_coeff = (p2[0] - p1[0]) / (p2[1] - p1[1])
-    #         b_coeff = p1[0] - a_coeff * p1[1]
-    #         x_range = [ int(a_coeff * y + b_coeff) for y in y_range ]
-    #
-    #     print(len(x_range), len(y_range))
-    #     profile = curr_img.amph.am[x_range, y_range]
-    #     dists = np.arange(0, profile.shape[0], 1) * px_sz
-    #     dists *= 1e9
-    #     self.plot_widget.plot(dists, profile, 'Distance [nm]', 'Intensity [a.u.]')
 
     def calc_phase_gradient(self):
         curr_img = self.display.image
