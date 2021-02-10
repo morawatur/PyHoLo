@@ -1844,8 +1844,8 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the same number of points on both images!')
             return
 
-        set1 = disp_pts_to_real_cnt_pts(img_width, points1)
-        set2 = disp_pts_to_real_cnt_pts(img_width, points2)
+        set1 = disp_pts_to_real_ctr_pts(img_width, points1)
+        set2 = disp_pts_to_real_ctr_pts(img_width, points2)
 
         shift_sum = np.zeros(2, dtype=np.int32)
         for pt1, pt2 in zip(set1, set2):
@@ -1943,8 +1943,8 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the same number of points on both images!')
             return
 
-        poly1 = disp_pts_to_real_cnt_pts(img_width, points1)
-        poly2 = disp_pts_to_real_cnt_pts(img_width, points2)
+        poly1 = disp_pts_to_real_ctr_pts(img_width, points1)
+        poly2 = disp_pts_to_real_ctr_pts(img_width, points2)
 
         poly1_dists = []
         poly2_dists = []
@@ -1981,10 +1981,10 @@ class HolographyWidget(QtWidgets.QWidget):
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
         curr_idx = self.display.image.num_in_ser - 1
-        real_points1 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx-1])
-        real_points2 = disp_pts_to_real_cnt_pts(curr_img.width, self.point_sets[curr_idx])
-        user_points1 = real_cnt_pts_to_tl_pts(curr_img.width, real_points1)
-        user_points2 = real_cnt_pts_to_tl_pts(curr_img.width, real_points2)
+        real_points1 = disp_pts_to_real_ctr_pts(curr_img.width, self.point_sets[curr_idx-1])
+        real_points2 = disp_pts_to_real_ctr_pts(curr_img.width, self.point_sets[curr_idx])
+        user_points1 = real_ctr_pts_to_tl_pts(curr_img.width, real_points1)
+        user_points2 = real_ctr_pts_to_tl_pts(curr_img.width, real_points2)
 
         if more_accurate:
             n_div = const.n_div_for_warp
@@ -2359,12 +2359,12 @@ class HolographyWidget(QtWidgets.QWidget):
         px_sz = curr_img.px_dim
 
         points = self.point_sets[curr_idx][:2]
-        points = np.array(disp_pts_to_real_cnt_pts(curr_img.width, points))
+        points = np.array(disp_pts_to_real_ctr_pts(curr_img.width, points))
 
-        # find rotation center (center of the line)
+        # find rotation center of the section
         rot_center = np.average(points, 0).astype(np.int32)
 
-        # find direction (angle) of the line
+        # find direction (angle) of the section
         dir_info = tr.find_dir_angles(points[0], points[1])
         dir_angle = imsup.degrees(dir_info[0])
         proj_dir = dir_info[2]
@@ -2414,8 +2414,8 @@ class HolographyWidget(QtWidgets.QWidget):
     #     curr_idx = curr_img.num_in_ser - 1
     #     px_sz = curr_img.px_dim
     #     p1, p2 = self.point_sets[curr_idx][:2]
-    #     p1 = disp_pt_to_real_cnt_pt(curr_img.width, p1)
-    #     p2 = disp_pt_to_real_cnt_pt(curr_img.width, p2)
+    #     p1 = disp_pt_to_real_ctr_pt(curr_img.width, p1)
+    #     p2 = disp_pt_to_real_ctr_pt(curr_img.width, p2)
     #
     #     x1, x2 = min(p1[0], p2[0]), max(p1[0], p2[0])
     #     y1, y2 = min(p1[1], p2[1]), max(p1[1], p2[1])
@@ -2732,14 +2732,14 @@ def norm_phase_to_area(phase, pt1, pt2):
 
 # --------------------------------------------------------
 
-def real_cnt_pt_to_tl_pt(img_width, center_pt):
+def real_ctr_pt_to_tl_pt(img_width, center_pt):
     top_left_pt = [ cc + img_width // 2 for cc in center_pt ]
     return top_left_pt
 
 # --------------------------------------------------------
 
-def real_cnt_pts_to_tl_pts(img_width, center_pts):
-    top_left_pts = [ real_cnt_pt_to_tl_pt(img_width, cpt) for cpt in center_pts ]
+def real_ctr_pts_to_tl_pts(img_width, center_pts):
+    top_left_pts = [ real_ctr_pt_to_tl_pt(img_width, cpt) for cpt in center_pts ]
     return top_left_pts
 
 # --------------------------------------------------------
@@ -2758,7 +2758,7 @@ def disp_pts_to_real_tl_pts(img_width, disp_pts):
 
 # --------------------------------------------------------
 
-def disp_pt_to_real_cnt_pt(img_width, disp_pt):
+def disp_pt_to_real_ctr_pt(img_width, disp_pt):
     disp_width = const.disp_dim
     factor = img_width / disp_width
     real_pt = [ int(round((dc - disp_width // 2) * factor)) for dc in disp_pt ]
@@ -2766,8 +2766,8 @@ def disp_pt_to_real_cnt_pt(img_width, disp_pt):
 
 # --------------------------------------------------------
 
-def disp_pts_to_real_cnt_pts(img_width, disp_pts):
-    real_pts = [ disp_pt_to_real_cnt_pt(img_width, dpt) for dpt in disp_pts ]
+def disp_pts_to_real_ctr_pts(img_width, disp_pts):
+    real_pts = [ disp_pt_to_real_ctr_pt(img_width, dpt) for dpt in disp_pts ]
     return real_pts
 
 # --------------------------------------------------------
@@ -2786,7 +2786,7 @@ def real_tl_pts_to_disp_pts(img_width, real_pts):
 
 # --------------------------------------------------------
 
-def real_cnt_pt_to_disp_pt(img_width, real_pt):
+def real_ctr_pt_to_disp_pt(img_width, real_pt):
     disp_width = const.disp_dim
     factor = disp_width / img_width
     disp_pt = [ int(round(rc * factor)) + disp_width // 2 for rc in real_pt ]
@@ -2794,8 +2794,8 @@ def real_cnt_pt_to_disp_pt(img_width, real_pt):
 
 # --------------------------------------------------------
 
-def real_cnt_pts_to_disp_pts(img_width, real_pts):
-    disp_pts = [ real_cnt_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
+def real_ctr_pts_to_disp_pts(img_width, real_pts):
+    disp_pts = [ real_ctr_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
     return disp_pts
 
 # --------------------------------------------------------
