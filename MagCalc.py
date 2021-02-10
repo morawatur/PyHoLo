@@ -35,9 +35,9 @@ def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
     d_phase = ph2 - ph1                                         # consider sign of magnetic field
     B_val = B_coeff * d_phase
     if print_msg:
-        print('{0:.1f} nm'.format(d_dist_real * 1e9))
-        print('{0:.2f} rad'.format(d_phase))
-        print('B = {0:.2f} T'.format(B_val))
+        print('In-plane distance: {0:.1f} nm'.format(d_dist_real * 1e9))
+        print('Phase difference: {0:.2f} rad'.format(d_phase))
+        print('Magnetic field B = {0:.2f} mT'.format(B_val * 1e3))
     return B_val
 
 #-------------------------------------------------------------------
