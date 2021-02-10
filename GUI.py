@@ -2363,13 +2363,11 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # find rotation center (center of the line)
         rot_center = np.average(points, 0).astype(np.int32)
-        print('rot. center = {0}'.format(rot_center))
 
         # find direction (angle) of the line
         dir_info = tr.find_dir_angles(points[0], points[1])
         dir_angle = imsup.degrees(dir_info[0])
         proj_dir = dir_info[2]
-        print('dir. angle = {0:.2f} deg'.format(dir_angle))
 
         # shift image by -center
         shift_to_rc = list(-rot_center)
@@ -2389,8 +2387,6 @@ class HolographyWidget(QtWidgets.QWidget):
             frag_width, frag_height = frag_dim2, frag_dim1
 
         frag_coords = imsup.det_crop_coords_for_new_dims(img_rot.width, img_rot.height, frag_width, frag_height)
-        print('Frag. dims = {0}, {1}'.format(frag_width, frag_height))
-        print('Frag. coords = {0}'.format(frag_coords))
         img_cropped = imsup.crop_amph_roi(img_rot, frag_coords)
 
         # calculate projection of intensity
