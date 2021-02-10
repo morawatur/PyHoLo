@@ -217,7 +217,6 @@ def clear_image_data(img):
 #-------------------------------------------------------------------
 
 def scale_image(img, new_min, new_max):
-    # curr_min = np.delete(img, np.argwhere(img==0)).min()
     curr_min = img.min()
     curr_max = img.max()
     if curr_min == curr_max:
@@ -347,7 +346,7 @@ def det_crop_coords_after_rotation(img_dim, rot_dim, angle):
 def det_crop_coords_for_new_dims(old_width, old_height, new_width, new_height):
     orig_x = (old_width - new_width) // 2
     orig_y = (old_height - new_height) // 2
-    crop_coords = [ orig_x, orig_y, orig_x + new_width, orig_y + new_height ]
+    crop_coords = [orig_x, orig_y, orig_x + new_width, orig_y + new_height]
     return crop_coords
 
 #-------------------------------------------------------------------
@@ -359,19 +358,10 @@ def calc_coords_from_new_center(p1, new_center):
 #-------------------------------------------------------------------
 
 def get_common_area(coords1, coords2):
-    # 1st way (lists)
     coords3 = []
-    coords3[0:2] = [c1 if c1 > c2 else c2 for c1, c2 in zip(coords1[0:2], coords2[0:2])]
-    coords3[2:4] = [c1 if c1 < c2 else c2 for c1, c2 in zip(coords1[2:4], coords2[2:4])]
+    coords3[0:2] = [ max(c1, c2) for c1, c2 in zip(coords1[0:2], coords2[0:2]) ]
+    coords3[2:4] = [ min(c1, c2) for c1, c2 in zip(coords1[2:4], coords2[2:4]) ]
     return coords3
-
-    # # 2nd way (numpy arrays)
-    # coords1_arr = np.array(coords1)
-    # coords2_arr = np.array(coords2)
-    # coords3_arr = np.zeros(4)
-    # coords3_arr[0:2] = np.fromiter((np.where(c1 > c2, c1, c2) for c1, c2 in zip(coords1_arr[0:2], coords2_arr[0:2])))
-    # coords3_arr[2:4] = np.fromiter((np.where(c1 > c2, c2, c1) for c1, c2 in zip(coords1_arr[2:4], coords2_arr[2:4])))
-    # return list(coords3_arr)
 
 #-------------------------------------------------------------------
 
@@ -653,37 +643,28 @@ def shift_image(img, shift):
 def remove_outlier_pixels(arr, min_threshold=0.2, max_threshold=1.8):
     arr_mean = np.mean(arr)
     arr_corr = np.copy(arr)
-
-    outliers1 = np.where(arr > (max_threshold * arr_mean))
-    outliers2 = np.where(arr < (min_threshold * arr_mean))
-
-    arr_corr[outliers1] = arr_mean
-    arr_corr[outliers2] = arr_mean
-
+    arr_corr[arr > max_threshold * arr_mean] = arr_mean
+    arr_corr[arr < min_threshold * arr_mean] = arr_mean
     return arr_corr
 
 #-------------------------------------------------------------------
 
 def remove_outlier_pixels_ip(arr, min_threshold=0.2, max_threshold=1.8):
     arr_mean = np.mean(arr)
-
-    outliers1 = np.where(arr > (max_threshold * arr_mean))
-    outliers2 = np.where(arr < (min_threshold * arr_mean))
-
-    arr[outliers1] = arr_mean
-    arr[outliers2] = arr_mean
+    arr[arr > max_threshold * arr_mean] = arr_mean
+    arr[arr < min_threshold * arr_mean] = arr_mean
 
 #-------------------------------------------------------------------
 
 def prep_img_and_calc_log(arr):
     arr_corr = np.copy(arr)
-    arr_corr[np.where(arr <= 0)] = np.min(arr[np.where(arr > 0)])
+    arr_corr[arr <= 0] = np.min(arr[arr > 0])
     return np.log(arr_corr)
 
 #-------------------------------------------------------------------
 
 def prep_img_and_calc_log_ip(arr):
-    arr[np.where(arr <= 0)] = np.min(arr[np.where(arr > 0)])
+    arr[arr <= 0] = np.min(arr[arr > 0])
     arr[:] = np.log(arr)
 
 #-------------------------------------------------------------------
