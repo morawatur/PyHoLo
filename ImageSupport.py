@@ -320,16 +320,16 @@ def crop_img_roi_mid(img, mid_pt, roi_dims):
 
 # -------------------------------------------------------------------
 
-def det_crop_coords(width, height, shift):
+def det_crop_coords_after_shift(width, height, shift):
     dx, dy = shift
     if dx >= 0 and dy >= 0:
-        coords = [dy, dx, height, width]
+        coords = [dx, dy, width, height]
     elif dy < 0 <= dx:
-        coords = [0, dx, height+dy, width]
+        coords = [dx, 0, width, height+dy]
     elif dx < 0 <= dy:
-        coords = [dy, 0, height, width+dx]
+        coords = [0, dy, width+dx, height]
     else:
-        coords = [0, 0, height+dy, width+dx]
+        coords = [0, 0, width+dx, height+dy]
     return coords
 
 #-------------------------------------------------------------------
@@ -366,16 +366,14 @@ def get_common_area(coords1, coords2):
 #-------------------------------------------------------------------
 
 def make_square_coords(coords):
-    height = coords[3] - coords[1]
     width = coords[2] - coords[0]
+    height = coords[3] - coords[1]
     half_diff = abs(height - width) // 2
     dim_fix = 1 if (height + width) % 2 else 0
 
     if height > width:
-        # square_coords = [coords[1] + half_diff + dim_fix, coords[0], coords[3] - half_diff, coords[2]]
         square_coords = [coords[0], coords[1] + half_diff + dim_fix, coords[2], coords[3] - half_diff]
     else:
-        # square_coords = [coords[1], coords[0] + half_diff + dim_fix, coords[3], coords[2] - half_diff]
         square_coords = [coords[0] + half_diff + dim_fix, coords[1], coords[2] - half_diff, coords[3]]
     return square_coords
 
