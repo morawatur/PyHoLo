@@ -171,7 +171,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     max_B = np.max(B_values[0])
     max_B_angle = angles[0][np.argmax(B_values[0])] - np.pi / 2.0
     Bx, By = max_B * np.cos(max_B_angle), -max_B * np.sin(max_B_angle)
-    print('B_proj = [Bx, By] = [{0:.2f}, {1:.2f}] T'.format(Bx, By))
+    print('B_proj = [Bx, By] = [{0:.2f}, {1:.2f}] mT'.format(Bx * 1e3, By * 1e3))
 
     return max_B_angle
 
