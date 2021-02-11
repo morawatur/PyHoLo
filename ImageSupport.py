@@ -420,59 +420,28 @@ def create_image_list_from_image(img, how_many):
 
 #-------------------------------------------------------------------
 
-def pad_array(arr, arr_pad, pads, pad_val):
-    p_height, p_width = arr_pad.shape
-    arr_pad[pads[0]:p_height - pads[1], pads[2]:p_width - pads[3]] = np.copy(arr)
-    arr_pad[0:pads[0], :] = pad_val
-    arr_pad[p_height - pads[1]:p_height, :] = pad_val
-    arr_pad[:, 0:pads[2]] = pad_val
-    arr_pad[:, p_width - pads[3]:p_width] = pad_val
+def pad_array(arr, new_w, new_h, pval=0.0):
+    old_h, old_w = arr.shape
+    p_arr = np.full((new_h, new_w), pval, dtype=arr.dtype)
+    x1, y1, x2, y2 = det_crop_coords_for_new_dims(new_w, new_h, old_w, old_h)
+    p_arr[y1:y2, x1:x2] = np.copy(arr)
+    return p_arr
 
 #-------------------------------------------------------------------
 
-def pad_img_with_buf(img, buf_sz, pad_value, dirs):
-    if buf_sz == 0:
+def pad_image(img, new_w, new_h, pval=0.0):
+    if new_w == img.width and new_h == img.height:
+        return img
+    if new_w < img.width or new_h < img.height:
         return img
 
-    pads = [ buf_sz if d in 'tblr' else 0 for d in dirs ]
-    p_height = img.height + pads[0] + pads[1]
-    p_width = img.width + pads[2] + pads[3]
     img.reim_to_amph()
 
-    pad_img = ImageExp(p_height, p_width, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
-    pad_img.amph.am = pad_img.amph.am.astype(img.amph.am.dtype)
-    pad_img.amph.ph = pad_img.amph.ph.astype(img.amph.ph.dtype)
+    p_img = ImageExp(new_h, new_w, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
+    p_img.amph.am = pad_array(img.amph.am, new_w, new_h, pval)
+    p_img.amph.ph = pad_array(img.amph.ph, new_w, new_h, pval)
 
-    pad_array(img.amph.am, pad_img.amph.am, pads, pad_value)
-    pad_array(img.amph.ph, pad_img.amph.ph, pads, pad_value)
-
-    return pad_img
-
-#-------------------------------------------------------------------
-
-def pad_img_from_ref(img, ref_width, pad_value):
-    buf_sz_tot = ref_width - img.width
-    if buf_sz_tot <= 0:
-        return img
-    buf_sz = buf_sz_tot // 2
-
-    if buf_sz_tot % 2 == 0:
-        pads = 4 * [buf_sz]
-    else:
-        pads = [ (buf_sz + (1 if idx % 2 else 0)) for idx in range(4) ]
-
-    p_height = img.height + pads[0] + pads[1]
-    p_width = img.width + pads[2] + pads[3]
-    img.reim_to_amph()
-
-    pad_img = ImageExp(p_height, p_width, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
-    pad_img.amph.am = pad_img.amph.am.astype(img.amph.am.dtype)
-    pad_img.amph.ph = pad_img.amph.ph.astype(img.amph.ph.dtype)
-
-    pad_array(img.amph.am, pad_img.amph.am, pads, pad_value)
-    pad_array(img.amph.ph, pad_img.amph.ph, pads, pad_value)
-
-    return pad_img
+    return p_img
 
 #-------------------------------------------------------------------
 
