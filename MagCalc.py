@@ -101,7 +101,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
         return 'f'
 
     r_values = [ (n + 1) * r1 for n in range(n_r) ]
-    print('r = {0}'.format(r_values))
+    print('r = [' + ', '.join('{0}'.format(int(round(r))) for r in r_values) + '] px')
 
     ang1 = ang0 - np.pi / 2.0
     ang2 = ang0 + np.pi / 2.0
@@ -160,38 +160,54 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
+    out_f = 'B_pol_{0}{1}.png'.format(img.name, addn_str)
     ax.margins(0, 0)
-    fig.savefig('B_pol_{0}{1}.png'.format(img.name, addn_str), dpi=300, bbox_inches='tight', pad_inches=0)
+    fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()
     fig.clf()
     plt.close(fig)
-    print('B_pol_{0}{1}.png exported!'.format(img.name, addn_str))
+    print('Polar plot exported --> {0}'.format(out_f))
 
-    # print [Bx, By] components of resultant (projected) vector B
+    # print [Bx, By] components of max. (projected) B vector
     max_B = np.max(B_values[0])
     max_B_angle = angles[0][np.argmax(B_values[0])] - np.pi / 2.0
     Bx, By = max_B * np.cos(max_B_angle), -max_B * np.sin(max_B_angle)
     print('B_proj = [Bx, By] = [{0:.2f}, {1:.2f}] mT'.format(Bx * 1e3, By * 1e3))
 
-    return max_B_angle
+    return max_B, max_B_angle
 
 #-------------------------------------------------------------------
 
 def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt1=False, n_r=3):
     orig_pts = []
+    max_B_values = []
     max_B_angles = []
 
     for row in range(n_rows):
         for col in range(n_cols):
             new_orig_xy = np.round([ x + j*2*r1 for x, j in zip(orig_xy, [col, row]) ]).astype(np.int32)
             rc_str = '_{0}{1}'.format(row+1, col+1)
-            max_B_ang = calc_B_polar_from_orig_r(img, new_orig_xy, r1, smpl_thck, orig_is_pt1, ang0=0.0, n_r=n_r, addn_str=rc_str)
-            state = max_B_ang
+            max_B_info = calc_B_polar_from_orig_r(img, new_orig_xy, r1, smpl_thck, orig_is_pt1, ang0=0.0, n_r=n_r, addn_str=rc_str)
+            state = max_B_info
             if state == 'f':
                 return orig_pts
             else:
+                max_B, max_B_ang = max_B_info
+                max_B_values.append(max_B)
                 max_B_angles.append(max_B_ang)
             orig_pts.append(list(new_orig_xy))
+
+    # export [Bx, By] components of max. B vectors to txt file
+    B_arr, ang_arr = np.array(max_B_values), np.array(max_B_angles)
+    sin_arr, cos_arr = -np.sin(ang_arr), np.cos(ang_arr)
+    Bx = B_arr * cos_arr * 1e3      # mT
+    By = B_arr * sin_arr * 1e3      # mT
+    Bxy = np.vstack((Bx, By)).T
+
+    out_f_Bxy = '{0}_max_Bxy_mT.txt'.format(img.name)
+    np.savetxt(out_f_Bxy, Bxy, fmt='%.2f')
+    print('Components [Bx, By] of max. B vectors (in mT) exported --> {0}'.format(out_f_Bxy))
+    # ---
 
     # export phase image with max. B vectors
     fig, ax = plt.subplots()
@@ -199,22 +215,22 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
     cbar = fig.colorbar(im)
     cbar.set_label('phase shift [rad]')
 
-    for [x, y], dir_ang in zip(orig_pts, max_B_angles):
-        dx, dy = r1 * np.cos(dir_ang), -r1 * np.sin(dir_ang)
+    for [x, y], sin_ang, cos_ang in zip(orig_pts, sin_arr, cos_arr):
+        dx, dy = r1 * cos_ang, r1 * sin_ang
         ax.arrow(x, y, dx, dy, fc='k', ec='k', lw=0.6, head_width=12, head_length=20, length_includes_head=True)
         circ = Circle((x, y), r1, fill=False, ec='orange', ls='--', lw=0.6)
         ax.add_patch(circ)
 
-    out_f = '{0}_+max_B_vec.png'.format(img.name)
+    out_f_img = '{0}_+max_B_vec.png'.format(img.name)
     ax.axis('off')
     ax.margins(0, 0)
     ax.xaxis.set_major_locator(plt.NullLocator())
     ax.yaxis.set_major_locator(plt.NullLocator())
-    fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
+    fig.savefig(out_f_img, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()
     fig.clf()
     plt.close(fig)
-    print('Phase image with max. B vectors exported: {0}'.format(out_f))
+    print('Phase image with max. B vectors exported --> {0}'.format(out_f_img))
     # ---
 
     return orig_pts
@@ -249,9 +265,10 @@ def calc_B_polar_from_area(frag, smpl_thck):
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
+    out_f = 'B_pol_{0}.png'.format(frag.name)
     ax.margins(0, 0)
-    fig.savefig('B_pol_{0}.png'.format(frag.name), dpi=300, bbox_inches='tight', pad_inches=0)
+    fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()
     fig.clf()
     plt.close(fig)
-    print('B_pol_{0}.png exported!'.format(frag.name))
+    print('Polar plot exported --> {0}'.format(out_f))
