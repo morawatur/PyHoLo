@@ -693,7 +693,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.rot_clockwise_button.clicked.connect(self.rot_right)
         self.rot_counter_clockwise_button.clicked.connect(self.rot_left)
         self.apply_button.clicked.connect(self.apply_changes)
-        self.reset_button.clicked.connect(self.reset_changes)
+        self.reset_button.clicked.connect(partial(self.reset_changes, True))
 
         self.disable_manual_panel()
 
@@ -1163,7 +1163,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def disable_manual_panel(self):
         if self.backup_image is not None:
-            self.reset_changes_and_delete_backup()
+            self.reset_changes_and_delete_backup(upd_disp=False)
         self.left_button.setEnabled(False)
         self.right_button.setEnabled(False)
         self.up_button.setEnabled(False)
@@ -1718,7 +1718,7 @@ class HolographyWidget(QtWidgets.QWidget):
             self.backup_image = imsup.copy_amph_image(self.display.image)
             self.enable_manual_panel()
         else:
-            self.reset_changes_and_delete_backup()
+            self.reset_changes_and_delete_backup(upd_disp=True)
             self.disable_manual_panel()
 
     def move_left(self):
@@ -1786,20 +1786,20 @@ class HolographyWidget(QtWidgets.QWidget):
     def apply_changes(self):
         self.zero_shift_rot()
         self.backup_image = imsup.copy_amph_image(self.display.image)
-        print('Changes for {0} have been applied'.format(self.display.image.name))
+        print('Changes to {0} have been applied'.format(self.display.image.name))
 
-    def reset_changes(self):
+    def reset_changes(self, upd_disp=True):
         curr = self.display.image
         curr.amph.am = np.copy(self.backup_image.amph.am)
         curr.amph.ph = np.copy(self.backup_image.amph.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         if curr.shift != [0, 0] or curr.rot != 0:
-            self.update_display_and_bcg()
-            print('Changes for {0} have been revoked'.format(self.display.image.name))
-        self.zero_shift_rot()
+            if upd_disp: self.update_display_and_bcg()
+            self.zero_shift_rot()
+            print('Changes to {0} have been revoked'.format(self.display.image.name))
 
-    def reset_changes_and_delete_backup(self):
-        self.reset_changes()
+    def reset_changes_and_delete_backup(self, upd_disp=True):
+        self.reset_changes(upd_disp)
         self.backup_image = None
 
     def cross_corr_with_prev(self):
