@@ -29,6 +29,7 @@ results_dir = 'results/'
 
 aperture = 64                       # aperture diameter
 hann_win = 72                       # side length of Hann. window
+smooth_width = 5                    # width of aperture edge smoothing
 min_COM_roi_hlf_edge = 5
 
 ew_lambda = 1.968749e-12            # m (300kV)
