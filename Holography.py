@@ -96,8 +96,8 @@ def insert_tukey_aperture(img, ap_dia, smooth_w):
     img_ap = imsup.copy_amph_image(img)
 
     iw = img_ap.width
-    ir = iw // 2
-    ap_r = ap_dia // 2
+    # ir = iw // 2
+    # ap_r = ap_dia // 2
 
     tw = ap_dia + 2 * smooth_w
     tr = tw // 2
@@ -114,20 +114,19 @@ def insert_tukey_aperture(img, ap_dia, smooth_w):
 
     tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
 
-    iy, ix = np.ogrid[-ir:iw-ir, -ir:iw-ir]
-    i_mask = ix * ix + iy * iy > ap_r * ap_r
+    img_ap.amph.am *= tuk_win_2d_full
+    img_ap.amph.ph *= tuk_win_2d_full
 
-    img_ap.amph.am[i_mask] = tuk_win_2d_full[i_mask]
-    img_ap.amph.ph[i_mask] = tuk_win_2d_full[i_mask]
-
+    # iy, ix = np.ogrid[-ir:iw-ir, -ir:iw-ir]
+    # i_mask = ix * ix + iy * iy > ap_r * ap_r
+    #
     # img_ap.amph.am[i_mask] = 0.0
     # img_ap.amph.ph[i_mask] = 0.0
     #
     # t1 = (iw - tw) // 2
     # t2 = t1 + tw
-    # t_mask_2 = t_ss > ap_r * ap_r
-    # img_ap.amph.am[t1:t2, t1:t2][t_mask_2] = tuk_win_2d[t_mask_2]
-    # img_ap.amph.ph[t1:t2, t1:t2][t_mask_2] = tuk_win_2d[t_mask_2]
+    # img_ap.amph.am[t1:t2, t1:t2] *= tuk_win_2d
+    # img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
 
     img.change_complex_repr(dt)
     img_ap.change_complex_repr(dt)
