@@ -18,6 +18,7 @@
 #-------------------------------------------------------------------
 
 import numpy as np
+from scipy import signal as sig
 import Constants as const
 import ImageSupport as imsup
 
@@ -89,6 +90,51 @@ def mult_by_hann_window(img, hw_dim):
 
 #-------------------------------------------------------------------
 
+def insert_tukey_aperture(img, ap_dia, smooth_w):
+    dt = img.cmp_repr
+    img.reim_to_amph()
+    img_ap = imsup.copy_amph_image(img)
+
+    iw = img_ap.width
+    ir = iw // 2
+    ap_r = ap_dia // 2
+
+    tw = ap_dia + 2 * smooth_w
+    tr = tw // 2
+    alpha = 2 * smooth_w / tw
+
+    ty, tx = np.ogrid[-tr:tw-tr, -tr:tw-tr]
+    t_ss = tx * tx + ty * ty
+    t_mask = t_ss < tr * tr
+    rc_dists = np.sqrt(t_ss).astype(np.int32)
+
+    tuk_win = sig.tukey(tw, alpha)[tr:]
+    tuk_win_2d = np.zeros((tw, tw), dtype=tuk_win.dtype)
+    tuk_win_2d[t_mask] = tuk_win[rc_dists[t_mask]]
+
+    tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
+
+    iy, ix = np.ogrid[-ir:iw-ir, -ir:iw-ir]
+    i_mask = ix * ix + iy * iy > ap_r * ap_r
+
+    img_ap.amph.am[i_mask] = tuk_win_2d_full[i_mask]
+    img_ap.amph.ph[i_mask] = tuk_win_2d_full[i_mask]
+
+    # img_ap.amph.am[i_mask] = 0.0
+    # img_ap.amph.ph[i_mask] = 0.0
+    #
+    # t1 = (iw - tw) // 2
+    # t2 = t1 + tw
+    # t_mask_2 = t_ss > ap_r * ap_r
+    # img_ap.amph.am[t1:t2, t1:t2][t_mask_2] = tuk_win_2d[t_mask_2]
+    # img_ap.amph.ph[t1:t2, t1:t2][t_mask_2] = tuk_win_2d[t_mask_2]
+
+    img.change_complex_repr(dt)
+    img_ap.change_complex_repr(dt)
+    return img_ap
+
+#-------------------------------------------------------------------
+
 def holo_fft(h_img):
     h_fft = imsup.calc_fft(h_img)
     h_fft = imsup.fft_to_diff(h_fft)
@@ -96,13 +142,12 @@ def holo_fft(h_img):
 
 #-------------------------------------------------------------------
 
-def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, hann_dim=const.hann_win):
+def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, smooth_w=const.smooth_width):
     subpx_shift, px_shift = np.modf(shift)
     sband_ctr = imsup.shift_image(h_fft, list(px_shift.astype(np.int32)))
     if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
         sband_ctr = subpixel_shift(sband_ctr, list(subpx_shift))
-    sband_ctr_ap = insert_aperture(sband_ctr, ap_dia)
-    sband_ctr_ap = mult_by_hann_window(sband_ctr_ap, hann_dim)
+    sband_ctr_ap = insert_tukey_aperture(sband_ctr, ap_dia, smooth_w)
     return sband_ctr_ap
 
 #-------------------------------------------------------------------
