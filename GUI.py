@@ -2067,7 +2067,7 @@ class HolographyWidget(QtWidgets.QWidget):
         mid = h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
 
         self.log_scale_checkbox.setChecked(True)
@@ -2102,10 +2102,10 @@ class HolographyWidget(QtWidgets.QWidget):
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
 
         obj_h_fft = holo.holo_fft(obj_h_img)
-        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
 
         ref_sband_ctr_ap.name = 'ref_sband'
         obj_sband_ctr_ap.name = 'obj_sband'
@@ -2152,10 +2152,10 @@ class HolographyWidget(QtWidgets.QWidget):
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
 
-        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        ref_sband_ctr_ap = holo.holo_get_sideband(ref_h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
 
         obj_h_fft = holo.holo_fft(obj_h_img)
-        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        obj_sband_ctr_ap = holo.holo_get_sideband(obj_h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
 
         rec_ref = holo.holo_ifft(ref_sband_ctr_ap)
         rec_obj = holo.holo_ifft(obj_sband_ctr_ap)
@@ -2347,7 +2347,7 @@ class HolographyWidget(QtWidgets.QWidget):
         aper_diam = int(self.aperture_input.text())
         hann_win_dim = int(self.hann_win_input.text())
 
-        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, hann_dim=hann_win_dim)
+        sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, smooth_w=hann_win_dim)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
 
         self.log_scale_checkbox.setChecked(True)
