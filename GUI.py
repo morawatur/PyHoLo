@@ -376,6 +376,8 @@ class HolographyWindow(QtWidgets.QMainWindow):
 
         img_type = 'amp' if self.holo_widget.amp_radio_button.isChecked() else 'phs'
 
+        self.show_status_bar_message('Reading files...', change_bkg=True)
+
         for fpath in file_paths:
             print('Reading file "{0}"'.format(fpath))
 
@@ -411,6 +413,8 @@ class HolographyWindow(QtWidgets.QMainWindow):
             if not self.holo_widget.tab_disp.isEnabled():
                 self.holo_widget.enable_tabs()
 
+        self.show_status_bar_message('', change_bkg=True)
+
     def open_image_series(self):
         import pathlib
         curr_dir = str(pathlib.Path().absolute())
@@ -425,11 +429,15 @@ class HolographyWindow(QtWidgets.QMainWindow):
             print('Could not load the starting image. It must be in dm3 format...')
             return
 
+        self.show_status_bar_message('Reading files...', change_bkg=True)
+
         first_img = load_image_series_from_first_file(file_path)
         self.holo_widget.insert_img_after_curr(first_img)
 
         if not self.holo_widget.tab_disp.isEnabled():
             self.holo_widget.enable_tabs()
+
+        self.show_status_bar_message('', change_bkg=True)
 
     def show_status_bar_message(self, msg='', change_bkg=False):
         status_bar = self.statusBar()
