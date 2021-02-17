@@ -2051,12 +2051,17 @@ class HolographyWidget(QtWidgets.QWidget):
     def holo_get_sideband(self):
         # general convention is (x, y), i.e. (col, row)
         h_fft = self.display.image
+        pt_set = self.point_sets[h_fft.num_in_ser - 1]
+
+        if len(pt_set) < 2:
+            print('Mark the sideband first...')
+            return
 
         print('--------------------------')
         print('Hologram reconstruction (no reference hologram)')
         print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(h_fft.name))
 
-        [pt1, pt2] = self.point_sets[h_fft.num_in_ser - 1][:2]
+        pt1, pt2 = pt_set[:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2097,13 +2102,23 @@ class HolographyWidget(QtWidgets.QWidget):
         ref_h_fft = self.display.image
         obj_h_img = self.display.image.next
 
+        if obj_h_img is None:
+            print('Could not find the object hologram (should be next in the queue)...')
+            return
+
+        pt_set = self.point_sets[ref_h_fft.num_in_ser - 1]
+
+        if len(pt_set) < 2:
+            print('Mark the sideband first...')
+            return
+
         print('--------------------------')
         print('Hologram reconstruction (with reference hologram)'
               '\nInput:'
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
-        [pt1, pt2] = self.point_sets[ref_h_fft.num_in_ser - 1][:2]
+        pt1, pt2 = pt_set[:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2144,10 +2159,20 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(h_ifft)
 
     def rec_holo_with_ref_auto(self):
-        self.parent().show_status_bar_message('Working...', change_bkg=True)
-
         ref_h_fft = self.display.image
         obj_h_img = self.display.image.next
+
+        if obj_h_img is None:
+            print('Could not find the object hologram (should be next in the queue)...')
+            return
+
+        pt_set = self.point_sets[ref_h_fft.num_in_ser - 1]
+
+        if len(pt_set) < 2:
+            print('Mark the sideband first...')
+            return
+
+        self.parent().show_status_bar_message('Working...', change_bkg=True)
 
         print('--------------------------')
         print('(Fast) Hologram reconstruction (with reference hologram)'
@@ -2155,7 +2180,7 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{0}" -- FFT of the reference hologram (with selected sideband)'
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
-        [pt1, pt2] = self.point_sets[ref_h_fft.num_in_ser - 1][:2]
+        pt1, pt2 = pt_set[:2]
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2]  # x, y
