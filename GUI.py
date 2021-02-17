@@ -1340,7 +1340,7 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amph.am[real_y, real_x],
                                                         curr_img.amph.ph[real_y, real_x]))
         else:
-            print('Wrong marker coordinates!')
+            print('Wrong marker coordinates')
 
     def delete_image(self):
         curr_img = self.display.image
@@ -1516,7 +1516,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
-            print('Mark the area by selecting two points!')
+            print('Mark two points to indicate the area...')
             return
 
         p1, p2 = self.point_sets[curr_idx][:2]
@@ -1693,7 +1693,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def crop_n_fragments(self):
         curr_idx = self.display.image.num_in_ser - 1
         if len(self.point_sets[curr_idx]) < 2:
-            print('You have to select the area for cropping!')
+            print('Mark two points to indicate the cropping area...')
             return
 
         curr_img = self.display.image
@@ -1822,7 +1822,7 @@ class HolographyWidget(QtWidgets.QWidget):
     def cross_corr_with_prev(self):
         curr_img = self.display.image
         if curr_img.prev is None:
-            print('There is no reference image!')
+            print('Could not find the reference (preceding) image...')
             return
         img_list_to_cc = imsup.create_image_list_from_image(curr_img.prev, 2)
         img_aligned = cross_corr_images(img_list_to_cc)[0]
@@ -1852,13 +1852,14 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.num_in_ser - 1
         img_width = curr_img.width
 
+        if curr_img.prev is None:
+            print('Could not find the reference (preceding) image...')
+            return
+
         points1 = self.point_sets[curr_idx - 1]
         points2 = self.point_sets[curr_idx]
-        n_points1 = len(points1)
-        n_points2 = len(points2)
 
-        if n_points1 != n_points2:
-            print('Mark the same number of points on both images!')
+        if not validate_two_point_sets(points1, points2, min_sz=1):
             return
 
         set1 = disp_pts_to_real_ctr_pts(img_width, points1)
@@ -1869,22 +1870,25 @@ class HolographyWidget(QtWidgets.QWidget):
             shift = np.array(pt1) - np.array(pt2)
             shift_sum += shift
 
-        self.shift = list(shift_sum // n_points1)
+        self.shift = list(shift_sum // len(points1))
         self.reshift()
 
     def auto_rot_image(self):
         curr_img = self.display.image
         curr_idx = curr_img.num_in_ser - 1
 
+        if curr_img.prev is None:
+            print('Could not find the reference (preceding) image...')
+            return
+
         points1 = self.point_sets[curr_idx-1]
         points2 = self.point_sets[curr_idx]
 
+        if not validate_two_point_sets(points1, points2, min_sz=2):
+            return
+
         np1 = len(points1)
         np2 = len(points2)
-
-        if np1 != np2:
-            print('Mark the same number of points on both images!')
-            return
 
         if np1 % 2:
             np1 -= 1
@@ -1928,7 +1932,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def get_scale_ratio_from_images(self):
         if self.display.image.prev is None:
-            print('There is no previous image!')
+            print('Could not find the reference (preceding) image...')
             return
         curr_px_dim = self.display.image.px_dim
         prev_px_dim = self.display.image.prev.px_dim
@@ -1944,20 +1948,17 @@ class HolographyWidget(QtWidgets.QWidget):
         img_width = curr_img.width
 
         points2 = self.point_sets[curr_idx]
-        n_points2 = len(points2)
+        np2 = len(points2)
 
-        if curr_img.prev is None or n_points2 == 0:
+        if curr_img.prev is None or np2 == 0:
             print('Manual scaling')
             self.scale_factor = float(self.scale_factor_input.text())
             self.rescale_image()
             return
 
-        # ref_img = curr_img.prev
         points1 = self.point_sets[curr_idx - 1]
-        n_points1 = len(points1)
 
-        if n_points1 != n_points2:
-            print('Mark the same number of points on both images!')
+        if not validate_two_point_sets(points1, points2, min_sz=2):
             return
 
         poly1 = disp_pts_to_real_ctr_pts(img_width, points1)
@@ -1998,8 +1999,19 @@ class HolographyWidget(QtWidgets.QWidget):
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
         curr_idx = self.display.image.num_in_ser - 1
-        real_points1 = disp_pts_to_real_ctr_pts(curr_img.width, self.point_sets[curr_idx-1])
-        real_points2 = disp_pts_to_real_ctr_pts(curr_img.width, self.point_sets[curr_idx])
+
+        if curr_img.prev is None:
+            print('Could not find the reference (preceding) image...')
+            return
+
+        points1 = self.point_sets[curr_idx-1]
+        points2 = self.point_sets[curr_idx]
+
+        if not validate_two_point_sets(points1, points2, min_sz=3):
+            return
+
+        real_points1 = disp_pts_to_real_ctr_pts(curr_img.width, points1)
+        real_points2 = disp_pts_to_real_ctr_pts(curr_img.width, points2)
         user_points1 = real_ctr_pts_to_tl_pts(curr_img.width, real_points1)
         user_points2 = real_ctr_pts_to_tl_pts(curr_img.width, real_points2)
 
@@ -2031,6 +2043,10 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def rewarp(self):
         curr_img = self.display.image
+
+        if len(self.warp_points) == 0:
+            print('No image has been warped yet...')
+            return
 
         src = np.array(self.warp_points[0])
         dst = np.array(self.warp_points[1])
@@ -2480,7 +2496,7 @@ class HolographyWidget(QtWidgets.QWidget):
     # calculate B from profile in PlotWidget
     def calc_B_from_profile(self):
         if len(self.plot_widget.marked_points) < 2:
-            print('You have to mark two points on the profile!')
+            print('You have to mark two points on the profile...')
             return
         pt1, pt2 = self.plot_widget.marked_points_data
         d_dist_real = np.abs(pt1[0] - pt2[0]) * 1e-9
@@ -2499,7 +2515,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
-            print('You must select two point on the image!')
+            print('You have to mark two points on the image...')
             return
 
         dpt1, dpt2 = self.point_sets[curr_idx][:2]
@@ -2538,7 +2554,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_idx = curr_img.num_in_ser - 1
 
         if len(self.point_sets[curr_idx]) < 2:
-            print('You have to mark two points!')
+            print('You have to mark two points on the image...')
             return
 
         pt1, pt2 = self.point_sets[curr_idx][:2]
@@ -2734,6 +2750,15 @@ def norm_phase_to_area(phase, pt1, pt2):
     phs_avg = np.average(phase[y1:y2, x1:x2])
     phase_norm = phase - phs_avg
     return phase_norm
+
+# --------------------------------------------------------
+
+def validate_two_point_sets(pts1, pts2, min_sz=0):
+    np1, np2 = len(pts1), len(pts2)
+    if np1 < min_sz or np1 != np2:
+        print('Mark the same (>={0}) number of reference points on both images...'.format(min_sz))
+        return 0
+    return 1
 
 # --------------------------------------------------------
 
