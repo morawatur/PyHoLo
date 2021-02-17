@@ -2007,7 +2007,7 @@ class HolographyWidget(QtWidgets.QWidget):
         points1 = self.point_sets[curr_idx-1]
         points2 = self.point_sets[curr_idx]
 
-        if not validate_two_point_sets(points1, points2, min_sz=3):
+        if not validate_two_point_sets(points1, points2, min_sz=4):
             return
 
         real_points1 = disp_pts_to_real_ctr_pts(curr_img.width, points1)
