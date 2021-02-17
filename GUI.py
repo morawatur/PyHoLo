@@ -346,12 +346,14 @@ class HolographyWindow(QtWidgets.QMainWindow):
         open_img_ser_act.setShortcut('Ctrl+D')
         open_img_ser_act.triggered.connect(self.open_image_series)
 
-        menubar = self.menuBar()
-        file_menu = menubar.addMenu('File')
+        menu_bar = self.menuBar()
+        file_menu = menu_bar.addMenu('File')
         file_menu.addAction(open_img_act)
         file_menu.addAction(open_img_ser_act)
 
         # ------------------------------
+
+        self.statusBar().showMessage('')
 
         self.setCentralWidget(self.holo_widget)
 
@@ -428,6 +430,17 @@ class HolographyWindow(QtWidgets.QMainWindow):
 
         if not self.holo_widget.tab_disp.isEnabled():
             self.holo_widget.enable_tabs()
+
+    def show_status_bar_message(self, msg='', change_bkg=False):
+        status_bar = self.statusBar()
+        status_bar.showMessage(msg)
+        if not change_bkg:
+            return
+        if status_bar.styleSheet() == '':
+            status_bar.setStyleSheet('background-color : yellow')
+        else:
+            status_bar.setStyleSheet('')
+        status_bar.repaint()
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_A:
@@ -2131,6 +2144,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.insert_img_after_curr(h_ifft)
 
     def rec_holo_with_ref_auto(self):
+        self.parent().show_status_bar_message('Working...', change_bkg=True)
+
         ref_h_fft = self.display.image
         obj_h_img = self.display.image.next
 
@@ -2189,6 +2204,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         print('--------------------------')
         self.phs_radio_button.setChecked(True)
+        self.parent().show_status_bar_message('', change_bkg=True)
 
     def calc_phs_sum(self):
         rec_holo1 = self.display.image.prev
