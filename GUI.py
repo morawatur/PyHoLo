@@ -1571,10 +1571,13 @@ class HolographyWidget(QtWidgets.QWidget):
                 fname = 'cos_phs{0}'.format(curr_num)
 
         if is_amp_checked:
+            img_type = 'amplitude'
             data_to_export = np.copy(curr_img.amph.am)
         elif is_phs_checked:
+            img_type = 'phase'
             data_to_export = np.copy(curr_img.amph.ph)
         else:
+            img_type = 'cos(phase)'
             data_to_export = np.cos(curr_img.amph.ph)
 
         # numpy array file (new)
@@ -1612,9 +1615,10 @@ class HolographyWidget(QtWidgets.QWidget):
             log_file.write('File name:\t{0}{1}\n'
                            'Image name:\t{2}\n'
                            'Image size:\t{3}x{4}\n'
-                           'Data type:\t{5}\n'
-                           'Calibration:\t{6} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
-                                                           curr_img.height, data_to_export.dtype,
+                           'Image type:\t{5}\n'
+                           'Data type:\t{6}\n'
+                           'Calibration:\t{7} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
+                                                           curr_img.height, img_type, data_to_export.dtype,
                                                            curr_img.px_dim * 1e9))
         print('Saved log file: "{0}"'.format(log_fname))
 
