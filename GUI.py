@@ -432,6 +432,10 @@ class HolographyWindow(QtWidgets.QMainWindow):
         self.show_status_bar_message('Reading files...', change_bkg=True)
 
         first_img = load_image_series_from_first_file(file_path)
+        if first_img is None:
+            self.show_status_bar_message('', change_bkg=True)
+            return
+
         self.holo_widget.insert_img_after_curr(first_img)
 
         if not self.holo_widget.tab_disp.isEnabled():
@@ -2663,38 +2667,54 @@ def open_dm3_file(file_path, img_type='amp'):
 
 # --------------------------------------------------------
 
-def load_image_series_from_first_file(img_path):
+def load_image_series_from_first_file(img_fpath):
     img_list = imsup.ImageList()
-    img_num_match = re.search('([0-9]+).dm3', img_path)
+    img_num_match = re.search('([0-9]+).dm3', img_fpath)
+
+    if img_num_match is None:
+        print('Invalid file name (number is missing).\n'
+              'Rename files to match the following convention: "ser1.dm3", "ser2.dm3", "ser3.dm3", ...\n'
+              'The part before the number has to be the same for all files in that series.')
+        return None             # ignore the file with invalid name and return to the main program
+    #     img_num_text = '1'    # read the file with invalid name anyway
+    # else:
+    #     img_num_text = img_num_match.group(1)
+
     img_num_text = img_num_match.group(1)
     img_num = int(img_num_text)
 
     img_idx = 0
-    is_there_info = False
-    imgs_info = None
+    info = None
+    name_col, type_col = 1, 2
+    valid_types = ('amp', 'phs')
 
     if img_idx == 0:
-        import pandas as pd
-        first_img_name_match = re.search('(.+)/(.+).dm3$', img_path)
+        first_img_name_match = re.search('(.+)/(.+).dm3$', img_fpath)
         dir_path = first_img_name_match.group(1)
-        info_file_path = '{0}/info.txt'.format(dir_path)
-        if path.isfile(info_file_path):
-            is_there_info = True
-            imgs_info = pd.read_csv(info_file_path, sep='\t', header=None)
-            imgs_info = imgs_info.values[img_num-1:, :]
+        info_fpath = '{0}/info.txt'.format(dir_path)
+        if path.isfile(info_fpath) and path.getsize(info_fpath) > 0:
+            import pandas as pd
+            info = pd.read_csv(info_fpath, sep='\t', header=None)
+            info = info.values[img_num-1:, :]
             print('info file detected')
         else:
-            print('info file not detected')
+            print('info file not detected or empty')
 
-    while path.isfile(img_path):
-        print('Reading file "' + img_path + '"')
-        img_name_match = re.search('(.+)/(.+).dm3$', img_path)
-        img_name_text = img_name_match.group(2)
-        img_type = imgs_info[img_idx, 2] if is_there_info else 'amp'
+    while path.isfile(img_fpath):
+        print('Reading file "' + img_fpath + '"')
+        img_name_match = re.search('(.+)/(.+).dm3$', img_fpath)
+        img_name = img_name_match.group(2)
+        img_type = valid_types[0]
 
-        img = open_dm3_file(img_path, img_type)
+        if info is not None and img_idx < info.shape[0]:
+            if info.shape[1] > name_col:
+                img_name = info[img_idx, name_col]
+            if info.shape[1] > type_col and info[img_idx, type_col] in valid_types:
+                img_type = info[img_idx, type_col]
+
+        img = open_dm3_file(img_fpath, img_type)
         img.num_in_ser = img_num
-        img.name = imgs_info[img_idx, 1] if is_there_info else img_name_text
+        img.name = img_name
         img = rescale_image_buffer_to_window(img, const.disp_dim)
         img_list.append(img)
 
@@ -2703,7 +2723,7 @@ def load_image_series_from_first_file(img_path):
         img_num_text_new = img_num_text.replace(str(img_num-1), str(img_num))
         if img_num == 10:
             img_num_text_new = img_num_text_new[1:]
-        img_path = rreplace(img_path, img_num_text, img_num_text_new, 1)
+        img_fpath = rreplace(img_fpath, img_num_text, img_num_text_new, 1)
         img_num_text = img_num_text_new
 
     img_list.update_links()
