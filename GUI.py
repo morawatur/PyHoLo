@@ -585,7 +585,8 @@ class HolographyWidget(QtWidgets.QWidget):
         wrap_button = QtWidgets.QPushButton('Wrap', self)
         norm_phase_button = QtWidgets.QPushButton('Norm. phase', self)
         crop_button = QtWidgets.QPushButton('Crop N ROIs', self)
-        flip_button = QtWidgets.QPushButton('Flip', self)
+        flip_h_button = QtWidgets.QPushButton('Flip H', self)
+        flip_v_button = QtWidgets.QPushButton('Flip V', self)
         blank_area_button = QtWidgets.QPushButton('Blank area', self)
         export_button = QtWidgets.QPushButton('Export', self)
         export_all_button = QtWidgets.QPushButton('Export all', self)
@@ -636,7 +637,8 @@ class HolographyWidget(QtWidgets.QWidget):
         wrap_button.clicked.connect(self.wrap_img_phase)
         norm_phase_button.clicked.connect(self.norm_phase)
         crop_button.clicked.connect(self.crop_n_fragments)
-        flip_button.clicked.connect(self.flip_image_h)
+        flip_h_button.clicked.connect(partial(self.flip_image, True))
+        flip_v_button.clicked.connect(partial(self.flip_image, False))
         blank_area_button.clicked.connect(self.blank_area)
         export_button.clicked.connect(self.export_image)
         export_all_button.clicked.connect(self.export_all)
@@ -665,8 +667,9 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_disp.addWidget(crop_button, 4, 1)
         grid_disp.addWidget(self.n_to_crop_input, 4, 2)
         grid_disp.addWidget(self.clear_prev_checkbox, 4, 3, 1, 2)
-        grid_disp.addWidget(flip_button, 1, 4)
-        grid_disp.addWidget(blank_area_button, 2, 4)
+        grid_disp.addWidget(flip_h_button, 1, 4)
+        grid_disp.addWidget(flip_v_button, 2, 4)
+        grid_disp.addWidget(blank_area_button, 3, 4)
 
         grid_exp = QtWidgets.QGridLayout()
         grid_exp.setColumnStretch(0, 1)
@@ -1572,15 +1575,18 @@ class HolographyWidget(QtWidgets.QWidget):
             img.name += '{0:.2f}rad'.format(abs(norm_val))
 
         self.fname_input.setText(curr_img.name)
-        self.update_display()
+        self.update_display_and_bcg()
         self.update_curr_info_label()
         print('All phases normalized')
 
-    def flip_image_h(self):
+    def flip_image(self, horizontal=True):
         curr_img = self.display.image
-        imsup.flip_image_h(curr_img)
+        if horizontal:
+            imsup.flip_image_h(curr_img)
+        else:
+            imsup.flip_image_v(curr_img)
         self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)  # refresh buffer
-        self.update_display()
+        self.update_display_and_bcg()
 
     def export_image(self):
         curr_num = self.display.image.num_in_ser
