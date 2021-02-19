@@ -2097,6 +2097,7 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(h_fft.name))
 
         pt1, pt2 = pt_set[:2]
+        pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2154,6 +2155,7 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
         pt1, pt2 = pt_set[:2]
+        pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2] # x, y
@@ -2216,6 +2218,7 @@ class HolographyWidget(QtWidgets.QWidget):
               '\n"{1}" -- object hologram'.format(ref_h_fft.name, obj_h_img.name))
 
         pt1, pt2 = pt_set[:2]
+        pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
         dpts = pt1 + pt2
         rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
         rpt1 = rpts[:2]  # x, y
