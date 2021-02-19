@@ -1532,6 +1532,7 @@ class HolographyWidget(QtWidgets.QWidget):
             return
 
         p1, p2 = self.point_sets[curr_idx][:2]
+        p1, p2 = tr.convert_points_to_tl_br(p1, p2)
         p1 = disp_pt_to_real_tl_pt(curr_img.width, p1)
         p2 = disp_pt_to_real_tl_pt(curr_img.width, p2)
 
