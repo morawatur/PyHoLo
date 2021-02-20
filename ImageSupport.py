@@ -623,16 +623,20 @@ def remove_outlier_pixels_ip(arr, min_threshold=0.2, max_threshold=1.8):
 
 #-------------------------------------------------------------------
 
-def prep_img_and_calc_log(arr):
-    arr_corr = np.copy(arr)
-    arr_corr[arr <= 0] = np.min(arr[arr > 0])
-    return np.log(arr_corr)
+def prep_arr_and_calc_log(arr):
+    # arr_corr = np.copy(arr)
+    # arr_corr[arr <= 0] = np.min(arr[arr > 0])
+    arr_corr = np.abs(arr)
+    arr_corr[arr == 0] = np.min(arr_corr[arr_corr > 0])
+    return np.log10(arr_corr)
 
 #-------------------------------------------------------------------
 
-def prep_img_and_calc_log_ip(arr):
-    arr[arr <= 0] = np.min(arr[arr > 0])
-    arr[:] = np.log(arr)
+def prep_arr_and_calc_log_ip(arr):
+    # arr[arr <= 0] = np.min(arr[arr > 0])
+    arr[:] = np.abs(arr)        # or: np.abs(arr, out=arr)
+    arr[arr == 0] = np.min(arr[arr > 0])
+    arr[:] = np.log10(arr)      # or: np.log10(arr, out=arr)
 
 #-------------------------------------------------------------------
 
@@ -676,7 +680,7 @@ def save_arr_as_tiff(data, fname, log=False, color=False, brg=0, cnt=255, gam=1.
     if rm_out_px:
         remove_outlier_pixels_ip(data, min_px, max_px)
     if log:
-        prep_img_and_calc_log_ip(data)
+        prep_arr_and_calc_log_ip(data)
     data = update_image_bright_cont_gamma(data, brg, cnt, gam)
     if color:
         data = grayscale_to_rgb(data)
@@ -694,12 +698,7 @@ def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
     img.change_complex_repr(dt)
 
     if log:
-        if np.min(img_var) < 0:
-            img_var -= np.min(img_var)
-        if np.min(img_var) == 0:
-            img_var += 1e-6
-        img_var = np.log10(img_var)
-
+        prep_arr_and_calc_log_ip(img_var)
     if scale:
         img_var = scale_image(img_var, 0.0, 255.0)
 
