@@ -90,13 +90,16 @@ def mult_by_hann_window(img, hw_dim):
 
 #-------------------------------------------------------------------
 
-def insert_tukey_aperture(img, ap_dia, smooth_w):
+def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     dt = img.cmp_repr
     img.reim_to_amph()
     img_ap = imsup.copy_amph_image(img)
 
+    ap_dia = int(abs(ap_dia))
+    smooth_w = int(abs(smooth_w))
+
     iw = img_ap.width
-    # ir = iw // 2
+    ir = iw // 2
     # ap_r = ap_dia // 2
 
     tw = ap_dia + 2 * smooth_w
@@ -105,28 +108,36 @@ def insert_tukey_aperture(img, ap_dia, smooth_w):
 
     ty, tx = np.ogrid[-tr:tw-tr, -tr:tw-tr]
     t_ss = tx * tx + ty * ty
-    t_mask = t_ss < tr * tr
+    t_mask_1 = t_ss < tr * tr
     rc_dists = np.sqrt(t_ss).astype(np.int32)
 
     tuk_win = sig.tukey(tw, alpha)[tr:]
     tuk_win_2d = np.zeros((tw, tw), dtype=tuk_win.dtype)
-    tuk_win_2d[t_mask] = tuk_win[rc_dists[t_mask]]
+    tuk_win_2d[t_mask_1] = tuk_win[rc_dists[t_mask_1]]
 
-    tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
+    iy, ix = np.ogrid[-ir:iw-ir, -ir:iw-ir]
+    i_mask_0 = ix * ix + iy * iy >= tr * tr
 
-    img_ap.amph.am *= tuk_win_2d_full
-    img_ap.amph.ph *= tuk_win_2d_full
+    t1 = (iw - tw) // 2
+    t2 = t1 + tw
 
-    # iy, ix = np.ogrid[-ir:iw-ir, -ir:iw-ir]
-    # i_mask = ix * ix + iy * iy > ap_r * ap_r
-    #
-    # img_ap.amph.am[i_mask] = 0.0
-    # img_ap.amph.ph[i_mask] = 0.0
-    #
-    # t1 = (iw - tw) // 2
-    # t2 = t1 + tw
-    # img_ap.amph.am[t1:t2, t1:t2] *= tuk_win_2d
-    # img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
+    if log_smooth:
+        log_amp = imsup.prep_arr_and_calc_log(img_ap.amph.am[t1:t2, t1:t2])
+        log_amp *= tuk_win_2d
+        img_ap.amph.am[i_mask_0] = 0.0
+        # img_ap.amph.am[t1:t2, t1:t2][t_mask_1] = np.power(np.e, log_amp[t_mask_1])        # log (ln)
+        img_ap.amph.am[t1:t2, t1:t2][t_mask_1] = np.power(10.0, log_amp[t_mask_1])          # log10
+        img_ap.amph.am[img.amph.am == 0] = 0.0
+    else:
+        img_ap.amph.am[i_mask_0] = 0.0
+        img_ap.amph.am[t1:t2, t1:t2] *= tuk_win_2d
+
+    img_ap.amph.ph[i_mask_0] = 0.0
+    img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
+
+    # tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
+    # img_ap.amph.am *= tuk_win_2d_full
+    # img_ap.amph.ph *= tuk_win_2d_full
 
     img.change_complex_repr(dt)
     img_ap.change_complex_repr(dt)
@@ -146,7 +157,7 @@ def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, smooth_w=const.smooth
     sband_ctr = imsup.shift_image(h_fft, list(px_shift.astype(np.int32)))
     if abs(subpx_shift[0]) > 0.0 or abs(subpx_shift[1]) > 0.0:
         sband_ctr = subpixel_shift(sband_ctr, list(subpx_shift))
-    sband_ctr_ap = insert_tukey_aperture(sband_ctr, ap_dia, smooth_w)
+    sband_ctr_ap = insert_tukey_aperture(sband_ctr, ap_dia, smooth_w, log_smooth=True)
     return sband_ctr_ap
 
 #-------------------------------------------------------------------
