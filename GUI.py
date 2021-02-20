@@ -483,6 +483,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.plot_widget.canvas.setFixedHeight(350)
 
         self.curr_info_label = QtWidgets.QLabel('Image info', self)
+        self.only_int = QtGui.QIntValidator()
 
         # ------------------------------
         # Navigation panel (1)
@@ -833,9 +834,11 @@ class HolographyWidget(QtWidgets.QWidget):
 
         aperture_label = QtWidgets.QLabel('Aperture diam. [px]', self)
         self.aperture_input = QtWidgets.QLineEdit(str(const.aperture), self)
+        self.aperture_input.setValidator(self.only_int)
 
         smooth_width_label = QtWidgets.QLabel('Smooth width [px]', self)
         self.smooth_width_input = QtWidgets.QLineEdit(str(const.smooth_width), self)
+        self.smooth_width_input.setValidator(self.only_int)
 
         self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
         self.radians_to_add_input = QtWidgets.QLineEdit('3.14', self)
@@ -998,7 +1001,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.arr_size_input = QtWidgets.QLineEdit('20', self)
         self.arr_dist_input = QtWidgets.QLineEdit('50', self)
 
-        self.only_int = QtGui.QIntValidator()
         self.arr_size_input.setValidator(self.only_int)
         self.arr_dist_input.setValidator(self.only_int)
 
@@ -2098,6 +2100,12 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the sideband first...')
             return
 
+        aper_diam = abs(int(self.aperture_input.text()))
+        smooth_width = abs(int(self.smooth_width_input.text()))
+
+        if not validate_aperture(aper_diam, smooth_width, h_fft.width):
+            return
+
         print('--------------------------')
         print('Hologram reconstruction (no reference hologram)')
         print('Input:\n"{0}" -- FFT of the object hologram (with selected sideband)'.format(h_fft.name))
@@ -2121,9 +2129,6 @@ class HolographyWidget(QtWidgets.QWidget):
         ang = imsup.degrees(np.angle(sb_xy_comp))
         print('R = {0:.3f} um-1\nAng = {1:.2f} deg'.format(R * 1e-6, ang))
         # ------------------
-
-        aper_diam = int(self.aperture_input.text())
-        smooth_width = int(self.smooth_width_input.text())
 
         mid = h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
@@ -2151,6 +2156,12 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the sideband first...')
             return
 
+        aper_diam = abs(int(self.aperture_input.text()))
+        smooth_width = abs(int(self.smooth_width_input.text()))
+
+        if not validate_aperture(aper_diam, smooth_width, ref_h_fft.width):
+            return
+
         print('--------------------------')
         print('Hologram reconstruction (with reference hologram)'
               '\nInput:'
@@ -2164,9 +2175,6 @@ class HolographyWidget(QtWidgets.QWidget):
         sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
-
-        aper_diam = int(self.aperture_input.text())
-        smooth_width = int(self.smooth_width_input.text())
 
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
@@ -2209,6 +2217,12 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark the sideband first...')
             return
 
+        aper_diam = abs(int(self.aperture_input.text()))
+        smooth_width = abs(int(self.smooth_width_input.text()))
+
+        if not validate_aperture(aper_diam, smooth_width, ref_h_fft.width):
+            return
+
         self.parent().show_status_bar_message('Working...', change_bkg=True)
 
         print('--------------------------')
@@ -2224,9 +2238,6 @@ class HolographyWidget(QtWidgets.QWidget):
         sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
         sband_xy = holo.find_sideband_center(sband, orig=rpt1, subpx=apply_subpx_shift)
-
-        aper_diam = int(self.aperture_input.text())
-        smooth_width = int(self.smooth_width_input.text())
 
         mid = ref_h_fft.width // 2
         shift = [mid - sband_xy[0], mid - sband_xy[1]]
@@ -2418,14 +2429,17 @@ class HolographyWidget(QtWidgets.QWidget):
     def get_sideband_from_xy(self):
         h_fft = self.display.image
 
+        aper_diam = abs(int(self.aperture_input.text()))
+        smooth_width = abs(int(self.smooth_width_input.text()))
+
+        if not validate_aperture(aper_diam, smooth_width, h_fft.width):
+            return
+
         sbx = float(self.sideband_x_input.text())
         sby = float(self.sideband_y_input.text())
 
         mid = h_fft.width // 2
         shift = [mid - sbx, mid - sby]
-
-        aper_diam = int(self.aperture_input.text())
-        smooth_width = int(self.smooth_width_input.text())
 
         sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, smooth_w=smooth_width)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
@@ -2775,6 +2789,14 @@ def validate_two_point_sets(pts1, pts2, min_sz=0):
     np1, np2 = len(pts1), len(pts2)
     if np1 < min_sz or np1 != np2:
         print('Mark the same (>={0}) number of reference points on both images...'.format(min_sz))
+        return 0
+    return 1
+
+# --------------------------------------------------------
+
+def validate_aperture(ap_dia, smooth_w, img_dim):
+    if ap_dia + 2 * smooth_w > img_dim:
+        print('Aperture exceeds the image size')
         return 0
     return 1
 
