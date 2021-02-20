@@ -95,8 +95,8 @@ def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     img.reim_to_amph()
     img_ap = imsup.copy_amph_image(img)
 
-    ap_dia = int(abs(ap_dia))
-    smooth_w = int(abs(smooth_w))
+    # ap_dia = int(abs(ap_dia))
+    # smooth_w = int(abs(smooth_w))
 
     iw = img_ap.width
     ir = iw // 2
