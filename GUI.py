@@ -1549,28 +1549,34 @@ class HolographyWidget(QtWidgets.QWidget):
     def norm_phase(self):
         curr_img = self.display.image
         curr_idx = curr_img.num_in_ser - 1
+
         n_points = len(self.point_sets[curr_idx])
         if n_points == 0:
-            print('Mark reference point (or area) on the image')
+            print('Mark reference point (or area -- two points) on the image')
             return
 
-        pt_disp = self.point_sets[curr_idx][:n_points]
+        pt_disp = self.point_sets[curr_idx][:2]
         pt_real = disp_pts_to_real_tl_pts(curr_img.width, pt_disp)
 
-        x1, y1 = pt_real[0]
-        x2, y2 = 0, 0
-        if n_points > 1:
-            x2, y2 = pt_real[1]
+        if n_points == 1:
+            x1, y1 = pt_real[0]
+            x2, y2 = 0, 0
+        else:
+            (x1, y1), (x2, y2) = tr.convert_points_to_tl_br(pt_real[0], pt_real[1])
 
         first_img = imsup.get_first_image(curr_img)
         img_list = imsup.create_image_list_from_first_image(first_img)
+
         for img in img_list:
             if n_points == 1:
                 norm_val = img.amph.ph[y1, x1]
             else:
                 norm_val = np.average(img.amph.ph[y1:y2, x1:x2])
             img.amph.ph -= norm_val
-            img.update_cos_phase()
+
+            if img.cos_phase is not None:
+                img.update_cos_phase()
+
             img.name += '_-' if norm_val > 0.0 else '_+'
             img.name += '{0:.2f}rad'.format(abs(norm_val))
 
@@ -2762,23 +2768,6 @@ def crop_fragment(img, coords):
     crop_img = imsup.crop_amph_roi(img, coords)
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
-
-# --------------------------------------------------------
-
-def norm_phase_to_pt(phase, pt):
-    x, y = pt
-    phase_norm = phase - phase[y, x]
-    return phase_norm
-
-# --------------------------------------------------------
-
-def norm_phase_to_area(phase, pt1, pt2):
-    # pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
-    x1, y1 = pt1
-    x2, y2 = pt2
-    phs_avg = np.average(phase[y1:y2, x1:x2])
-    phase_norm = phase - phs_avg
-    return phase_norm
 
 # --------------------------------------------------------
 

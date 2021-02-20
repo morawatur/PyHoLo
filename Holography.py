@@ -188,6 +188,28 @@ def calc_phase_diff(img1, img2):
 
 #-------------------------------------------------------------------
 
+def norm_phase_to_pt(phase, pt, in_place=False):
+    x, y = pt
+    if in_place:
+        phase -= phase[y, x]
+        return
+    else:
+        return phase - phase[y, x]
+
+#-------------------------------------------------------------------
+
+def norm_phase_to_area(phase, pt1, pt2, in_place=False):
+    x1, y1 = pt1
+    x2, y2 = pt2
+    phase_avg = np.average(phase[y1:y2, x1:x2])
+    if in_place:
+        phase -= phase_avg
+        return
+    else:
+        return phase - phase_avg
+
+#-------------------------------------------------------------------
+
 def find_mass_center(arr):
     h, w = arr.shape
     x = np.linspace(0, w-1, w)
