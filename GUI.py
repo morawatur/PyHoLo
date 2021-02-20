@@ -174,7 +174,7 @@ class LabelExt(QtWidgets.QLabel):
             if hide_bad_px:
                 imsup.remove_outlier_pixels_ip(px_arr, const.min_px_threshold, const.max_px_threshold)
             if log_scale:
-                imsup.prep_img_and_calc_log_ip(px_arr)
+                imsup.prep_arr_and_calc_log_ip(px_arr)
         elif disp_phs:
             px_arr = np.copy(self.image.buffer.ph)
         else:
@@ -2098,10 +2098,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         pt1, pt2 = pt_set[:2]
         pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
-        dpts = pt1 + pt2
-        rpts = disp_pt_to_real_tl_pt(h_fft.width, dpts)
-        rpt1 = rpts[:2] # x, y
-        rpt2 = rpts[2:] # x, y
+        rpt1, rpt2 = disp_pts_to_real_tl_pts(h_fft.width, [pt1, pt2])
 
         sband = np.copy(h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
@@ -2156,10 +2153,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         pt1, pt2 = pt_set[:2]
         pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
-        dpts = pt1 + pt2
-        rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
-        rpt1 = rpts[:2] # x, y
-        rpt2 = rpts[2:] # x, y
+        rpt1, rpt2 = disp_pts_to_real_tl_pts(ref_h_fft.width, [pt1, pt2])
 
         sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
@@ -2219,10 +2213,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         pt1, pt2 = pt_set[:2]
         pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
-        dpts = pt1 + pt2
-        rpts = disp_pt_to_real_tl_pt(ref_h_fft.width, dpts)
-        rpt1 = rpts[:2]  # x, y
-        rpt2 = rpts[2:]  # x, y
+        rpt1, rpt2 = disp_pts_to_real_tl_pts(ref_h_fft.width, [pt1, pt2])
 
         sband = np.copy(ref_h_fft.amph.am[rpt1[1]:rpt2[1], rpt1[0]:rpt2[0]])
         apply_subpx_shift = self.subpixel_shift_checkbox.isChecked()
