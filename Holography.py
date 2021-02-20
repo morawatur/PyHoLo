@@ -121,23 +121,45 @@ def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     t1 = (iw - tw) // 2
     t2 = t1 + tw
 
-    if log_smooth:
-        log_amp = imsup.prep_arr_and_calc_log(img_ap.amph.am[t1:t2, t1:t2])
-        log_amp *= tuk_win_2d
-        img_ap.amph.am[i_mask_0] = 0.0
-        # img_ap.amph.am[t1:t2, t1:t2][t_mask_1] = np.power(np.e, log_amp[t_mask_1])        # log (ln)
-        img_ap.amph.am[t1:t2, t1:t2][t_mask_1] = np.power(10.0, log_amp[t_mask_1])          # log10
-        img_ap.amph.am[img.amph.am == 0] = 0.0
-    else:
-        img_ap.amph.am[i_mask_0] = 0.0
-        img_ap.amph.am[t1:t2, t1:t2] *= tuk_win_2d
-
+    img_ap.amph.am[i_mask_0] = 0.0
     img_ap.amph.ph[i_mask_0] = 0.0
-    img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
 
-    # tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
-    # img_ap.amph.am *= tuk_win_2d_full
-    # img_ap.amph.ph *= tuk_win_2d_full
+    if log_smooth:
+        # ----------------
+        # img_ap.amph_to_reim()
+        # re = img_ap.reim.real[t1:t2, t1:t2]
+        # im = img_ap.reim.imag[t1:t2, t1:t2]
+        # neg_re = np.where(re < 0)
+        # neg_im = np.where(im < 0)
+        # zero_re = np.where(re == 0)
+        # zero_im = np.where(im == 0)
+        # imsup.prep_arr_and_calc_log_ip(re)
+        # imsup.prep_arr_and_calc_log_ip(im)
+        # re *= tuk_win_2d
+        # im *= tuk_win_2d
+        # re[t_mask_1] = np.power(10.0, re[t_mask_1])
+        # im[t_mask_1] = np.power(10.0, im[t_mask_1])
+        # re[neg_re] *= -1
+        # im[neg_im] *= -1
+        # re[zero_re] = 0.0
+        # im[zero_im] = 0.0
+        # img_ap.reim_to_amph()
+        # ------ OR ------
+        roi_amp = img_ap.amph.am[t1:t2, t1:t2]
+        zero_amp = np.where(roi_amp == 0)
+        imsup.prep_arr_and_calc_log_ip(roi_amp)
+        roi_amp *= tuk_win_2d
+        roi_amp[t_mask_1] = np.power(10.0, roi_amp[t_mask_1])
+        roi_amp[zero_amp] = 0.0
+        img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
+        # ----------------
+    else:
+        img_ap.amph.am[t1:t2, t1:t2] *= tuk_win_2d
+        img_ap.amph.ph[t1:t2, t1:t2] *= tuk_win_2d
+
+        # tuk_win_2d_full = imsup.pad_array(tuk_win_2d, iw, iw, pval=0.0)
+        # img_ap.amph.am *= tuk_win_2d_full
+        # img_ap.amph.ph *= tuk_win_2d_full
 
     img.change_complex_repr(dt)
     img_ap.change_complex_repr(dt)
