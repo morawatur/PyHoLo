@@ -2714,17 +2714,19 @@ def load_image_series_from_first_file(img_fpath):
         dir_path = first_img_name_match.group(1)
         info_fpath = '{0}/info.txt'.format(dir_path)
         if path.isfile(info_fpath) and path.getsize(info_fpath) > 0:
+            print('info file detected')
             import pandas as pd
             info = pd.read_csv(info_fpath, sep='\t', header=None)
-            info = info.values[img_num-1:, :]
-            print('info file detected')
+            first_row_idx = img_num - 1 if img_num > 0 else 0
+            info = info.values[first_row_idx:, :]
         else:
             print('info file not detected or empty')
 
     while path.isfile(img_fpath):
         print('Reading file "' + img_fpath + '"')
-        img_name_match = re.search('(.+)/(.+).dm3$', img_fpath)
-        img_name = img_name_match.group(2)
+        img_fname_match = re.search('(.+)/(.+).dm3$', img_fpath)
+        img_fname = img_fname_match.group(2)
+        img_name = img_fname
         img_type = valid_types[0]
 
         if info is not None and img_idx < info.shape[0]:
@@ -2741,10 +2743,13 @@ def load_image_series_from_first_file(img_fpath):
 
         img_idx += 1
         img_num += 1
+
         img_num_text_new = img_num_text.replace(str(img_num-1), str(img_num))
-        if img_num == 10:
+        if img_num == 10 and img_num_text_new[0] == '0':
             img_num_text_new = img_num_text_new[1:]
-        img_fpath = rreplace(img_fpath, img_num_text, img_num_text_new, 1)
+
+        img_fname_new = rreplace(img_fname, img_num_text, img_num_text_new, 1)
+        img_fpath = rreplace(img_fpath, img_fname, img_fname_new, 1)
         img_num_text = img_num_text_new
 
     img_list.update_links()
