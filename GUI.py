@@ -996,7 +996,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
         self.perpendicular_arrows_checkbox.setChecked(False)
 
-        arr_size_label = QtWidgets.QLabel('Arrow size [a.u.]', self)
+        arr_size_label = QtWidgets.QLabel('Arrow size [au]', self)
         arr_dist_label = QtWidgets.QLabel('Arrow dist. [px]', self)
         self.arr_size_input = QtWidgets.QLineEdit('20', self)
         self.arr_dist_input = QtWidgets.QLineEdit('50', self)
@@ -1013,22 +1013,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
-        arr_size_vbox = QtWidgets.QVBoxLayout()
-        arr_size_vbox.addWidget(arr_size_label)
-        arr_size_vbox.addWidget(self.arr_size_input)
-
-        arr_dist_vbox = QtWidgets.QVBoxLayout()
-        arr_dist_vbox.addWidget(arr_dist_label)
-        arr_dist_vbox.addWidget(self.arr_dist_input)
-
-        ph3d_elev_vbox = QtWidgets.QVBoxLayout()
-        ph3d_elev_vbox.addWidget(ph3d_elev_label)
-        ph3d_elev_vbox.addWidget(self.ph3d_elev_input)
-
-        ph3d_azim_vbox = QtWidgets.QVBoxLayout()
-        ph3d_azim_vbox.addWidget(ph3d_azim_label)
-        ph3d_azim_vbox.addWidget(self.ph3d_azim_input)
-
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_3d_phase_button.clicked.connect(self.export_3d_phase)
 
@@ -1042,13 +1026,17 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc_2.layout.setColumnStretch(5, 1)
         self.tab_calc_2.layout.setRowStretch(0, 1)
         self.tab_calc_2.layout.setRowStretch(6, 1)
-        self.tab_calc_2.layout.addLayout(arr_size_vbox, 1, 1, 2, 1)
-        self.tab_calc_2.layout.addLayout(arr_dist_vbox, 1, 2, 2, 1)
+        self.tab_calc_2.layout.addWidget(arr_size_label, 1, 1)
+        self.tab_calc_2.layout.addWidget(self.arr_size_input, 1, 2)
+        self.tab_calc_2.layout.addWidget(arr_dist_label, 2, 1)
+        self.tab_calc_2.layout.addWidget(self.arr_dist_input, 2, 2)
         self.tab_calc_2.layout.addWidget(export_glob_scaled_phases_button, 3, 1, 1, 2)
         self.tab_calc_2.layout.addWidget(self.add_arrows_checkbox, 4, 1, 1, 2)
         self.tab_calc_2.layout.addWidget(self.perpendicular_arrows_checkbox, 5, 1, 1, 2)
-        self.tab_calc_2.layout.addLayout(ph3d_elev_vbox, 1, 3, 2, 1)
-        self.tab_calc_2.layout.addLayout(ph3d_azim_vbox, 1, 4, 2, 1)
+        self.tab_calc_2.layout.addWidget(ph3d_elev_label, 1, 3)
+        self.tab_calc_2.layout.addWidget(self.ph3d_elev_input, 1, 4)
+        self.tab_calc_2.layout.addWidget(ph3d_azim_label, 2, 3)
+        self.tab_calc_2.layout.addWidget(self.ph3d_azim_input, 2, 4)
         self.tab_calc_2.layout.addWidget(ph3d_mesh_label, 3, 3)
         self.tab_calc_2.layout.addWidget(self.ph3d_mesh_input, 3, 4)
         self.tab_calc_2.layout.addWidget(export_3d_phase_button, 4, 3, 1, 2)
