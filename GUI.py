@@ -988,7 +988,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # ------------------------------
 
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colormaps', self)
-        export_img3d_button = QtWidgets.QPushButton('Export 3D image', self)
+        export_3d_phase_button = QtWidgets.QPushButton('Export 3D phase', self)
 
         self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
         self.add_arrows_checkbox.setChecked(False)
@@ -996,20 +996,20 @@ class HolographyWidget(QtWidgets.QWidget):
         self.perpendicular_arrows_checkbox = QtWidgets.QCheckBox('Perpendicular', self)
         self.perpendicular_arrows_checkbox.setChecked(False)
 
-        arr_size_label = QtWidgets.QLabel('Arrow size', self)
-        arr_dist_label = QtWidgets.QLabel('Arrow dist.', self)
+        arr_size_label = QtWidgets.QLabel('Arrow size [a.u.]', self)
+        arr_dist_label = QtWidgets.QLabel('Arrow dist. [px]', self)
         self.arr_size_input = QtWidgets.QLineEdit('20', self)
         self.arr_dist_input = QtWidgets.QLineEdit('50', self)
 
         self.arr_size_input.setValidator(self.only_int)
         self.arr_dist_input.setValidator(self.only_int)
 
-        ph3d_ang1_label = QtWidgets.QLabel('Ang #1', self)
-        ph3d_ang2_label = QtWidgets.QLabel('Ang #2', self)
-        self.ph3d_ang1_input = QtWidgets.QLineEdit('0', self)
-        self.ph3d_ang2_input = QtWidgets.QLineEdit('0', self)
+        ph3d_elev_label = QtWidgets.QLabel('Elev. angle [{0}]'.format(u'\N{DEGREE SIGN}'), self)
+        ph3d_azim_label = QtWidgets.QLabel('Azim. angle [{0}]'.format(u'\N{DEGREE SIGN}'), self)
+        self.ph3d_elev_input = QtWidgets.QLineEdit('0', self)
+        self.ph3d_azim_input = QtWidgets.QLineEdit('0', self)
 
-        ph3d_mesh_label = QtWidgets.QLabel('Mesh dist.', self)
+        ph3d_mesh_label = QtWidgets.QLabel('Mesh dist. [px]', self)
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
@@ -1021,16 +1021,16 @@ class HolographyWidget(QtWidgets.QWidget):
         arr_dist_vbox.addWidget(arr_dist_label)
         arr_dist_vbox.addWidget(self.arr_dist_input)
 
-        ph3d_ang1_vbox = QtWidgets.QVBoxLayout()
-        ph3d_ang1_vbox.addWidget(ph3d_ang1_label)
-        ph3d_ang1_vbox.addWidget(self.ph3d_ang1_input)
+        ph3d_elev_vbox = QtWidgets.QVBoxLayout()
+        ph3d_elev_vbox.addWidget(ph3d_elev_label)
+        ph3d_elev_vbox.addWidget(self.ph3d_elev_input)
 
-        ph3d_ang2_vbox = QtWidgets.QVBoxLayout()
-        ph3d_ang2_vbox.addWidget(ph3d_ang2_label)
-        ph3d_ang2_vbox.addWidget(self.ph3d_ang2_input)
+        ph3d_azim_vbox = QtWidgets.QVBoxLayout()
+        ph3d_azim_vbox.addWidget(ph3d_azim_label)
+        ph3d_azim_vbox.addWidget(self.ph3d_azim_input)
 
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
-        export_img3d_button.clicked.connect(self.export_3d_phase)
+        export_3d_phase_button.clicked.connect(self.export_3d_phase)
 
         self.tab_calc_2 = QtWidgets.QWidget()
         self.tab_calc_2.layout = QtWidgets.QGridLayout()
@@ -1047,11 +1047,11 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc_2.layout.addWidget(export_glob_scaled_phases_button, 3, 1, 1, 2)
         self.tab_calc_2.layout.addWidget(self.add_arrows_checkbox, 4, 1, 1, 2)
         self.tab_calc_2.layout.addWidget(self.perpendicular_arrows_checkbox, 5, 1, 1, 2)
-        self.tab_calc_2.layout.addLayout(ph3d_ang1_vbox, 1, 3, 2, 1)
-        self.tab_calc_2.layout.addLayout(ph3d_ang2_vbox, 1, 4, 2, 1)
+        self.tab_calc_2.layout.addLayout(ph3d_elev_vbox, 1, 3, 2, 1)
+        self.tab_calc_2.layout.addLayout(ph3d_azim_vbox, 1, 4, 2, 1)
         self.tab_calc_2.layout.addWidget(ph3d_mesh_label, 3, 3)
         self.tab_calc_2.layout.addWidget(self.ph3d_mesh_input, 3, 4)
-        self.tab_calc_2.layout.addWidget(export_img3d_button, 4, 3, 1, 2)
+        self.tab_calc_2.layout.addWidget(export_3d_phase_button, 4, 3, 1, 2)
         self.tab_calc_2.setLayout(self.tab_calc_2.layout)
 
         # ------------------------------
@@ -1674,14 +1674,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def export_3d_phase(self):
         from matplotlib import cm
-        # from mpl_toolkits.mplot3d import Axes3D
+        from mpl_toolkits.mplot3d import Axes3D
 
         curr_img = self.display.image
         img_dim = curr_img.width
         px_sz = curr_img.px_dim * 1e9
 
-        ang1 = int(self.ph3d_ang1_input.text())
-        ang2 = int(self.ph3d_ang2_input.text())
+        elev_ang = int(self.ph3d_elev_input.text())
+        azim_ang = int(self.ph3d_azim_input.text())
         step = int(self.ph3d_mesh_input.text())
 
         # X = np.arange(0, img_dim, step, dtype=np.float32)
@@ -1700,8 +1700,8 @@ class HolographyWidget(QtWidgets.QWidget):
         # ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
-        ax.view_init(ang1, ang2)
-        fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, ang1, ang2), dpi=300)
+        ax.view_init(elev_ang, azim_ang)
+        fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang), dpi=300)
         print('3D phase image exported!')
         ax.cla()
         fig.clf()
