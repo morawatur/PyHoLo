@@ -501,7 +501,7 @@ class HolographyWidget(QtWidgets.QWidget):
         reset_names_button = QtWidgets.QPushButton('Reset names', self)
         delete_button = QtWidgets.QPushButton('Delete', self)
         clear_button = QtWidgets.QPushButton('Clear', self)
-        undo_button = QtWidgets.QPushButton('Undo', self)
+        rm_last_marker_button = QtWidgets.QPushButton('Remove last marker', self)
         add_marker_at_xy_button = QtWidgets.QPushButton('Add marker', self)
         transfer_phs_to_img_button = QtWidgets.QPushButton('Transfer current phase to image No. -->', self)
 
@@ -535,7 +535,7 @@ class HolographyWidget(QtWidgets.QWidget):
         reset_names_button.clicked.connect(self.reset_image_names)
         delete_button.clicked.connect(self.delete_image)
         clear_button.clicked.connect(self.clear_image)
-        undo_button.clicked.connect(self.remove_last_point)
+        rm_last_marker_button.clicked.connect(self.remove_last_marker)
         add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
         transfer_phs_to_img_button.clicked.connect(self.transfer_phase_to_image)
 
@@ -566,7 +566,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_nav.layout.addWidget(reset_names_button, 4, 2)
         self.tab_nav.layout.addWidget(clear_button, 3, 3, 1, 2)
         self.tab_nav.layout.addWidget(delete_button, 4, 3, 1, 2)
-        self.tab_nav.layout.addWidget(undo_button, 5, 3, 1, 2)
+        self.tab_nav.layout.addWidget(rm_last_marker_button, 5, 3, 1, 2)
         self.tab_nav.layout.addWidget(self.amp_radio_button, 5, 1)
         self.tab_nav.layout.addWidget(self.phs_radio_button, 6, 1)
         self.tab_nav.layout.addWidget(self.cos_phs_radio_button, 7, 1)
@@ -1324,7 +1324,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.point_sets[curr_idx][:] = []
         self.display.repaint()
 
-    def remove_last_point(self):
+    def remove_last_marker(self):
         curr_idx = abs(self.display.image.num_in_ser) - 1
         if len(self.point_sets[curr_idx]) == 0:
             return
