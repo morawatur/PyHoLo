@@ -745,7 +745,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.scale_factor_input = QtWidgets.QLineEdit('1.0', self)
 
         auto_shift_button.clicked.connect(self.auto_shift_image)
-        auto_rot_button.clicked.connect(self.auto_rot_image)
+        auto_rot_button.clicked.connect(self.auto_rotate_image)
         get_scale_ratio_button.clicked.connect(self.get_scale_ratio_from_images)
         scale_button.clicked.connect(self.scale_image)
         warp_button.clicked.connect(partial(self.warp_image, False))
@@ -1889,7 +1889,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.shift = list(shift_sum // len(points1))
         self.reshift()
 
-    def auto_rot_image(self):
+    def auto_rotate_image(self):
         curr_img = self.display.image
         curr_idx = curr_img.num_in_ser - 1
 
