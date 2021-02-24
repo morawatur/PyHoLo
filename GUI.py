@@ -699,10 +699,10 @@ class HolographyWidget(QtWidgets.QWidget):
         # Manual alignment panel (3)
         # ------------------------------
 
-        self.left_button = QtWidgets.QPushButton(QtGui.QIcon('gui/left.png'), '', self)
-        self.right_button = QtWidgets.QPushButton(QtGui.QIcon('gui/right.png'), '', self)
-        self.up_button = QtWidgets.QPushButton(QtGui.QIcon('gui/up.png'), '', self)
-        self.down_button = QtWidgets.QPushButton(QtGui.QIcon('gui/down.png'), '', self)
+        self.move_left_button = QtWidgets.QPushButton(QtGui.QIcon('gui/left.png'), '', self)
+        self.move_right_button = QtWidgets.QPushButton(QtGui.QIcon('gui/right.png'), '', self)
+        self.move_up_button = QtWidgets.QPushButton(QtGui.QIcon('gui/up.png'), '', self)
+        self.move_down_button = QtWidgets.QPushButton(QtGui.QIcon('gui/down.png'), '', self)
         self.rot_clockwise_button = QtWidgets.QPushButton(QtGui.QIcon('gui/rot_right.png'), '', self)
         self.rot_counter_clockwise_button = QtWidgets.QPushButton(QtGui.QIcon('gui/rot_left.png'), '', self)
         self.apply_button = QtWidgets.QPushButton('Apply changes', self)
@@ -715,12 +715,12 @@ class HolographyWidget(QtWidgets.QWidget):
         self.px_shift_input = QtWidgets.QLineEdit('0', self)
         self.rot_angle_input = QtWidgets.QLineEdit('0.0', self)
 
-        self.left_button.clicked.connect(self.move_left)
-        self.right_button.clicked.connect(self.move_right)
-        self.up_button.clicked.connect(self.move_up)
-        self.down_button.clicked.connect(self.move_down)
-        self.rot_clockwise_button.clicked.connect(self.rot_right)
-        self.rot_counter_clockwise_button.clicked.connect(self.rot_left)
+        self.move_left_button.clicked.connect(self.move_left)
+        self.move_right_button.clicked.connect(self.move_right)
+        self.move_up_button.clicked.connect(self.move_up)
+        self.move_down_button.clicked.connect(self.move_down)
+        self.rot_clockwise_button.clicked.connect(self.rotate_right)
+        self.rot_counter_clockwise_button.clicked.connect(self.rotate_left)
         self.apply_button.clicked.connect(self.apply_changes)
         self.reset_button.clicked.connect(partial(self.reset_changes, True))
 
@@ -771,10 +771,10 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_manual.setColumnStretch(8, 1)
         grid_manual.setRowStretch(0, 1)
         grid_manual.setRowStretch(4, 1)
-        grid_manual.addWidget(self.left_button, 2, 1)
-        grid_manual.addWidget(self.right_button, 2, 3)
-        grid_manual.addWidget(self.up_button, 1, 2)
-        grid_manual.addWidget(self.down_button, 3, 2)
+        grid_manual.addWidget(self.move_left_button, 2, 1)
+        grid_manual.addWidget(self.move_right_button, 2, 3)
+        grid_manual.addWidget(self.move_up_button, 1, 2)
+        grid_manual.addWidget(self.move_down_button, 3, 2)
         grid_manual.addWidget(self.px_shift_input, 2, 2)
         grid_manual.addWidget(self.manual_mode_checkbox, 1, 4)
         grid_manual.addWidget(self.apply_button, 2, 4)
@@ -1168,10 +1168,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_corr.setEnabled(False)
 
     def enable_manual_panel(self):
-        self.left_button.setEnabled(True)
-        self.right_button.setEnabled(True)
-        self.up_button.setEnabled(True)
-        self.down_button.setEnabled(True)
+        self.move_left_button.setEnabled(True)
+        self.move_right_button.setEnabled(True)
+        self.move_up_button.setEnabled(True)
+        self.move_down_button.setEnabled(True)
         self.rot_clockwise_button.setEnabled(True)
         self.rot_counter_clockwise_button.setEnabled(True)
         self.px_shift_input.setEnabled(True)
@@ -1182,10 +1182,10 @@ class HolographyWidget(QtWidgets.QWidget):
     def disable_manual_panel(self):
         if self.backup_image is not None:
             self.reset_changes_and_delete_backup(upd_disp=False)
-        self.left_button.setEnabled(False)
-        self.right_button.setEnabled(False)
-        self.up_button.setEnabled(False)
-        self.down_button.setEnabled(False)
+        self.move_left_button.setEnabled(False)
+        self.move_right_button.setEnabled(False)
+        self.move_up_button.setEnabled(False)
+        self.move_down_button.setEnabled(False)
         self.rot_clockwise_button.setEnabled(False)
         self.rot_counter_clockwise_button.setEnabled(False)
         self.px_shift_input.setEnabled(False)
@@ -1787,11 +1787,11 @@ class HolographyWidget(QtWidgets.QWidget):
         self.display.image.shift = total_shift
         self.update_display_and_bcg()
 
-    def rot_left(self):
+    def rotate_left(self):
         ang = float(self.rot_angle_input.text())
         self.rotate_image(ang)
 
-    def rot_right(self):
+    def rotate_right(self):
         ang = float(self.rot_angle_input.text())
         self.rotate_image(-ang)
 
