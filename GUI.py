@@ -276,8 +276,8 @@ class PlotWidget(QtWidgets.QWidget):
 class LineEditWithLabel(QtWidgets.QWidget):
     def __init__(self, parent, lab_text='Label', default_input=''):
         super(LineEditWithLabel, self).__init__(parent)
-        self.label = QtWidgets.QLabel(lab_text)
-        self.input = QtWidgets.QLineEdit(default_input)
+        self.label = QtWidgets.QLabel(lab_text, self)
+        self.input = QtWidgets.QLineEdit(default_input, self)
         self.initUI()
 
     def initUI(self):
@@ -543,7 +543,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.phs_radio_button.toggled.connect(self.update_display_and_bcg)
         self.cos_phs_radio_button.toggled.connect(self.update_display_and_bcg)
 
-        self.tab_nav = QtWidgets.QWidget()
+        self.tab_nav = QtWidgets.QWidget(self)
         self.tab_nav.layout = QtWidgets.QGridLayout()
         self.tab_nav.layout.setColumnStretch(0, 1)
         self.tab_nav.layout.setColumnStretch(1, 1)
@@ -689,7 +689,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_exp.addWidget(self.export_npy_radio_button, 2, 3, 1, 2)
         grid_exp.addWidget(self.export_raw_radio_button, 3, 3, 1, 2)
 
-        self.tab_disp = QtWidgets.QWidget()
+        self.tab_disp = QtWidgets.QWidget(self)
         self.tab_disp.layout = QtWidgets.QVBoxLayout()
         self.tab_disp.layout.addLayout(grid_disp)
         self.tab_disp.layout.addLayout(grid_exp)
@@ -804,7 +804,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_auto.addWidget(cross_corr_all_button, 2, 3)
         grid_auto.addWidget(self.scale_factor_input, 4, 3)
 
-        self.tab_align = QtWidgets.QWidget()
+        self.tab_align = QtWidgets.QWidget(self)
         self.tab_align.layout = QtWidgets.QVBoxLayout()
         self.tab_align.layout.addLayout(grid_manual)
         self.tab_align.layout.addLayout(grid_auto)
@@ -859,7 +859,7 @@ class HolographyWidget(QtWidgets.QWidget):
         remove_phase_tilt_button.clicked.connect(self.remove_phase_tilt)
         get_sideband_from_xy_button.clicked.connect(self.get_sideband_from_xy)
 
-        self.tab_holo = QtWidgets.QWidget()
+        self.tab_holo = QtWidgets.QWidget(self)
         self.tab_holo.layout = QtWidgets.QGridLayout()
         self.tab_holo.layout.setColumnStretch(0, 1)
         self.tab_holo.layout.setColumnStretch(1, 1)
@@ -945,7 +945,7 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
 
-        self.tab_calc = QtWidgets.QWidget()
+        self.tab_calc = QtWidgets.QWidget(self)
         self.tab_calc.layout = QtWidgets.QGridLayout()
         self.tab_calc.layout.setColumnStretch(0, 1)
         self.tab_calc.layout.setColumnStretch(1, 1)
@@ -1016,7 +1016,7 @@ class HolographyWidget(QtWidgets.QWidget):
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_3d_phase_button.clicked.connect(self.export_3d_phase)
 
-        self.tab_calc_2 = QtWidgets.QWidget()
+        self.tab_calc_2 = QtWidgets.QWidget(self)
         self.tab_calc_2.layout = QtWidgets.QGridLayout()
         self.tab_calc_2.layout.setColumnStretch(0, 1)
         self.tab_calc_2.layout.setColumnStretch(1, 1)
@@ -1089,7 +1089,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.cont_input.returnPressed.connect(self.update_display_and_bcg)
         self.gamma_input.returnPressed.connect(self.update_display_and_bcg)
 
-        self.tab_corr = QtWidgets.QWidget()
+        self.tab_corr = QtWidgets.QWidget(self)
         self.tab_corr.layout = QtWidgets.QGridLayout()
         self.tab_corr.layout.setColumnStretch(0, 1)
         self.tab_corr.layout.setColumnStretch(1, 2)
@@ -1116,7 +1116,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # Main layout
         # ------------------------------
 
-        self.tabs = QtWidgets.QTabWidget()
+        self.tabs = QtWidgets.QTabWidget(self)
         self.tabs.addTab(self.tab_nav, 'Navigation')
         self.tabs.addTab(self.tab_disp, 'Display')
         self.tabs.addTab(self.tab_align, 'Alignment')
