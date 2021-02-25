@@ -1570,6 +1570,7 @@ class HolographyWidget(QtWidgets.QWidget):
             img.name += '_-' if norm_val > 0.0 else '_+'
             img.name += '{0:.2f}rad'.format(abs(norm_val))
 
+        self.name_input.setText(curr_img.name)
         self.fname_input.setText(curr_img.name)
         self.update_display_and_bcg()
         self.update_curr_info_label()
