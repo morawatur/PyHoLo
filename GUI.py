@@ -1211,9 +1211,9 @@ class HolographyWidget(QtWidgets.QWidget):
     def go_to_image(self, new_idx):
         first_img = imsup.get_first_image(self.display.image)
         imgs = imsup.create_image_list_from_first_image(first_img)
-        if 0 > new_idx >= len(imgs):
+        if new_idx < 0 or new_idx >= len(imgs):
             print('Image index out of range')
-            return
+            return 0
 
         curr_img = imgs[new_idx]
         if curr_img.name == '':
@@ -1227,20 +1227,21 @@ class HolographyWidget(QtWidgets.QWidget):
         self.display.update_labels()
         self.update_curr_info_label()
         self.update_display_and_bcg()
+        return 1
 
     def go_to_prev_image(self):
         curr_img = self.display.image
         if curr_img.prev is None:
-            return
+            return 0
         prev_idx = curr_img.prev.num_in_ser - 1
-        self.go_to_image(prev_idx)
+        return self.go_to_image(prev_idx)
 
     def go_to_next_image(self):
         curr_img = self.display.image
         if curr_img.next is None:
-            return
+            return 0
         next_idx = curr_img.next.num_in_ser - 1
-        self.go_to_image(next_idx)
+        return self.go_to_image(next_idx)
 
     def go_to_first_image(self):
         curr_idx = self.display.image.num_in_ser - 1
@@ -1652,13 +1653,10 @@ class HolographyWidget(QtWidgets.QWidget):
         print('Saved log file: "{0}"'.format(log_fname))
 
     def export_all(self):
-        curr_img = imsup.get_first_image(self.display.image)
-        self.display.image = curr_img
+        self.go_to_first_image()
         self.export_image()
-        while curr_img.next is not None:
-            self.go_to_next_image()
+        while self.go_to_next_image():
             self.export_image()
-            curr_img = self.display.image
         print('All images saved')
 
     def export_3d_phase(self):
