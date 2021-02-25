@@ -25,17 +25,17 @@ from skimage.restoration import unwrap_phase    # used in GUI.py
 #-------------------------------------------------------------------
 
 def rescale_pixel_dim(px_dim, old_dim, new_dim):
-    resc_factor = old_dim / new_dim
-    return px_dim * resc_factor
+    sc_factor = old_dim / new_dim
+    return px_dim * sc_factor
 
 #-------------------------------------------------------------------
 
-def rotate_image_ski(img, angle, resize=False, mode='constant'):
+def rotate_image_ski(img, angle, resize=False):
     dt = img.cmp_repr
     img.reim_to_amph()
 
-    amp_rot = tr.rotate(img.amph.am, angle, resize=resize, mode=mode, cval=0.0, preserve_range=True)
-    phs_rot = tr.rotate(img.amph.ph, angle, resize=resize, mode=mode, cval=0.0, preserve_range=True)
+    amp_rot = tr.rotate(img.amph.am, angle, resize=resize, mode='constant', cval=0.0, preserve_range=True)
+    phs_rot = tr.rotate(img.amph.ph, angle, resize=resize, mode='constant', cval=0.0, preserve_range=True)
 
     img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_rot.load_amp_data(amp_rot)
@@ -50,12 +50,12 @@ def rotate_image_ski(img, angle, resize=False, mode='constant'):
 
 #-------------------------------------------------------------------
 
-def rescale_image_ski(img, factor):
+def rescale_image_ski(img, scale_factor):
     dt = img.cmp_repr
     img.reim_to_amph()
 
-    amp_mag = tr.rescale(img.amph.am, scale=factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
-    phs_mag = tr.rescale(img.amph.ph, scale=factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
+    amp_mag = tr.rescale(img.amph.am, scale_factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
+    phs_mag = tr.rescale(img.amph.ph, scale_factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
 
     img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_mag.load_amp_data(amp_mag)
