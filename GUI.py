@@ -473,9 +473,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.preview_scroll = ImgScrollArea()
         self.backup_image = None
         self.point_sets = [[]]
-        self.shift = [0, 0]     # [dx, dy]
-        self.rot_angle = 0
-        self.scale_factor = 1.0
+        self.last_shift = [0, 0]     # [dx, dy]
+        self.last_rot_angle = 0
+        self.last_scale_factor = 1.0
         self.warp_points = []
         self.initUI()
 
@@ -1886,7 +1886,7 @@ class HolographyWidget(QtWidgets.QWidget):
             shift = np.array(pt1) - np.array(pt2)
             shift_sum += shift
 
-        self.shift = list(shift_sum // len(points1))
+        self.last_shift = list(shift_sum // len(points1))
         self.reshift()
 
     def auto_rotate_image(self):
@@ -1926,23 +1926,23 @@ class HolographyWidget(QtWidgets.QWidget):
             rot_angle_avg += rot_angle
 
         rot_angle_avg /= n_pairs
-        self.rot_angle = rot_angle_avg
+        self.last_rot_angle = rot_angle_avg
 
         print('Partial rot. angles: ' + ', '.join('{0:.2f} deg'.format(ang) for ang in rot_angles))
         # print('Average rot. angle = {0:.2f} deg'.format(rot_angle_avg))
         self.rerotate()
 
     def reshift(self):
-        print('Shifting by [dx, dy] = {0} px'.format(self.shift))
+        print('Shifting by [dx, dy] = {0} px'.format(self.last_shift))
         curr_img = self.display.image
-        shifted_img = imsup.shift_amph_image(curr_img, self.shift)
+        shifted_img = imsup.shift_amph_image(curr_img, self.last_shift)
         shifted_img.name = curr_img.name + '_sh'
         self.insert_img_after_curr(shifted_img)
 
     def rerotate(self):
-        print('Using rot. angle = {0:.2f} deg'.format(self.rot_angle))
+        print('Using rot. angle = {0:.2f} deg'.format(self.last_rot_angle))
         curr_img = self.display.image
-        rotated_img = tr.rotate_image_ski(curr_img, self.rot_angle)
+        rotated_img = tr.rotate_image_ski(curr_img, self.last_rot_angle)
         rotated_img.name = curr_img.name + '_rot'
         self.insert_img_after_curr(rotated_img)
 
@@ -1968,7 +1968,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         if curr_img.prev is None or np2 == 0:
             print('Manual scaling')
-            self.scale_factor = float(self.scale_factor_input.text())
+            self.last_scale_factor = float(self.scale_factor_input.text())
             self.rescale_image()
             return
 
@@ -1989,7 +1989,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         scfs = [ dist1 / dist2 for dist1, dist2 in zip(poly1_dists, poly2_dists) ]
         scf_avg = np.average(scfs)
-        self.scale_factor = scf_avg
+        self.last_scale_factor = scf_avg
 
         print('Automatic scaling:')
         print('Partial scale factors: ' + ', '.join('{0:.2f}x'.format(scf) for scf in scfs))
@@ -1997,9 +1997,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.rescale_image()
 
     def rescale_image(self):
-        print('Using scale factor = {0:.2f}x'.format(self.scale_factor))
+        print('Using scale factor = {0:.2f}x'.format(self.last_scale_factor))
         curr_img = self.display.image
-        mag_img = tr.rescale_image_ski(curr_img, self.scale_factor)
+        mag_img = tr.rescale_image_ski(curr_img, self.last_scale_factor)
         pad_sz = (mag_img.width - curr_img.width) // 2
 
         if pad_sz > 0:
