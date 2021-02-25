@@ -634,8 +634,8 @@ class HolographyWidget(QtWidgets.QWidget):
         fname_label = QtWidgets.QLabel('File name', self)
         self.fname_input = QtWidgets.QLineEdit('', self)
 
-        unwrap_button.clicked.connect(self.unwrap_img_phase)
-        wrap_button.clicked.connect(self.wrap_img_phase)
+        unwrap_button.clicked.connect(self.unwrap_phase)
+        wrap_button.clicked.connect(self.wrap_phase)
         norm_phase_button.clicked.connect(self.norm_phase)
         crop_button.clicked.connect(self.crop_n_fragments)
         flip_h_button.clicked.connect(partial(self.flip_image, True))
@@ -1273,7 +1273,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         # self.preview_scroll.update_scroll_list(self.display.image)
 
-    def move_image_to_pos(self, new_idx):
+    def move_image_to_index(self, new_idx):
         curr_img = self.display.image
         curr_idx = abs(curr_img.num_in_ser) - 1
 
@@ -1291,18 +1291,18 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def swap_left(self):
         prev_idx = self.display.image.num_in_ser - 2
-        self.move_image_to_pos(prev_idx)
+        self.move_image_to_index(prev_idx)
 
     def swap_right(self):
         next_idx = self.display.image.num_in_ser
-        self.move_image_to_pos(next_idx)
+        self.move_image_to_index(next_idx)
 
     def make_image_first(self):
-        self.move_image_to_pos(0)
+        self.move_image_to_index(0)
 
     def make_image_last(self):
         last_img = imsup.get_last_image(self.display.image)
-        self.move_image_to_pos(last_img.num_in_ser - 1)
+        self.move_image_to_index(last_img.num_in_ser - 1)
 
     def clear_image(self):
         labToDel = self.display.children()
@@ -1497,14 +1497,14 @@ class HolographyWidget(QtWidgets.QWidget):
         self.gamma_input.setText('1.0')
         self.update_display_and_bcg()
 
-    def unwrap_img_phase(self):
+    def unwrap_phase(self):
         curr_img = self.display.image
         new_phs = tr.unwrap_phase(curr_img.amph.ph)
         curr_img.amph.ph = np.copy(new_phs)
         self.display.image = rescale_image_buffer_to_window(curr_img, const.disp_dim)
         self.update_display()
 
-    def wrap_img_phase(self):
+    def wrap_phase(self):
         curr_img = self.display.image
         uw_min = np.min(curr_img.amph.ph)
 
