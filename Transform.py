@@ -34,11 +34,8 @@ def rotate_image_ski(img, angle, resize=False, mode='constant'):
     dt = img.cmp_repr
     img.reim_to_amph()
 
-    # amp_cval = (np.min(img.amph.am) + np.max(img.amph.am)) / 2.0
-    # phs_cval = (np.min(img.amph.ph) + np.max(img.amph.ph)) / 2.0
-
-    amp_rot = tr.rotate(img.amph.am, angle, resize=resize, mode=mode, cval=0.0)
-    phs_rot = tr.rotate(img.amph.ph, angle, resize=resize, mode=mode, cval=0.0)
+    amp_rot = tr.rotate(img.amph.am, angle, resize=resize, mode=mode, cval=0.0, preserve_range=True)
+    phs_rot = tr.rotate(img.amph.ph, angle, resize=resize, mode=mode, cval=0.0, preserve_range=True)
 
     img_rot = imsup.ImageExp(amp_rot.shape[0], amp_rot.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_rot.load_amp_data(amp_rot)
@@ -57,8 +54,8 @@ def rescale_image_ski(img, factor):
     dt = img.cmp_repr
     img.reim_to_amph()
 
-    amp_mag = tr.rescale(img.amph.am, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
-    phs_mag = tr.rescale(img.amph.ph, scale=factor, mode='constant', cval=0.0, multichannel=False, anti_aliasing=False)
+    amp_mag = tr.rescale(img.amph.am, scale=factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
+    phs_mag = tr.rescale(img.amph.ph, scale=factor, mode='constant', cval=0.0, preserve_range=True, anti_aliasing=False)
 
     img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_mag.load_amp_data(amp_mag)
@@ -81,8 +78,8 @@ def warp_image_ski(img, src_set, dst_set):
 
     tform3 = tr.ProjectiveTransform()
     tform3.estimate(src_set, dst_set)
-    amp_warp = tr.warp(img.amph.am, tform3, output_shape=img.amph.am.shape, mode='constant', cval=0.0)
-    phs_warp = tr.warp(img.amph.ph, tform3, output_shape=img.amph.ph.shape, mode='constant', cval=0.0)
+    amp_warp = tr.warp(img.amph.am, tform3, output_shape=img.amph.am.shape, mode='constant', cval=0.0, preserve_range=True)
+    phs_warp = tr.warp(img.amph.ph, tform3, output_shape=img.amph.ph.shape, mode='constant', cval=0.0, preserve_range=True)
 
     img_warp = imsup.ImageExp(amp_warp.shape[0], amp_warp.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
     img_warp.load_amp_data(amp_warp)
