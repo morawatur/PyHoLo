@@ -51,7 +51,7 @@ def find_img_max(img):
 def insert_aperture(img, ap_dia):
     dt = img.cmp_repr
     img.reim_to_amph()
-    img_ap = imsup.copy_amph_image(img)
+    img_ap = imsup.get_copy_of_amph_image(img)
 
     n = img_ap.width
     c = n // 2
@@ -72,7 +72,7 @@ def insert_aperture(img, ap_dia):
 def mult_by_hann_window(img, hw_dim):
     dt = img.cmp_repr
     img.reim_to_amph()
-    new_img = imsup.copy_amph_image(img)
+    new_img = imsup.get_copy_of_amph_image(img)
 
     hann = np.hanning(hw_dim)
     hann_2d = np.sqrt(np.outer(hann, hann))
@@ -93,7 +93,7 @@ def mult_by_hann_window(img, hw_dim):
 def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     dt = img.cmp_repr
     img.reim_to_amph()
-    img_ap = imsup.copy_amph_image(img)
+    img_ap = imsup.get_copy_of_amph_image(img)
 
     # ap_dia = int(abs(ap_dia))
     # smooth_w = int(abs(smooth_w))
