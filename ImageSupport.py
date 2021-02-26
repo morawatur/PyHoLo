@@ -257,7 +257,21 @@ def grayscale_to_rgb(gs_arr):
 
 #-------------------------------------------------------------------
 
-def copy_reim_image(img):
+def copy_amph_arrays(img_src, img_dst):
+    img_dst.amph.am = np.copy(img_src.amph.am)
+    img_dst.amph.ph = np.copy(img_src.amph.ph)
+
+#-------------------------------------------------------------------
+
+def get_copy_of_amph_image(img):
+    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
+                        px_dim_sz=img.px_dim)
+    copy_amph_arrays(img, img_copy)
+    return img_copy
+
+#-------------------------------------------------------------------
+
+def get_copy_of_reim_image(img):
     img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
                         px_dim_sz=img.px_dim)
     img_copy.reim = np.copy(img.amph.reim)
@@ -265,20 +279,11 @@ def copy_reim_image(img):
 
 #-------------------------------------------------------------------
 
-def copy_amph_image(img):
-    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
-                        px_dim_sz=img.px_dim)
-    img_copy.amph.am = np.copy(img.amph.am)
-    img_copy.amph.ph = np.copy(img.amph.ph)
-    return img_copy
-
-#-------------------------------------------------------------------
-
-def copy_image(img):
+def get_image_copy(img):
     if img.cmp_repr == Image.cmp['CRI']:
-        img_copy = copy_reim_image(img)
+        img_copy = get_copy_of_reim_image(img)
     else:
-        img_copy = copy_amph_image(img)
+        img_copy = get_copy_of_amph_image(img)
     return img_copy
 
 # -------------------------------------------------------------------
@@ -381,7 +386,7 @@ def make_square_coords(coords):
 #-------------------------------------------------------------------
 
 def create_imgexp_from_img(img):
-    return copy_image(img)
+    return get_image_copy(img)
 
 #-------------------------------------------------------------------
 
