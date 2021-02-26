@@ -1770,6 +1770,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.move_image([0, n_px])
 
     def move_image(self, shift):
+        if shift == [0, 0]:
+            return
+
         bckp = self.backup_image
         curr = self.display.image
         total_shift = list(np.array(curr.shift) + np.array(shift))
@@ -1795,6 +1798,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.rotate_image(-ang)
 
     def rotate_image(self, rot):
+        if rot == 0:
+            return
+
         bckp = self.backup_image
         curr = self.display.image
         total_rot = curr.rot + rot
