@@ -1823,13 +1823,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def reset_changes(self, upd_disp=True):
         curr = self.display.image
+        if curr.shift == [0, 0] and curr.rot == 0:
+            return
         curr.amph.am = np.copy(self.backup_image.amph.am)
         curr.amph.ph = np.copy(self.backup_image.amph.ph)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
-        if curr.shift != [0, 0] or curr.rot != 0:
-            if upd_disp: self.update_display_and_bcg()
-            self.zero_shift_rot()
-            print('Changes to {0} have been revoked'.format(self.display.image.name))
+        if upd_disp: self.update_display_and_bcg()
+        self.zero_shift_rot()
+        print('Changes to {0} have been revoked'.format(self.display.image.name))
 
     def reset_changes_and_delete_backup(self, upd_disp=True):
         self.reset_changes(upd_disp)
