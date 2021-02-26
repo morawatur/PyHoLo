@@ -166,8 +166,7 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def set_image(self, disp_amp=True, disp_phs=False, log_scale=False, hide_bad_px=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
-        if self.image.buffer.am.shape[0] != const.disp_dim:
-            self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
+        rescale_image_buffer_to_window(self.image, const.disp_dim)
 
         if disp_amp:
             px_arr = np.copy(self.image.buffer.am)
@@ -2747,6 +2746,8 @@ def load_image_series_from_first_file(img_fpath):
 # --------------------------------------------------------
 
 def rescale_image_buffer_to_window(img, win_dim):
+    if img.buffer.am.shape[0] == win_dim:
+        return
     scale_factor = win_dim / img.width
     img_to_disp = tr.rescale_image_ski(img, scale_factor)
     img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
