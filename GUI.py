@@ -166,7 +166,8 @@ class LabelExt(QtWidgets.QLabel):
             lab.show()
 
     def set_image(self, disp_amp=True, disp_phs=False, log_scale=False, hide_bad_px=False, color=False, update_bcg=False, bright=0, cont=255, gamma=1.0):
-        rescale_image_buffer_to_window(self.image, const.disp_dim)
+        if self.image.buffer.am.shape[0] != const.disp_dim:
+            self.image = rescale_image_buffer_to_window(self.image, const.disp_dim)
 
         if disp_amp:
             px_arr = np.copy(self.image.buffer.am)
@@ -1816,7 +1817,8 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def apply_changes(self):
         self.zero_shift_rot()
-        self.backup_image = imsup.copy_amph_image(self.display.image)
+        self.backup_image.amph.am = np.copy(self.display.image.amph.am)
+        self.backup_image.amph.ph = np.copy(self.display.image.amph.ph)
         print('Changes to {0} have been applied'.format(self.display.image.name))
 
     def reset_changes(self, upd_disp=True):
@@ -2746,8 +2748,6 @@ def load_image_series_from_first_file(img_fpath):
 # --------------------------------------------------------
 
 def rescale_image_buffer_to_window(img, win_dim):
-    if img.buffer.am.shape[0] == win_dim:
-        return
     scale_factor = win_dim / img.width
     img_to_disp = tr.rescale_image_ski(img, scale_factor)
     img.buffer = imsup.ComplexAmPhMatrix(img_to_disp.height, img_to_disp.width)
