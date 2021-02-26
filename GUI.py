@@ -1530,7 +1530,7 @@ class HolographyWidget(QtWidgets.QWidget):
         p1 = disp_pt_to_real_tl_pt(curr_img.width, p1)
         p2 = disp_pt_to_real_tl_pt(curr_img.width, p2)
 
-        blanked_img = imsup.copy_amph_image(curr_img)
+        blanked_img = imsup.get_copy_of_amph_image(curr_img)
         blanked_img.amph.am[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
         blanked_img.amph.ph[p1[1]:p2[1], p1[0]:p2[0]] = 0.0
 
@@ -1747,7 +1747,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
-            self.backup_image = imsup.copy_amph_image(self.display.image)
+            self.backup_image = imsup.get_copy_of_amph_image(self.display.image)
             self.enable_manual_panel()
         else:
             self.reset_changes_and_delete_backup(upd_disp=True)
@@ -1783,8 +1783,7 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             shifted_img = imsup.shift_amph_image(bckp, total_shift)
 
-        curr.amph.am = np.copy(shifted_img.amph.am)
-        curr.amph.ph = np.copy(shifted_img.amph.ph)
+        imsup.copy_amph_arrays(shifted_img, curr)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.shift = total_shift
         self.update_display_and_bcg()
@@ -1811,8 +1810,7 @@ class HolographyWidget(QtWidgets.QWidget):
         else:
             rotated_img = tr.rotate_image_ski(bckp, total_rot)
 
-        curr.amph.am = np.copy(rotated_img.amph.am)
-        curr.amph.ph = np.copy(rotated_img.amph.ph)
+        imsup.copy_amph_arrays(rotated_img, curr)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         self.display.image.rot = total_rot
         self.update_display_and_bcg()
@@ -1823,16 +1821,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def apply_changes(self):
         self.zero_shift_rot()
-        self.backup_image.amph.am = np.copy(self.display.image.amph.am)
-        self.backup_image.amph.ph = np.copy(self.display.image.amph.ph)
+        imsup.copy_amph_arrays(self.display.image, self.backup_image)
         print('Changes to {0} have been applied'.format(self.display.image.name))
 
     def reset_changes(self, upd_disp=True):
         curr = self.display.image
         if curr.shift == [0, 0] and curr.rot == 0:
             return
-        curr.amph.am = np.copy(self.backup_image.amph.am)
-        curr.amph.ph = np.copy(self.backup_image.amph.ph)
+        imsup.copy_amph_arrays(self.backup_image, curr)
         self.display.image = rescale_image_buffer_to_window(curr, const.disp_dim)
         if upd_disp: self.update_display_and_bcg()
         self.zero_shift_rot()
@@ -1860,7 +1856,7 @@ class HolographyWidget(QtWidgets.QWidget):
         insert_idx = n_imgs
         img_align_list = cross_corr_images(all_img_list)
 
-        ref_img = imsup.copy_amph_image(first_img)
+        ref_img = imsup.get_copy_of_amph_image(first_img)
         img_align_list.insert(0, ref_img)
         all_img_list += img_align_list
         for i in range(n_imgs):
@@ -2303,7 +2299,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         amp_factor = float(self.amp_factor_input.text())
 
-        phs_amplified = imsup.copy_amph_image(curr_img)
+        phs_amplified = imsup.get_copy_of_amph_image(curr_img)
         phs_amplified.amph.ph *= amp_factor
         phs_amplified.update_cos_phase()
 
@@ -2318,7 +2314,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         radians = float(self.radians_to_add_input.text())
 
-        new_phs_img = imsup.copy_amph_image(curr_img)
+        new_phs_img = imsup.get_copy_of_amph_image(curr_img)
         new_phs_img.amph.ph += radians
         new_phs_img.update_cos_phase()
 
@@ -2415,7 +2411,7 @@ class HolographyWidget(QtWidgets.QWidget):
         phs_grad_img.load_phs_data(phs_grad_xy)
         phs_grad_img.name = '{0}_tilt'.format(curr_img.name)
 
-        new_phs_img = imsup.copy_amph_image(curr_img)
+        new_phs_img = imsup.get_copy_of_amph_image(curr_img)
         new_phs_img.amph.ph -= phs_grad_xy
         new_phs_img.name = '{0}_--tilt'.format(curr_img.name)
 
@@ -2649,7 +2645,7 @@ class HolographyWidget(QtWidgets.QWidget):
         C_E = (2 * np.pi / ew_lambda) * (Ua + U0) / (Ua * (Ua + 2 * U0))
         mip = curr_phs / (C_E * sample_thickness)
 
-        mean_inner_pot_img = imsup.copy_amph_image(curr_img)
+        mean_inner_pot_img = imsup.get_copy_of_amph_image(curr_img)
         mean_inner_pot_img.amph.am *= 0
         mean_inner_pot_img.amph.ph = np.copy(mip)
         mean_inner_pot_img.name = 'MIP_from_{0}'.format(curr_img.name)
@@ -2662,7 +2658,7 @@ class HolographyWidget(QtWidgets.QWidget):
         conts_scaled = imsup.scale_image(conts, 0.0, 1.0)
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0.0
-        img_filtered = imsup.copy_amph_image(curr_img)
+        img_filtered = imsup.get_copy_of_amph_image(curr_img)
         img_filtered.amph.ph = np.copy(conts_scaled)
         self.insert_img_after_curr(img_filtered)
 
