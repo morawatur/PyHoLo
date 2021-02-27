@@ -193,7 +193,7 @@ def holo_ifft(h_fft):
 
 def calc_phase_sum(img1, img2):
     # complex multiplication
-    phs_sum = imsup.ImageExp(img1.height, img1.width)
+    phs_sum = imsup.get_empty_image_copy(img1)
     phs_sum.amph.am = img1.amph.am * img2.amph.am
     phs_sum.amph.ph = img1.amph.ph + img2.amph.ph
     return phs_sum
@@ -202,8 +202,8 @@ def calc_phase_sum(img1, img2):
 
 def calc_phase_diff(img1, img2):
     # complex division
-    phs_diff = imsup.ImageExp(img1.height, img1.width)
-    img1.amph.am[np.where(img1.amph.am == 0.0)] = 1.0
+    phs_diff = imsup.get_empty_image_copy(img1)
+    img1.amph.am[img1.amph.am == 0.0] = 1.0
     phs_diff.amph.am = img2.amph.am / img1.amph.am
     phs_diff.amph.ph = img2.amph.ph - img1.amph.ph
     return phs_diff
@@ -270,7 +270,7 @@ def subpixel_shift(img, subpx_sh):
     dt = img.cmp_repr
     img.amph_to_reim()
     h, w = img.reim.shape
-    img_sh = imsup.ImageExp(h, w, img.cmp_repr)
+    img_sh = imsup.get_empty_image_copy(img)
 
     dx, dy = subpx_sh
     wx = np.abs(dx)
@@ -307,7 +307,7 @@ def subpixel_shift(img, subpx_sh):
 #     dt = img.cmp_repr
 #     img.reim_to_amph()
 #     h, w = img.amph.am.shape
-#     img_sh = imsup.ImageExp(h, w, img.cmp_repr)
+#     img_sh = imsup.get_empty_image_copy(img)
 #
 #     dx, dy = subpx_sh
 #     wx = np.abs(dx)

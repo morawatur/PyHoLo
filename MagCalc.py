@@ -78,11 +78,11 @@ def calc_Bxy_maps(img, smpl_thck):
     Bx = B_coeff * dx
     By = B_coeff * dy
 
-    Bx_img = imsup.ImageExp(img.height, img.width)
+    Bx_img = imsup.get_empty_image_copy(img)
     Bx_img.amph.ph = np.copy(Bx)
     Bx_img.name = 'Bx_from_{0}'.format(img.name)
 
-    By_img = imsup.ImageExp(img.height, img.width)
+    By_img = imsup.get_empty_image_copy(img)
     By_img.amph.ph = np.copy(By)
     By_img.name = 'By_from_{0}'.format(img.name)
 

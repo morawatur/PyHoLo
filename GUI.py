@@ -322,7 +322,7 @@ class ImgScrollArea(QtWidgets.QScrollArea):
 
 def create_preview_img(full_img, new_sz):
     sx, sy = new_sz
-    preview = imsup.ImageExp(sx, sy, full_img.cmp)
+    preview = imsup.ImageExp(sx, sy, full_img.cmp_repr)
     preview.amph.am = np.copy(full_img.amph.am[:sx, :sy])
     preview.amph.ph = np.copy(full_img.amph.ph[:sx, :sy])
     return preview
@@ -2407,7 +2407,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         phs_grad_xy = phs_grad_x + phs_grad_y
 
-        phs_grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        phs_grad_img = imsup.get_empty_image_copy(curr_img)
         phs_grad_img.load_phs_data(phs_grad_xy)
         phs_grad_img.name = '{0}_tilt'.format(curr_img.name)
 
@@ -2489,9 +2489,9 @@ class HolographyWidget(QtWidgets.QWidget):
 
     def calc_phase_gradient(self):
         curr_img = self.display.image
-        dx_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        dy_img = imsup.ImageExp(curr_img.height, curr_img.width)
-        grad_img = imsup.ImageExp(curr_img.height, curr_img.width)
+        dx_img = imsup.get_empty_image_copy(curr_img)
+        dy_img = imsup.get_empty_image_copy(curr_img)
+        grad_img = imsup.get_empty_image_copy(curr_img)
         print('Calculating gradient for sample distance = {0:.2f} nm'.format(curr_img.px_dim * 1e9))
         dx, dy = np.gradient(curr_img.amph.ph, curr_img.px_dim)
         dr = np.sqrt(dx * dx + dy * dy)
@@ -2622,7 +2622,7 @@ class HolographyWidget(QtWidgets.QWidget):
         #     #
         #     # # Pearson correlation matrix
         #     # corr_coef_arr = np.corrcoef(prev_phs, curr_phs)
-        #     # corr_coef_img = imsup.ImageExp(curr_img.height, curr_img.width, px_dim_sz=curr_img.px_dim)
+        #     # corr_coef_img = imsup.get_empty_image_copy(curr_img)
         #     # corr_coef_img.amph.ph = np.copy(corr_coef_arr)
         #     # corr_coef_img = rescale_image_buffer_to_window(corr_coef_img, const.disp_dim)
         #     # corr_coef_img.name = 'corr_coef_{0}_vs_{1}'.format(curr_img.name, prev_img.name)
@@ -2645,8 +2645,7 @@ class HolographyWidget(QtWidgets.QWidget):
         C_E = (2 * np.pi / ew_lambda) * (Ua + U0) / (Ua * (Ua + 2 * U0))
         mip = curr_phs / (C_E * sample_thickness)
 
-        mean_inner_pot_img = imsup.get_copy_of_amph_image(curr_img)
-        mean_inner_pot_img.amph.am *= 0
+        mean_inner_pot_img = imsup.get_empty_image_copy(curr_img)
         mean_inner_pot_img.amph.ph = np.copy(mip)
         mean_inner_pot_img.name = 'MIP_from_{0}'.format(curr_img.name)
         self.insert_img_after_curr(mean_inner_pot_img)
