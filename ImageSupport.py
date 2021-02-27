@@ -257,6 +257,11 @@ def grayscale_to_rgb(gs_arr):
 
 #-------------------------------------------------------------------
 
+def get_empty_image_copy(img):
+    return ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, px_dim_sz=img.px_dim)
+
+#-------------------------------------------------------------------
+
 def copy_amph_arrays(img_src, img_dst):
     img_dst.amph.am = np.copy(img_src.amph.am)
     img_dst.amph.ph = np.copy(img_src.amph.ph)
@@ -264,16 +269,14 @@ def copy_amph_arrays(img_src, img_dst):
 #-------------------------------------------------------------------
 
 def get_copy_of_amph_image(img):
-    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
-                        px_dim_sz=img.px_dim)
+    img_copy = get_empty_image_copy(img)
     copy_amph_arrays(img, img_copy)
     return img_copy
 
 #-------------------------------------------------------------------
 
 def get_copy_of_reim_image(img):
-    img_copy = ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, defocus=img.defocus, num=img.num_in_ser,
-                        px_dim_sz=img.px_dim)
+    img_copy = get_empty_image_copy(img)
     img_copy.reim = np.copy(img.amph.reim)
     return img_copy
 
@@ -281,10 +284,9 @@ def get_copy_of_reim_image(img):
 
 def get_image_copy(img):
     if img.cmp_repr == Image.cmp['CRI']:
-        img_copy = get_copy_of_reim_image(img)
+        return get_copy_of_reim_image(img)
     else:
-        img_copy = get_copy_of_amph_image(img)
-    return img_copy
+        return get_copy_of_amph_image(img)
 
 # -------------------------------------------------------------------
 
@@ -495,7 +497,7 @@ def fft_to_diff(fft):
     dt = fft.cmp_repr
     fft.amph_to_reim()
 
-    diff = ImageExp(fft.height, fft.width, cmp_repr=Image.cmp['CRI'])
+    diff = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
     mid = diff.width // 2
     diff.reim[:mid, :mid] = fft.reim[mid:, mid:]
     diff.reim[:mid, mid:] = fft.reim[mid:, :mid]
