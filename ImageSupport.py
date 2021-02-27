@@ -469,7 +469,7 @@ def calc_fft(img):
     dt = img.cmp_repr
     img.amph_to_reim()
 
-    fft = ImageExp(img.height, img.width, Image.cmp['CRI'])
+    fft = get_empty_image_copy(img)
     fft.reim = np.fft.fft2(img.reim)
 
     img.change_complex_repr(dt)
@@ -482,7 +482,7 @@ def calc_ifft(fft):
     dt = fft.cmp_repr
     fft.amph_to_reim()
 
-    ifft = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
+    ifft = get_empty_image_copy(fft)
     ifft.reim = np.fft.ifft2(fft.reim)
     # ifft.reim = sp.fft.ifft2(fft.reim)
     # ifft.reim = sp.fftpack.ifft2(fft.reim)        # legacy
@@ -497,7 +497,7 @@ def fft_to_diff(fft):
     dt = fft.cmp_repr
     fft.amph_to_reim()
 
-    diff = ImageExp(fft.height, fft.width, Image.cmp['CRI'])
+    diff = get_empty_image_copy(fft)
     mid = diff.width // 2
     diff.reim[:mid, :mid] = fft.reim[mid:, mid:]
     diff.reim[:mid, mid:] = fft.reim[mid:, :mid]
@@ -522,7 +522,7 @@ def calc_cross_corr_fun(img1, img2):
     fft1.reim_to_amph()
     fft2.reim_to_amph()
 
-    fft3 = ImageExp(fft1.height, fft1.width, Image.cmp['CAP'])
+    fft3 = get_empty_image_copy(fft1)
     fft1.amph = conj_amph_matrix(fft1.amph)
     fft3.amph = mult_amph_matrices(fft1.amph, fft2.amph)
     fft3.amph.am = np.sqrt(fft3.amph.am)			# mcf ON
@@ -589,7 +589,7 @@ def shift_array(arr, dx, dy, fval=0.0):
 
 def shift_amph_image(img, shift):
     dx, dy = shift
-    img_shifted = ImageExp(img.height, img.width, img.cmp_repr, px_dim_sz=img.px_dim)
+    img_shifted = get_empty_image_copy(img)
 
     img_shifted.amph.am = shift_array(img.amph.am, dx, dy)
     img_shifted.amph.ph = shift_array(img.amph.ph, dx, dy)
@@ -606,7 +606,7 @@ def shift_image(img, shift):
     img.amph_to_reim()
     dx, dy = shift
 
-    img_shifted = ImageExp(img.height, img.width, img.cmp_repr, px_dim_sz=img.px_dim)
+    img_shifted = get_empty_image_copy(img)
     img_shifted.reim = shift_array(img.reim, dx, dy)
 
     img.change_complex_repr(dt)
