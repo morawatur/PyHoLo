@@ -217,7 +217,7 @@ def clear_image_data(img):
 
 #-------------------------------------------------------------------
 
-def scale_image(img, new_min, new_max):
+def scale_array_to_limits(img, new_min, new_max):
     curr_min = img.min()
     curr_max = img.max()
     if curr_min == curr_max:
@@ -662,7 +662,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
     # option 1 (c->b->g)
     # correct contrast
-    img_scaled = scale_image(img_src, Imin, Imax)
+    img_scaled = scale_array_to_limits(img_src, Imin, Imax)
     # correct brightness
     img_scaled += brg
     img_scaled[img_scaled < 0.0] = 0.0
@@ -672,7 +672,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
     # # option 2 (c->g->b)
     # # correct contrast
-    # img_scaled = scale_image(img_src, Imin, Imax)
+    # img_scaled = scale_array_to_limits(img_src, Imin, Imax)
     # img_scaled[img_scaled < 0.0] = 0.0
     # # correct gamma
     # img_scaled **= gam
@@ -708,7 +708,7 @@ def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
     if log:
         prep_arr_and_calc_log_ip(img_var)
     if scale:
-        img_var = scale_image(img_var, 0.0, 255.0)
+        img_var = scale_array_to_limits(img_var, 0.0, 255.0)
 
     if not color:
         img_to_disp = im.fromarray(img_var.astype(np.uint8))
