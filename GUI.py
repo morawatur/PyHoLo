@@ -79,7 +79,7 @@ class SimpleImageLabel(QtWidgets.QLabel):
         else:
             px_arr = np.copy(self.image.amph.ph)
 
-        pixmap = imsup.scale_image(px_arr, 0.0, 255.0)
+        pixmap = imsup.scale_array_to_limits(px_arr, 0.0, 255.0)
         q_image = QtGui.QImage(pixmap.astype(np.uint8), pixmap.shape[0], pixmap.shape[1], QtGui.QImage.Format_Indexed8)
         pixmap = QtGui.QPixmap(q_image)
         self.setPixmap(pixmap)
@@ -182,7 +182,7 @@ class LabelExt(QtWidgets.QLabel):
             px_arr = np.cos(self.image.buffer.ph)
 
         if not update_bcg:
-            pixmap_to_disp = imsup.scale_image(px_arr, 0.0, 255.0)
+            pixmap_to_disp = imsup.scale_array_to_limits(px_arr, 0.0, 255.0)
         else:
             pixmap_to_disp = imsup.update_image_bright_cont_gamma(px_arr, brg=bright, cnt=cont, gam=gamma)
 
@@ -2654,7 +2654,7 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_img = self.display.image
         curr_img.update_cos_phase()
         conts = np.copy(curr_img.cos_phase)
-        conts_scaled = imsup.scale_image(conts, 0.0, 1.0)
+        conts_scaled = imsup.scale_array_to_limits(conts, 0.0, 1.0)
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0.0
         img_filtered = imsup.get_copy_of_amph_image(curr_img)
