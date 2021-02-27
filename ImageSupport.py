@@ -105,12 +105,11 @@ class Image:
 
     def reim_to_amph(self):
         if self.cmp_repr == self.cmp['CAP']:
-            return 0
+            return
         self.amph.am = np.abs(self.reim)
         self.amph.ph = np.angle(self.reim)
         # self.amph.ph = np.arctan2(self.reim.imag, self.reim.real)
         self.cmp_repr = self.cmp['CAP']
-        return 1
 
     def amph_to_reim(self):
         if self.cmp_repr == self.cmp['CRI']:
@@ -154,10 +153,6 @@ class ImageExp(Image):
     def update_image_from_buffer(self):
         self.amph.am = np.copy(self.buffer.am)
         self.amph.ph = np.copy(self.buffer.ph)
-
-    def reim_to_amph(self):
-        if super(ImageExp, self).reim_to_amph():
-            self.update_buffer()
 
     def update_cos_phase(self):
         self.cos_phase = np.cos(self.amph.ph)
