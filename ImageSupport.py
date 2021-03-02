@@ -586,8 +586,11 @@ def shift_amph_image(img, shift):
     dx, dy = shift
     img_shifted = get_empty_image_copy(img)
 
-    img_shifted.amph.am = shift_array(img.amph.am, dx, dy)
-    img_shifted.amph.ph = shift_array(img.amph.ph, dx, dy)
+    am_fval = np.mean(img.amph.am)
+    ph_fval = 0.0
+
+    img_shifted.amph.am = shift_array(img.amph.am, dx, dy, fval=am_fval)
+    img_shifted.amph.ph = shift_array(img.amph.ph, dx, dy, fval=ph_fval)
 
     if img.cos_phase is not None:
         img_shifted.update_cos_phase()
