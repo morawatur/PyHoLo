@@ -1775,7 +1775,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         bckp = self.backup_image
         curr = self.display.image
-        total_shift = list(np.array(curr.shift) + np.array(shift))
+        total_shift = [curr.shift[0] + shift[0], curr.shift[1] + shift[1]]
 
         if curr.rot != 0:
             tmp = tr.rotate_image_ski(bckp, curr.rot)
