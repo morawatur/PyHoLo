@@ -2009,7 +2009,7 @@ class HolographyWidget(QtWidgets.QWidget):
             crop_coords = 2 * [pad_sz] + 2 * [pad_sz + curr_img.width]
             resc_img = imsup.crop_amph_roi(mag_img, crop_coords)
         else:
-            resc_img = imsup.pad_image(mag_img, curr_img.width, curr_img.height, pval=0.0)
+            resc_img = imsup.pad_image(mag_img, curr_img.width, curr_img.height)
 
         resc_img.name = curr_img.name + '_resc'
         self.insert_img_after_curr(resc_img)
