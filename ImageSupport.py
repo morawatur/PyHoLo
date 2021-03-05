@@ -432,7 +432,7 @@ def pad_array(arr, new_w, new_h, pval=0.0):
 
 #-------------------------------------------------------------------
 
-def pad_image(img, new_w, new_h, pval=0.0):
+def pad_image(img, new_w, new_h):
     if new_w == img.width and new_h == img.height:
         return img
     if new_w < img.width or new_h < img.height:
@@ -440,9 +440,12 @@ def pad_image(img, new_w, new_h, pval=0.0):
 
     img.reim_to_amph()
 
+    am_pval = np.mean(img.amph.am)
+    ph_pval = 0.0
+
     p_img = ImageExp(new_h, new_w, img.cmp_repr, num=img.num_in_ser, px_dim_sz=img.px_dim)
-    p_img.amph.am = pad_array(img.amph.am, new_w, new_h, pval)
-    p_img.amph.ph = pad_array(img.amph.ph, new_w, new_h, pval)
+    p_img.amph.am = pad_array(img.amph.am, new_w, new_h, pval=am_pval)
+    p_img.amph.ph = pad_array(img.amph.ph, new_w, new_h, pval=ph_pval)
 
     return p_img
 
