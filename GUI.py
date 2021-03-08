@@ -1956,10 +1956,9 @@ class HolographyWidget(QtWidgets.QWidget):
         curr_px_dim = self.display.image.px_dim
         prev_px_dim = self.display.image.prev.px_dim
         scale_ratio = curr_px_dim / prev_px_dim
-        print('Scale ratio (between current and previous images) = {0:.2f}x'.format(scale_ratio))
-        print('scale factor < 0 -- current image should be scaled')
-        print('scale factor > 0 -- previous image should be scaled')
-        self.scale_factor_input.setText('{0:.2f}'.format(scale_ratio))
+        print('Scale ratio (between current and previous images) = {0:.3f}x'.format(scale_ratio))
+        print('Scale the current image by this factor to ensure the same calibration between images')
+        self.scale_factor_input.setText('{0:.3f}'.format(scale_ratio))
 
     def scale_image(self):
         curr_img = self.display.image
@@ -1995,12 +1994,12 @@ class HolographyWidget(QtWidgets.QWidget):
         self.last_scale_factor = scf_avg
 
         print('Automatic scaling:')
-        print('Partial scale factors: ' + ', '.join('{0:.2f}x'.format(scf) for scf in scfs))
+        print('Partial scale factors: ' + ', '.join('{0:.3f}x'.format(scf) for scf in scfs))
         # print('Average scale factor = {0:.2f}x'.format(scf_avg))
         self.rescale_image()
 
     def rescale_image(self):
-        print('Using scale factor = {0:.2f}x'.format(self.last_scale_factor))
+        print('Using scale factor = {0:.3f}x'.format(self.last_scale_factor))
         curr_img = self.display.image
         resc_img = tr.rescale_image_ski(curr_img, self.last_scale_factor)
         diff_w = resc_img.width - curr_img.width
