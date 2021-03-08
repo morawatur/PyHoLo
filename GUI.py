@@ -2002,14 +2002,16 @@ class HolographyWidget(QtWidgets.QWidget):
     def rescale_image(self):
         print('Using scale factor = {0:.2f}x'.format(self.last_scale_factor))
         curr_img = self.display.image
-        mag_img = tr.rescale_image_ski(curr_img, self.last_scale_factor)
-        pad_sz = (mag_img.width - curr_img.width) // 2
+        resc_img = tr.rescale_image_ski(curr_img, self.last_scale_factor)
+        diff_w = resc_img.width - curr_img.width
+        pad_w = abs(diff_w) // 2
 
-        if pad_sz > 0:
-            crop_coords = 2 * [pad_sz] + 2 * [pad_sz + curr_img.width]
-            resc_img = imsup.crop_amph_roi(mag_img, crop_coords)
+        if diff_w > 0:
+            crop_coords = 2 * [pad_w] + 2 * [pad_w + curr_img.width]
+            resc_img = imsup.crop_amph_roi(resc_img, crop_coords)
         else:
-            resc_img = imsup.pad_image(mag_img, curr_img.width, curr_img.height)
+            # resc_img = imsup.pad_image1(resc_img, curr_img.width, curr_img.height)
+            resc_img = imsup.pad_image2(resc_img, (pad_w, pad_w + abs(diff_w) % 2))
 
         resc_img.name = curr_img.name + '_resc'
         self.insert_img_after_curr(resc_img)
