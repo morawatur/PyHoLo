@@ -57,24 +57,23 @@ def rescale_image_ski(img, scale_factor):
     dt = img.cmp_repr
     img.reim_to_amph()
 
-    amp_cval = np.mean(img.amph.am)
-    phs_cval = 0.0
+    anti_aliasing = True if scale_factor < 1 else False
 
-    amp_mag = tr.rescale(img.amph.am, scale_factor, mode='constant', cval=amp_cval, preserve_range=True, multichannel=False, anti_aliasing=True)
-    phs_mag = tr.rescale(img.amph.ph, scale_factor, mode='constant', cval=phs_cval, preserve_range=True, multichannel=False, anti_aliasing=True)
+    amp_resc = tr.rescale(img.amph.am, scale_factor, mode='reflect', preserve_range=True, multichannel=False, anti_aliasing=anti_aliasing)
+    phs_resc = tr.rescale(img.amph.ph, scale_factor, mode='reflect', preserve_range=True, multichannel=False, anti_aliasing=anti_aliasing)
 
-    img_mag = imsup.ImageExp(amp_mag.shape[0], amp_mag.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
-    img_mag.load_amp_data(amp_mag)
-    img_mag.load_phs_data(phs_mag)
+    img_resc = imsup.ImageExp(amp_resc.shape[0], amp_resc.shape[1], num=img.num_in_ser, px_dim_sz=img.px_dim)
+    img_resc.load_amp_data(amp_resc)
+    img_resc.load_phs_data(phs_resc)
     if img.cos_phase is not None:
-        img_mag.update_cos_phase()
+        img_resc.update_cos_phase()
 
-    img_mag.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_mag.width)
+    img_resc.px_dim = rescale_pixel_dim(img.px_dim, img.width, img_resc.width)
 
     img.change_complex_repr(dt)
-    img_mag.change_complex_repr(dt)
+    img_resc.change_complex_repr(dt)
 
-    return img_mag
+    return img_resc
 
 #-------------------------------------------------------------------
 
