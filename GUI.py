@@ -2931,6 +2931,8 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         ax.margins(0, 0)
         ax.xaxis.set_major_locator(plt.NullLocator())
         ax.yaxis.set_major_locator(plt.NullLocator())
+        ax.set_xbound(0, img.width)
+        ax.set_ybound(0, img.height)
         fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
         ax.cla()
 
