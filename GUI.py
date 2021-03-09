@@ -608,8 +608,8 @@ class HolographyWidget(QtWidgets.QWidget):
         self.hide_bad_px_checkbox.setChecked(False)
         self.hide_bad_px_checkbox.toggled.connect(self.update_display_and_bcg)
 
-        self.clear_prev_checkbox = QtWidgets.QCheckBox('Clear prev. images', self)
-        self.clear_prev_checkbox.setChecked(False)
+        self.rm_orig_images_checkbox = QtWidgets.QCheckBox('Remove original images', self)
+        self.rm_orig_images_checkbox.setChecked(False)
 
         self.gray_radio_button = QtWidgets.QRadioButton('Grayscale', self)
         self.color_radio_button = QtWidgets.QRadioButton('Color', self)
@@ -667,7 +667,7 @@ class HolographyWidget(QtWidgets.QWidget):
         grid_disp.addWidget(norm_phase_button, 3, 3)
         grid_disp.addWidget(crop_button, 4, 1)
         grid_disp.addWidget(self.n_to_crop_input, 4, 2)
-        grid_disp.addWidget(self.clear_prev_checkbox, 4, 3, 1, 2)
+        grid_disp.addWidget(self.rm_orig_images_checkbox, 4, 3, 1, 2)
         grid_disp.addWidget(flip_h_button, 1, 4)
         grid_disp.addWidget(flip_v_button, 2, 4)
         grid_disp.addWidget(blank_area_button, 3, 4)
@@ -1711,6 +1711,11 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark two points to indicate the cropping area...')
             return
 
+        n_to_crop = np.int(self.n_to_crop_input.text())
+        if n_to_crop <= 0:
+            print('Invalid number of ROIs')
+            return
+
         curr_img = self.display.image
         pt1, pt2 = self.point_sets[curr_idx][:2]
         pt1, pt2 = tr.convert_points_to_tl_br(pt1, pt2)
@@ -1723,10 +1728,11 @@ class HolographyWidget(QtWidgets.QWidget):
 
         print('ROI coords.: {0}'.format(real_sq_coords))
 
-        n_to_crop = np.int(self.n_to_crop_input.text())
         first_img = imsup.get_first_image(curr_img)
-        insert_idx = curr_idx + n_to_crop
         img_list = imsup.create_image_list_from_first_image(first_img)
+
+        n_to_crop = min(n_to_crop, len(img_list) - curr_idx)
+        insert_idx = curr_idx + n_to_crop
         img_list2 = img_list[curr_idx:insert_idx]
 
         for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_crop)):
@@ -1737,12 +1743,13 @@ class HolographyWidget(QtWidgets.QWidget):
             self.point_sets.insert(n, [])
 
         img_list.update_links()
+        self.go_to_image(insert_idx)
 
-        if self.clear_prev_checkbox.isChecked():
+        if self.rm_orig_images_checkbox.isChecked():
             del img_list[curr_idx:insert_idx]
             del self.point_sets[curr_idx:insert_idx]
+            self.update_curr_info_label()
 
-        self.go_to_image(curr_idx)
         print('Cropping complete!')
 
     def create_backup_image(self):
