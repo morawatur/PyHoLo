@@ -2661,12 +2661,15 @@ class HolographyWidget(QtWidgets.QWidget):
     def filter_contours(self):
         curr_img = self.display.image
         curr_img.update_cos_phase()
+
         conts = np.copy(curr_img.cos_phase)
         conts_scaled = imsup.scale_array_to_limits(conts, 0.0, 1.0)
         threshold = float(self.threshold_input.text())
         conts_scaled[conts_scaled < threshold] = 0.0
+
         img_filtered = imsup.get_copy_of_amph_image(curr_img)
         img_filtered.amph.ph = np.copy(conts_scaled)
+        img_filtered.name = '{0}_fltr'.format(curr_img.name)
         self.insert_img_after_curr(img_filtered)
 
 # --------------------------------------------------------
