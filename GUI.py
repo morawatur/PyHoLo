@@ -1693,7 +1693,7 @@ class HolographyWidget(QtWidgets.QWidget):
         ax.cla()
         fig.clf()
         plt.close(fig)
-        print('3D phase image exported!')
+        print('3D phase image exported')
 
     def export_glob_sc_phases(self):
         first_img = imsup.get_first_image(self.display.image)
@@ -1703,7 +1703,7 @@ class HolographyWidget(QtWidgets.QWidget):
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
         export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
-        print('Phases exported!')
+        print('All phases (colormaps) exported')
 
     def crop_n_fragments(self):
         curr_idx = self.display.image.num_in_ser - 1
