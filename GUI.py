@@ -1751,7 +1751,7 @@ class HolographyWidget(QtWidgets.QWidget):
             del self.point_sets[curr_idx:insert_idx]
             self.update_curr_info_label()
 
-        print('Cropping complete')
+        print('Cropping completed')
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
