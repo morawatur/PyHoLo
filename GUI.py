@@ -1687,13 +1687,14 @@ class HolographyWidget(QtWidgets.QWidget):
         # ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
+        out_f = '{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang)
         ax.view_init(elev_ang, azim_ang)
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)       # reduce white spaces around 3d plot
-        fig.savefig('{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang), dpi=300)
+        fig.savefig(out_f, dpi=300)
         ax.cla()
         fig.clf()
         plt.close(fig)
-        print('3D phase image exported')
+        print('3D phase image exported --> {0}'.format(out_f))
 
     def export_glob_sc_phases(self):
         first_img = imsup.get_first_image(self.display.image)
@@ -1750,7 +1751,7 @@ class HolographyWidget(QtWidgets.QWidget):
             del self.point_sets[curr_idx:insert_idx]
             self.update_curr_info_label()
 
-        print('Cropping complete!')
+        print('Cropping complete')
 
     def create_backup_image(self):
         if self.manual_mode_checkbox.isChecked():
@@ -1871,7 +1872,7 @@ class HolographyWidget(QtWidgets.QWidget):
         all_img_list.update_and_restrain_links()
 
         self.go_to_image(insert_idx)
-        print('Cross-correlation done!')
+        print('Cross-correlation completed')
 
     def auto_shift_image(self):
         curr_img = self.display.image
@@ -2021,7 +2022,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         resc_img.name = curr_img.name + '_resc'
         self.insert_img_after_curr(resc_img)
-        print('Image rescaled!')
+        print('Rescaling completed')
 
     def warp_image(self, more_accurate=False):
         curr_img = self.display.image
@@ -2081,7 +2082,7 @@ class HolographyWidget(QtWidgets.QWidget):
         warped_img = tr.warp_image_ski(curr_img, src, dst)
         warped_img.name = curr_img.name + '_warp'
         self.insert_img_after_curr(warped_img)
-        print('Image warped!')
+        print('Warping completed')
 
     def holo_fft(self):
         h_img = self.display.image
