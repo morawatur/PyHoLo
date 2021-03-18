@@ -484,6 +484,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         self.curr_info_label = QtWidgets.QLabel('Image info', self)
         self.only_int = QtGui.QIntValidator()
+        self.only_num = QtGui.QDoubleValidator()
 
         # ------------------------------
         # Navigation panel (1)
@@ -520,8 +521,11 @@ class HolographyWidget(QtWidgets.QWidget):
         marker_xy_label = QtWidgets.QLabel('Marker xy-coords:')
         self.marker_x_input = QtWidgets.QLineEdit('0', self)
         self.marker_y_input = QtWidgets.QLineEdit('0', self)
+        self.marker_x_input.setValidator(self.only_int)
+        self.marker_y_input.setValidator(self.only_int)
 
         self.img_num_for_phs_transfer_input = QtWidgets.QLineEdit('1', self)
+        self.img_num_for_phs_transfer_input.setValidator(self.only_int)
 
         prev_button.clicked.connect(self.go_to_prev_image)
         next_button.clicked.connect(self.go_to_next_image)
