@@ -459,6 +459,12 @@ class HolographyWindow(QtWidgets.QMainWindow):
             self.holo_widget.go_to_prev_image()
         elif event.key() == QtCore.Qt.Key_D:
             self.holo_widget.go_to_next_image()
+        elif event.key() == QtCore.Qt.Key_W:
+            self.holo_widget.amp_radio_button.toggle()
+        elif event.key() == QtCore.Qt.Key_S:
+            self.holo_widget.phs_radio_button.toggle()
+        elif event.key() == QtCore.Qt.Key_X:
+            self.holo_widget.cos_phs_radio_button.toggle()
 
 # --------------------------------------------------------
 
@@ -543,9 +549,9 @@ class HolographyWidget(QtWidgets.QWidget):
         add_marker_at_xy_button.clicked.connect(self.add_marker_at_xy)
         transfer_phs_to_img_button.clicked.connect(self.transfer_phase_to_image)
 
-        self.amp_radio_button.toggled.connect(self.update_display_and_bcg)
-        self.phs_radio_button.toggled.connect(self.update_display_and_bcg)
-        self.cos_phs_radio_button.toggled.connect(self.update_display_and_bcg)
+        self.amp_radio_button.toggled.connect(self.update_amp_display)
+        self.phs_radio_button.toggled.connect(self.update_phs_display)
+        self.cos_phs_radio_button.toggled.connect(self.update_cos_phs_display)
 
         self.tab_nav = QtWidgets.QWidget(self)
         self.tab_nav.layout = QtWidgets.QGridLayout()
@@ -649,7 +655,7 @@ class HolographyWidget(QtWidgets.QWidget):
         export_all_button.clicked.connect(self.export_all)
 
         self.gray_radio_button.toggled.connect(self.update_display_and_bcg)
-        self.color_radio_button.toggled.connect(self.update_display_and_bcg)
+        # self.color_radio_button.toggled.connect(self.update_display_and_bcg)
 
         grid_disp = QtWidgets.QGridLayout()
         grid_disp.setColumnStretch(0, 1)
@@ -1392,6 +1398,18 @@ class HolographyWidget(QtWidgets.QWidget):
         imgs[to_idx] = rescale_image_buffer_to_window(imgs[to_idx], const.disp_dim)
         self.go_to_image(to_idx)
         print('Phase transferred: {0} --> {1}'.format(curr_idx + 1, to_idx + 1))
+
+    def update_amp_display(self):
+        if self.amp_radio_button.isChecked():
+            self.update_display_and_bcg()
+
+    def update_phs_display(self):
+        if self.phs_radio_button.isChecked():
+            self.update_display_and_bcg()
+
+    def update_cos_phs_display(self):
+        if self.cos_phs_radio_button.isChecked():
+            self.update_display_and_bcg()
 
     def toggle_lines(self):
         self.display.show_lines = not self.display.show_lines
