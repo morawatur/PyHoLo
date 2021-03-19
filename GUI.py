@@ -655,7 +655,6 @@ class HolographyWidget(QtWidgets.QWidget):
         export_all_button.clicked.connect(self.export_all)
 
         self.gray_radio_button.toggled.connect(self.update_display_and_bcg)
-        # self.color_radio_button.toggled.connect(self.update_display_and_bcg)
 
         grid_disp = QtWidgets.QGridLayout()
         grid_disp.setColumnStretch(0, 1)
