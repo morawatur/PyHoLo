@@ -2612,7 +2612,7 @@ class HolographyWidget(QtWidgets.QWidget):
             self.display.repaint()
             if self.display.show_labs:
                 self.display.show_labels()
-            print('Orig. points were added to the display')
+            print('Origin points were added to the display')
 
     def calc_B_polar_from_area(self):
         curr_img = self.display.image
