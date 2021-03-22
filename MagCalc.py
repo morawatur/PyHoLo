@@ -154,9 +154,6 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     ax.plot(np.array([ang0, ang0 + np.pi]), np.array([B_lim2, B_lim2]), 'k--', lw=0.8)    # mark selected direction
     ax.plot(np.array([ang1, ang2]), np.array([B_lim2, B_lim2]), 'g--', lw=0.8)            # boundary between positive and negative values of B
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize=8)
-    # ax.plot(angles, np.zeros(n_ang), 'g--', lw=1)
-    # for ang, r in zip(angles[:n_ang:4], B_values[0][:n_ang:4]):
-    #     ax.annotate('', xytext=(0.0, r_min), xy=(ang, r), arrowprops=dict(facecolor='blue', arrowstyle='->'))
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
@@ -224,8 +221,8 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
     out_f_img = '{0}_+max_B_vec.png'.format(img.name)
     ax.axis('off')
     ax.margins(0, 0)
-    ax.xaxis.set_major_locator(plt.NullLocator())
-    ax.yaxis.set_major_locator(plt.NullLocator())
+    # ax.xaxis.set_major_locator(plt.NullLocator())
+    # ax.yaxis.set_major_locator(plt.NullLocator())
     fig.savefig(out_f_img, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()
     fig.clf()
