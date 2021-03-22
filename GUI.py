@@ -999,6 +999,12 @@ class HolographyWidget(QtWidgets.QWidget):
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colormaps', self)
         export_3d_phase_button = QtWidgets.QPushButton('Export 3D phase', self)
 
+        self.show_phase_checkbox = QtWidgets.QCheckBox('Show phase', self)
+        self.show_phase_checkbox.setChecked(True)
+
+        self.use_color_checkbox = QtWidgets.QCheckBox('Color', self)
+        self.use_color_checkbox.setChecked(True)
+
         self.add_arrows_checkbox = QtWidgets.QCheckBox('Add grad. arrows', self)
         self.add_arrows_checkbox.setChecked(False)
 
@@ -1034,14 +1040,16 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc_2.layout.setColumnStretch(4, 1)
         self.tab_calc_2.layout.setColumnStretch(5, 1)
         self.tab_calc_2.layout.setRowStretch(0, 1)
-        self.tab_calc_2.layout.setRowStretch(6, 1)
+        self.tab_calc_2.layout.setRowStretch(7, 1)
         self.tab_calc_2.layout.addWidget(arr_size_label, 1, 1)
         self.tab_calc_2.layout.addWidget(self.arr_size_input, 1, 2)
         self.tab_calc_2.layout.addWidget(arr_dist_label, 2, 1)
         self.tab_calc_2.layout.addWidget(self.arr_dist_input, 2, 2)
         self.tab_calc_2.layout.addWidget(export_glob_scaled_phases_button, 3, 1, 1, 2)
-        self.tab_calc_2.layout.addWidget(self.add_arrows_checkbox, 4, 1, 1, 2)
-        self.tab_calc_2.layout.addWidget(self.perpendicular_arrows_checkbox, 5, 1, 1, 2)
+        self.tab_calc_2.layout.addWidget(self.show_phase_checkbox, 4, 1)
+        self.tab_calc_2.layout.addWidget(self.use_color_checkbox, 4, 2)
+        self.tab_calc_2.layout.addWidget(self.add_arrows_checkbox, 5, 1, 1, 2)
+        self.tab_calc_2.layout.addWidget(self.perpendicular_arrows_checkbox, 6, 1, 1, 2)
         self.tab_calc_2.layout.addWidget(ph3d_elev_label, 1, 3)
         self.tab_calc_2.layout.addWidget(self.ph3d_elev_input, 1, 4)
         self.tab_calc_2.layout.addWidget(ph3d_azim_label, 2, 3)
@@ -1720,11 +1728,13 @@ class HolographyWidget(QtWidgets.QWidget):
     def export_glob_sc_phases(self):
         first_img = imsup.get_first_image(self.display.image)
         img_list = imsup.create_image_list_from_first_image(first_img)
-        is_arrows_checked = self.add_arrows_checkbox.isChecked()
-        is_perpendicular_checked = self.perpendicular_arrows_checkbox.isChecked()
+        show_phase = self.show_phase_checkbox.isChecked()
+        use_color = self.use_color_checkbox.isChecked()
+        add_arrows = self.add_arrows_checkbox.isChecked()
+        use_perp_arrows = self.perpendicular_arrows_checkbox.isChecked()
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
-        export_glob_sc_images(img_list, is_arrows_checked, is_perpendicular_checked, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
+        export_glob_sc_images(img_list, show_phase, use_color, add_arrows, use_perp_arrows, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
         print('All phases (colormaps) exported')
 
     def crop_n_fragments(self):
@@ -2921,23 +2931,27 @@ def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
 
 # --------------------------------------------------------
 
-def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
+def export_glob_sc_images(img_list, show_img=True, use_color=True, add_arrows=True, rot_arr_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
     global_limits = [1e5, 0]
 
-    for img in img_list:
-        limits = [np.min(img.amph.ph), np.max(img.amph.ph)]
-        if limits[0] < global_limits[0]:
-            global_limits[0] = limits[0]
-        if limits[1] > global_limits[1]:
-            global_limits[1] = limits[1]
+    if show_img:
+        for img in img_list:
+            limits = [np.min(img.amph.ph), np.max(img.amph.ph)]
+            if limits[0] < global_limits[0]:
+                global_limits[0] = limits[0]
+            if limits[1] > global_limits[1]:
+                global_limits[1] = limits[1]
 
     fig, ax = plt.subplots()
-    for img, idx in zip(img_list, range(1, len(img_list)+1)):
-        im = ax.imshow(img.amph.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap('jet'))
 
-        if idx == len(img_list):
-            cbar = fig.colorbar(im)
-            cbar.set_label(cbar_lab)
+    for img, idx in zip(img_list, range(1, len(img_list)+1)):
+        if show_img:
+            cmap_str = 'jet' if use_color else 'gray'
+            im = ax.imshow(img.amph.ph, vmin=global_limits[0], vmax=global_limits[1], cmap=plt.cm.get_cmap(cmap_str))
+
+            if idx == len(img_list):
+                cbar = fig.colorbar(im)
+                cbar.set_label(cbar_lab)
 
         if add_arrows:
             width, height = img.amph.ph.shape
@@ -2949,7 +2963,7 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
             yd, xd = np.gradient(phd)
 
             # arrows along magnetic contours
-            if rot_by_90:
+            if rot_arr_by_90:
                 xd_yd_comp = xd + 1j * yd
                 xd_yd_comp_rot = xd_yd_comp * np.exp(1j * np.pi / 2.0)
                 xd = xd_yd_comp_rot.real
@@ -2961,10 +2975,11 @@ def export_glob_sc_images(img_list, add_arrows=True, rot_by_90=False, arr_size=2
         out_f = '{0}.png'.format(img.name)
         ax.axis('off')
         ax.margins(0, 0)
-        ax.xaxis.set_major_locator(plt.NullLocator())
-        ax.yaxis.set_major_locator(plt.NullLocator())
         ax.set_xbound(0, img.width)
         ax.set_ybound(0, img.height)
+        if not show_img:
+            ax.invert_yaxis()
+        ax.set_box_aspect(1)
         fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
         ax.cla()
 
