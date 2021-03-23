@@ -2920,14 +2920,13 @@ def rreplace(text, old, new, occurence):
 
 # --------------------------------------------------------
 
-# def plot_arrow_fun(x, y, dx, dy, sc=1):
-#     plt.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
-
-# --------------------------------------------------------
-
 def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
+    hw = 5.0 + sc // 20.0
+    hl = 1.5 * hw
+    lw = 0.1 * hw
+    ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=lw, head_width=hw, head_length=hl)
     # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
-    ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
+    # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
 
 # --------------------------------------------------------
 
