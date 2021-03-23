@@ -2927,7 +2927,7 @@ def rreplace(text, old, new, occurence):
 # --------------------------------------------------------
 
 def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
-    hw = 5.0 + sc // 20.0
+    hw = 5.0 + sc // 20
     hl = 1.5 * hw
     lw = 0.2 * hw
     ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=lw, head_width=hw, head_length=hl)
