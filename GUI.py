@@ -1728,10 +1728,16 @@ class HolographyWidget(QtWidgets.QWidget):
     def export_glob_sc_phases(self):
         first_img = imsup.get_first_image(self.display.image)
         img_list = imsup.create_image_list_from_first_image(first_img)
+
         show_phase = self.show_phase_checkbox.isChecked()
         use_color = self.use_color_checkbox.isChecked()
         add_arrows = self.add_arrows_checkbox.isChecked()
         use_perp_arrows = self.perpendicular_arrows_checkbox.isChecked()
+
+        if not show_phase and not add_arrows:
+            print('Check the export parameters (checkboxes) -- the current configuration would produce empty images')
+            return
+
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
         export_glob_sc_images(img_list, show_phase, use_color, add_arrows, use_perp_arrows, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
@@ -2923,7 +2929,7 @@ def rreplace(text, old, new, occurence):
 def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
     hw = 5.0 + sc // 20.0
     hl = 1.5 * hw
-    lw = 0.1 * hw
+    lw = 0.2 * hw
     ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=lw, head_width=hw, head_length=hl)
     # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
     # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
