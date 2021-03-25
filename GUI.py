@@ -1738,10 +1738,14 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Check the export parameters (checkboxes) -- the current configuration would produce empty images')
             return
 
+        self.parent().show_status_bar_message('Exporting...', change_bkg=True)
+
         arrow_size = int(self.arr_size_input.text())
         arrow_dist = int(self.arr_dist_input.text())
-        export_glob_sc_images(img_list, show_phase, use_color, add_arrows, use_perp_arrows, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
-        print('All phases (colormaps) exported')
+        export_glob_sc_phase_maps(img_list, show_phase, use_color, add_arrows, use_perp_arrows, arrow_size, arrow_dist, cbar_lab='phase shift [rad]')
+
+        print('All phase maps exported')
+        self.parent().show_status_bar_message('', change_bkg=True)
 
     def crop_n_fragments(self):
         curr_idx = self.display.image.num_in_ser - 1
@@ -2936,7 +2940,7 @@ def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
 
 # --------------------------------------------------------
 
-def export_glob_sc_images(img_list, show_img=True, use_color=True, add_arrows=True, rot_arr_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
+def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrows=True, rot_arr_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
     global_limits = [1e5, 0]
 
     if show_img:
@@ -2977,7 +2981,7 @@ def export_glob_sc_images(img_list, show_img=True, use_color=True, add_arrows=Tr
             vectorized_arrow_drawing = np.vectorize(plot_arrow_fun)
             vectorized_arrow_drawing(ax, xv, yv, xd, yd, arr_size)
 
-        out_f = '{0}.png'.format(img.name)
+        out_f = '{0}_map.png'.format(img.name)
         ax.axis('off')
         ax.margins(0, 0)
         ax.set_xbound(0, img.width)
@@ -2987,6 +2991,8 @@ def export_glob_sc_images(img_list, show_img=True, use_color=True, add_arrows=Tr
         ax.set_box_aspect(1)
         fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
         ax.cla()
+
+        print('Map #{0} exported --> {1}'.format(idx, out_f))
 
     fig.clf()
     plt.close(fig)
