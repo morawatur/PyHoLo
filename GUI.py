@@ -1721,6 +1721,7 @@ class HolographyWidget(QtWidgets.QWidget):
         const.check_output_dir()
         out_f = path.join(const.output_dir, '{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang))
         ax.view_init(elev_ang, azim_ang)
+        ax.invert_yaxis()
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)       # reduce white spaces around 3d plot
         fig.savefig(out_f, dpi=300)
         ax.cla()
