@@ -24,8 +24,8 @@ max_px_threshold = 1.8
 n_div_for_warp = 8
 disp_name_max_len = 60
 
-input_dir = 'input/'
-results_dir = 'results/'
+input_dir = 'input'
+output_dir = 'output'
 
 aperture = 64                       # aperture diameter
 hann_win = 72                       # side length of Hann. window
