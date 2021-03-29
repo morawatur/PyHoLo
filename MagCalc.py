@@ -17,6 +17,7 @@
 
 #-------------------------------------------------------------------
 
+from os import path
 import numpy as np
 
 import Constants as const
@@ -157,7 +158,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
-    out_f = 'B_pol_{0}{1}.png'.format(img.name, addn_str)
+    out_f = path.join(const.output_dir, 'B_pol_{0}{1}.png'.format(img.name, addn_str))
     ax.margins(0, 0)
     fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()
@@ -201,7 +202,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
     By = B_arr * sin_arr * 1e3      # mT
     Bxy = np.vstack((Bx, By)).T
 
-    out_f_Bxy = '{0}_max_Bxy_mT.txt'.format(img.name)
+    out_f_Bxy = path.join(const.output_dir, '{0}_max_Bxy_mT.txt'.format(img.name))
     np.savetxt(out_f_Bxy, Bxy, fmt='%.2f')
     print('Components [Bx, By] of max. B vectors (in mT) exported --> {0}'.format(out_f_Bxy))
     # ---
@@ -218,7 +219,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
         circ = Circle((x, y), r1, fill=False, ec='orange', ls='--', lw=0.6)
         ax.add_patch(circ)
 
-    out_f_img = '{0}_+max_B_vec.png'.format(img.name)
+    out_f_img = path.join(const.output_dir, '{0}_+max_B_vec.png'.format(img.name))
     ax.axis('off')
     ax.margins(0, 0)
     # ax.xaxis.set_major_locator(plt.NullLocator())
@@ -262,7 +263,7 @@ def calc_B_polar_from_area(frag, smpl_thck):
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
-    out_f = 'B_pol_{0}.png'.format(frag.name)
+    out_f = path.join(const.output_dir, 'B_pol_{0}.png'.format(frag.name))
     ax.margins(0, 0)
     fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
     ax.cla()

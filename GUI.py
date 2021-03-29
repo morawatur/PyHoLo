@@ -917,8 +917,8 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
 
-        self.orig_in_pt1_radio_button = QtWidgets.QRadioButton('Orig in pt1', self)
-        self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig in middle', self)
+        self.orig_in_pt1_radio_button = QtWidgets.QRadioButton('Orig. in pt1', self)
+        self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig. in middle', self)
         self.orig_in_pt1_radio_button.setChecked(True)
 
         orig_B_pol_group = QtWidgets.QButtonGroup(self)
@@ -1623,11 +1623,11 @@ class HolographyWidget(QtWidgets.QWidget):
         fname = self.fname_input.text()
         if fname == '':
             if is_amp_checked:
-                fname = 'amp{0}'.format(curr_num)
+                fname = 'amp_{0}'.format(curr_num)
             elif is_phs_checked:
-                fname = 'phs{0}'.format(curr_num)
+                fname = 'phs_{0}'.format(curr_num)
             else:
-                fname = 'cos_phs{0}'.format(curr_num)
+                fname = 'cos_phs_{0}'.format(curr_num)
 
         if is_amp_checked:
             img_type = 'amplitude'
@@ -1639,17 +1639,19 @@ class HolographyWidget(QtWidgets.QWidget):
             img_type = 'cos(phase)'
             data_to_export = np.cos(curr_img.amph.ph)
 
+        fpath = path.join(const.output_dir, fname)
+
         # numpy array file (new)
         if self.export_npy_radio_button.isChecked():
             fname_ext = '.npy'
-            np.save(fname, data_to_export)
-            print('Saved image to numpy array file: "{0}.npy"'.format(fname))
+            np.save(fpath, data_to_export)
+            print('Saved image to numpy array file --> "{0}.npy"'.format(fpath))
 
         # raw data file
         elif self.export_raw_radio_button.isChecked():
             fname_ext = ''
-            data_to_export.tofile(fname)
-            print('Saved image to raw data file: "{0}"'.format(fname))
+            data_to_export.tofile(fpath)
+            print('Saved image to raw data file --> "{0}"'.format(fpath))
 
         # TIF file
         else:
@@ -1661,16 +1663,16 @@ class HolographyWidget(QtWidgets.QWidget):
             cont = int(self.cont_input.text())
             gamma = float(self.gamma_input.text())
 
-            imsup.save_arr_as_tiff(data_to_export, fname, log_scale, color, bright, cont, gamma,
+            imsup.save_arr_as_tiff(data_to_export, fpath, log_scale, color, bright, cont, gamma,
                                    hide_bad_px, const.min_px_threshold, const.max_px_threshold)
 
-            print('Saved image as "{0}.tif"'.format(fname))
+            print('Saved image as TIFF --> "{0}.tif"'.format(fpath))
             # if log_scale: print('Warning: Logarithmic scale is on')
             # if hide_bad_px: print('Warning: Outlier pixels are hidden')
 
         # save log file
-        log_fname = '{0}_log.txt'.format(fname)
-        with open(log_fname, 'w') as log_file:
+        log_fpath = '{0}_log.txt'.format(fpath)
+        with open(log_fpath, 'w') as log_file:
             log_file.write('File name:\t{0}{1}\n'
                            'Image name:\t{2}\n'
                            'Image size:\t{3}x{4}\n'
@@ -1679,7 +1681,6 @@ class HolographyWidget(QtWidgets.QWidget):
                            'Calibration:\t{7} nm\n'.format(fname, fname_ext, curr_img.name, curr_img.width,
                                                            curr_img.height, img_type, data_to_export.dtype,
                                                            curr_img.px_dim * 1e9))
-        print('Saved log file: "{0}"'.format(log_fname))
 
     def export_all(self):
         self.go_to_first_image()
@@ -1716,7 +1717,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
-        out_f = '{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang)
+        out_f = path.join(const.output_dir, '{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang))
         ax.view_init(elev_ang, azim_ang)
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)       # reduce white spaces around 3d plot
         fig.savefig(out_f, dpi=300)
@@ -2981,7 +2982,7 @@ def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrow
             vectorized_arrow_drawing = np.vectorize(plot_arrow_fun)
             vectorized_arrow_drawing(ax, xv, yv, xd, yd, arr_size)
 
-        out_f = '{0}_map.png'.format(img.name)
+        out_f = path.join(const.output_dir, '{0}_map.png'.format(img.name))
         ax.axis('off')
         ax.margins(0, 0)
         ax.set_xbound(0, img.width)

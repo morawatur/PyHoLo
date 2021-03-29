@@ -707,7 +707,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
 
 #-------------------------------------------------------------------
 
-def save_arr_as_tiff(data, fname, log=False, color=False, brg=0, cnt=255, gam=1.0, rm_out_px=False, min_px=0.2, max_px=1.8):
+def save_arr_as_tiff(data, fpath, log=False, color=False, brg=0, cnt=255, gam=1.0, rm_out_px=False, min_px=0.2, max_px=1.8):
     if rm_out_px:
         remove_outlier_pixels_ip(data, min_px, max_px)
     if log:
@@ -718,7 +718,7 @@ def save_arr_as_tiff(data, fname, log=False, color=False, brg=0, cnt=255, gam=1.
         data_to_save = im.fromarray(data.astype(np.uint8), 'RGB')
     else:
         data_to_save = im.fromarray(data.astype(np.uint8))
-    data_to_save.save('{0}.tif'.format(fname))
+    data_to_save.save('{0}.tif'.format(fpath))
 
 #-------------------------------------------------------------------
 
