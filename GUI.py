@@ -1639,6 +1639,7 @@ class HolographyWidget(QtWidgets.QWidget):
             img_type = 'cos(phase)'
             data_to_export = np.cos(curr_img.amph.ph)
 
+        const.check_output_dir()
         fpath = path.join(const.output_dir, fname)
 
         # numpy array file (new)
@@ -1717,6 +1718,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # ax.plot_surface(X, Y, curr_img.amph.ph, cmap=cm.jet, rcount=step, ccount=step)    # mesh (how many rows, cols will be used)
         # ax.plot_surface(X, Y, phs_to_disp, cmap=cm.jet)
 
+        const.check_output_dir()
         out_f = path.join(const.output_dir, '{0}_{1}_{2}.png'.format(curr_img.name, elev_ang, azim_ang))
         ax.view_init(elev_ang, azim_ang)
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)       # reduce white spaces around 3d plot
@@ -2982,6 +2984,7 @@ def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrow
             vectorized_arrow_drawing = np.vectorize(plot_arrow_fun)
             vectorized_arrow_drawing(ax, xv, yv, xd, yd, arr_size)
 
+        const.check_output_dir()
         out_f = path.join(const.output_dir, '{0}_map.png'.format(img.name))
         ax.axis('off')
         ax.margins(0, 0)

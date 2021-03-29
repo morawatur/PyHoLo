@@ -158,6 +158,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
+    const.check_output_dir()
     out_f = path.join(const.output_dir, 'B_pol_{0}{1}.png'.format(img.name, addn_str))
     ax.margins(0, 0)
     fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)
@@ -202,6 +203,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
     By = B_arr * sin_arr * 1e3      # mT
     Bxy = np.vstack((Bx, By)).T
 
+    const.check_output_dir()
     out_f_Bxy = path.join(const.output_dir, '{0}_max_Bxy_mT.txt'.format(img.name))
     np.savetxt(out_f_Bxy, Bxy, fmt='%.2f')
     print('Components [Bx, By] of max. B vectors (in mT) exported --> {0}'.format(out_f_Bxy))
@@ -263,6 +265,7 @@ def calc_B_polar_from_area(frag, smpl_thck):
     ax.set_ylim(B_lim1, B_lim2)
     ax.grid(True)
 
+    const.check_output_dir()
     out_f = path.join(const.output_dir, 'B_pol_{0}.png'.format(frag.name))
     ax.margins(0, 0)
     fig.savefig(out_f, dpi=300, bbox_inches='tight', pad_inches=0)

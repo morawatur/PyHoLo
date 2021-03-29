@@ -41,3 +41,10 @@ el_rest_mass = 9.109382e-31         # kg
 el_charge = 1.602177e-19            # C
 
 corr_arr_max_shift = 20
+
+#-------------------------------------------------------------------
+
+def check_output_dir():
+    import os
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
