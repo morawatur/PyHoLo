@@ -2246,8 +2246,8 @@ class HolographyWidget(QtWidgets.QWidget):
         h_fft = self.display.image
         h_ifft = holo.holo_ifft(h_fft)
         h_ifft.name = 'ifft_of_{0}'.format(h_fft.name)
-        self.log_scale_checkbox.setChecked(False)
         self.insert_img_after_curr(h_ifft)
+        self.log_scale_checkbox.setChecked(False)
 
     def rec_holo_with_ref_auto(self):
         ref_h_fft = self.display.image
@@ -2304,8 +2304,6 @@ class HolographyWidget(QtWidgets.QWidget):
 
         rec_obj_corr = holo.calc_phase_diff(rec_ref, rec_obj)
 
-        self.log_scale_checkbox.setChecked(False)
-
         if self.assign_rec_ph_to_obj_h_checkbox.isChecked():
             # obj_h_img.amph.ph[:] = rec_obj_corr.amph.ph
             obj_h_img.amph.ph = np.copy(rec_obj_corr.amph.ph)
@@ -2318,9 +2316,10 @@ class HolographyWidget(QtWidgets.QWidget):
             rec_obj_corr.name = 'ph_from_{0}'.format(obj_h_img.name)
             self.insert_img_after_curr(rec_obj_corr)
             print('Output:\n"{0}" -- reconstructed amplitude/phase of the object hologram'.format(rec_obj_corr.name))
-
         print('--------------------------')
+
         self.phs_radio_button.setChecked(True)
+        self.log_scale_checkbox.setChecked(False)
         self.parent().show_status_bar_message('', change_bkg=True)
 
     def calc_phs_sum(self):
