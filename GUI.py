@@ -2182,8 +2182,8 @@ class HolographyWidget(QtWidgets.QWidget):
         sband_ctr_ap = holo.holo_get_sideband(h_fft, shift, ap_dia=aper_diam, smooth_w=smooth_width)
         sband_ctr_ap.name = 'sband_{0}'.format(h_fft.name)
 
-        self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(sband_ctr_ap)
+        self.log_scale_checkbox.setChecked(True)
 
         print('Output:\n"{0}" -- cropped and centered sideband of the object hologram'.format(sband_ctr_ap.name))
         print('--------------------------')
@@ -2233,9 +2233,9 @@ class HolographyWidget(QtWidgets.QWidget):
         ref_sband_ctr_ap.name = 'ref_sband'
         obj_sband_ctr_ap.name = 'obj_sband'
 
-        self.log_scale_checkbox.setChecked(True)
         self.insert_img_after_curr(ref_sband_ctr_ap)
         self.insert_img_after_curr(obj_sband_ctr_ap)
+        self.log_scale_checkbox.setChecked(True)
 
         print('Output:'
               '\n"{0}" -- cropped and centered sideband of the reference hologram'
