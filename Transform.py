@@ -306,4 +306,3 @@ def calc_corr_array(arr1, arr2, max_shift=20):
 
     print('\rDone!')
     return corr_arr
-
