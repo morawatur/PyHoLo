@@ -22,7 +22,7 @@ disp_dim = 768
 min_px_threshold = 0.2
 max_px_threshold = 1.8
 n_div_for_warp = 8
-disp_name_max_len = 60
+disp_name_max_len = 50
 
 input_dir = 'input'
 output_dir = 'output'
