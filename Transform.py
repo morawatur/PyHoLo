@@ -15,20 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 import numpy as np
 import ImageSupport as imsup
 from skimage import transform as tr
 from skimage.restoration import unwrap_phase    # used in GUI.py
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rescale_pixel_dim(px_dim, old_dim, new_dim):
     sc_factor = old_dim / new_dim
     return px_dim * sc_factor
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rotate_image_ski(img, angle, resize=False):
     dt = img.cmp_repr
@@ -51,7 +51,7 @@ def rotate_image_ski(img, angle, resize=False):
 
     return img_rot
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rescale_image_ski(img, scale_factor):
     dt = img.cmp_repr
@@ -75,7 +75,7 @@ def rescale_image_ski(img, scale_factor):
 
     return img_resc
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def warp_image_ski(img, src_set, dst_set):
     dt = img.cmp_repr
@@ -100,12 +100,12 @@ def warp_image_ski(img, src_set, dst_set):
 
     return img_warp
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def det_crop_coords_after_ski_rotation(old_dim, angle):
     return imsup.det_crop_coords_after_rotation(old_dim, old_dim, angle)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class Line:
     def __init__(self, a_coeff, b_coeff):
@@ -124,7 +124,7 @@ class Line:
         self.a = a_coeff
         self.b = p1[1] - self.a * p1[0]
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class Plane:
     def __init__(self, a_coeff, b_coeff, c_coeff):
@@ -151,14 +151,14 @@ class Plane:
                 arr[y, x] = self.a * x + self.b * y + self.c
         return arr
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_perpendicular_line(line, point):
     line_perp = Line(-1 / line.a, 0)
     line_perp.get_from_slope_and_point(line_perp.a, point)
     return line_perp
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_rotation_center(pts1, pts2):
     A1, B1 = pts1
@@ -180,7 +180,7 @@ def find_rotation_center(pts1, pts2):
 
     return [rot_center_x, rot_center_y]
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rotate_point(p1, angle):
     z1 = np.complex(p1[0], p1[1])
@@ -189,7 +189,7 @@ def rotate_point(p1, angle):
     p2 = [r * np.cos(phi), r * np.sin(phi)]
     return p2
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_dir_angle(p1, p2, orig=(0, 0)):
     p1 = np.array(p1)
@@ -198,26 +198,26 @@ def find_dir_angle(p1, p2, orig=(0, 0)):
     p2 += (orig - p1)
     return np.arctan2(p2[1], p2[0])
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_distance(p1, p2):
     dist = np.sqrt((p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
     return dist
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_inner_angle(a, b, c):
     alpha = np.arccos(np.abs((a*a + b*b - c*c) / (2*a*b)))
     return imsup.degrees(alpha)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_outer_angle(p1, p2):
     dist = calc_distance(p1, p2)
     betha = np.arcsin(np.abs(p1[0] - p2[0]) / dist)
     return imsup.degrees(betha)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_rot_angle(p1, p2):
     z1 = np.complex(p1[0], p1[1])
@@ -230,14 +230,14 @@ def calc_rot_angle(p1, p2):
         rot_angle = -np.sign(rot_angle) * (360 - np.abs(rot_angle))
     return rot_angle
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def convert_points_to_tl_br(p1, p2):
     tl = list(np.amin([p1, p2], axis=0))
     br = list(np.amax([p1, p2], axis=0))
     return tl, br
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def lin_least_squares(x_arr, y_arr):
     n_pt = len(x_arr)
@@ -249,7 +249,7 @@ def lin_least_squares(x_arr, y_arr):
     b_coeff = (sy - a_coeff * sx) / n_pt
     return a_coeff, b_coeff
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # x_arr and y_arr must be numpy.arrays
 def lin_least_squares_alt(x_arr, y_arr):
@@ -262,7 +262,7 @@ def lin_least_squares_alt(x_arr, y_arr):
     b_coeff = ym - a_coeff * xm
     return a_coeff, b_coeff
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_avg_neigh(arr, x, y, nn=1):
     h, w = arr.shape
@@ -273,7 +273,7 @@ def calc_avg_neigh(arr, x, y, nn=1):
     avg_val = np.sum(arr_2_avg) / n_el
     return avg_val
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_corr_coef(arr1, arr2):
     a1 = arr1 - np.mean(arr1)
@@ -281,7 +281,7 @@ def calc_corr_coef(arr1, arr2):
     corr_coef = np.sum(a1 * a2) / np.sqrt(np.sum(a1 * a1) * np.sum(a2 * a2))
     return corr_coef
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_corr_array(arr1, arr2, max_shift=20):
     h, w = arr1.shape

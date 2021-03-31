@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # '<i' == little endian byte ordering
 # stworzyc klase tag_group, tag itp.
@@ -30,7 +30,7 @@ type_format = { 'char': 'c', 'uchar': 'B', 'bool': '?', 'i16': 'h', 'ui16': 'H',
 # units of pixel dimensions and image data, i.e. pixel values)
 tags_data = { 'RestoreImageDisplayBounds': [], 'Scale': [], 'Units': '', 'Data': [] }
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def Reverse(word):
   '''Returns reversed string.
@@ -39,7 +39,7 @@ def Reverse(word):
   '''
   return word[::-1]
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def GetTypeSize(type_id):
   '''Gives size of the datatype in bytes.
@@ -65,7 +65,7 @@ def GetTypeSize(type_id):
   elif type_id == 10:
     return type_size['i8']
 
-#------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def ReadDm3File(dm3_fpath):
   '''Reads dm3 file byte after byte to get the image data.
@@ -117,7 +117,7 @@ def ReadDm3File(dm3_fpath):
   image2d = np.reshape(image1d, tuple(image_dims))
   return image2d, pixel_dims
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def ReadTagGroup(dm3_file):
   '''Reads group of dm3 tags.
@@ -148,7 +148,7 @@ def ReadTagGroup(dm3_file):
   for tag_idx in range(0, tgroup_items['n_tags']):    # moze byc tez range(tgroup_items['n_tags'])
     ReadTag(dm3_file)
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def ReadTag(dm3_file):
   '''Reads single tag.
@@ -184,7 +184,7 @@ def ReadTag(dm3_file):
   else:
     ReadTagType(dm3_file, tag_items['label'])
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def ReadTagType(dm3_file, tag_label):
   '''Reads information about data structure and datatypes of individual values.
@@ -244,7 +244,7 @@ def ReadTagType(dm3_file, tag_label):
   n_elements = data_size / GetTypeSize(type_id)
   ReadTagData(dm3_file, n_elements, type_id, tag_label)
 
-#-----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def ReadTagData(dm3_file, n_elements, type_id, tag_label):
   '''Reads data based on the information about datatypes and number of elements.
@@ -295,7 +295,7 @@ def ReadTagData(dm3_file, n_elements, type_id, tag_label):
   elif tag_label == 'Data':
     tags_data[tag_label] = data
 
-#------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def SaveDm3AsPng(image_data, image_dims, dm3_fname):
   '''Saves image data as png file.
@@ -317,7 +317,7 @@ def SaveDm3AsPng(image_data, image_dims, dm3_fname):
   image = im.fromarray(image2d_rescaled)
   image.save(dm3_fname.replace('.dm3', '.png'))
 
-#------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # Run this block of code if a module is run as a standalone program
 if __name__ == '__main__':

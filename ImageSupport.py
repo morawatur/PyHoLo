@@ -15,30 +15,30 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 import numpy as np
 import scipy as sp
 from PIL import Image as im
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def radians(angle):
     return angle * np.pi / 180
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def degrees(angle):
     return angle * 180 / np.pi
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def frange(x, y, jump):
     while x < y:
         yield x
         x += jump
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class ComplexAmPhMatrix:
     def __init__(self, height, width):
@@ -49,7 +49,7 @@ class ComplexAmPhMatrix:
         del self.am
         del self.ph
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def conj_amph_matrix(ap):
     ap_conj = ComplexAmPhMatrix(ap.am.shape[0], ap.am.shape[1])
@@ -57,7 +57,7 @@ def conj_amph_matrix(ap):
     ap_conj.ph = -ap.ph
     return ap_conj
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def mult_amph_matrices(ap1, ap2):
     ap3 = ComplexAmPhMatrix(ap1.am.shape[0], ap1.am.shape[1])
@@ -65,7 +65,7 @@ def mult_amph_matrices(ap1, ap2):
     ap3.ph = ap1.ph + ap2.ph
     return ap3
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class Image:
     cmp = {'CRI': 0, 'CAP': 1}
@@ -121,7 +121,7 @@ class Image:
         if self.prev is not None:
             self.num_in_ser = self.prev.num_in_ser + 1
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class ImageExp(Image):
     def __init__(self, height, width, cmp_repr=Image.cmp['CAP'], defocus=0.0, num=1, px_dim_sz=-1.0):
@@ -157,7 +157,7 @@ class ImageExp(Image):
     def update_cos_phase(self):
         self.cos_phase = np.cos(self.amph.ph)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class ImageList(list):
     def __init__(self, img_list=[]):
@@ -180,7 +180,7 @@ class ImageList(list):
         self[len(self)-1].next = None
         self.update_links()
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def amph_to_new_reim(img):
     img_ri = ImageExp(img.height, img.width, cmp_repr=Image.cmp['CRI'])
@@ -202,7 +202,7 @@ def reim_to_new_amph(img):
         img_ap.amph.ph = np.angle(img.reim)
     return img_ap
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def clear_image_data(img):
     shape = img.reim.shape
@@ -210,7 +210,7 @@ def clear_image_data(img):
     img.amph.am = np.zeros(shape, dtype=np.float32)
     img.amph.ph = np.zeros(shape, dtype=np.float32)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def scale_array_to_limits(img, new_min, new_max):
     curr_min = img.min()
@@ -220,12 +220,12 @@ def scale_array_to_limits(img, new_min, new_max):
     img_scaled = (img - curr_min) * (new_max - new_min) / (curr_max - curr_min) + new_min
     return img_scaled
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def gs_to_rgb(gs_val, rgb_cm):
     return rgb_cm[int(gs_val)]
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def grayscale_to_rgb(gs_arr):
     gs_arr[gs_arr < 0] = 0
@@ -250,32 +250,32 @@ def grayscale_to_rgb(gs_arr):
 
     return rgb_arr
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_empty_image_copy(img):
     return ImageExp(img.height, img.width, cmp_repr=img.cmp_repr, px_dim_sz=img.px_dim)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def copy_amph_arrays(img_src, img_dst):
     img_dst.amph.am = np.copy(img_src.amph.am)
     img_dst.amph.ph = np.copy(img_src.amph.ph)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_copy_of_amph_image(img):
     img_copy = get_empty_image_copy(img)
     copy_amph_arrays(img, img_copy)
     return img_copy
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_copy_of_reim_image(img):
     img_copy = get_empty_image_copy(img)
     img_copy.reim = np.copy(img.amph.reim)
     return img_copy
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_image_copy(img):
     if img.cmp_repr == Image.cmp['CRI']:
@@ -283,7 +283,7 @@ def get_image_copy(img):
     else:
         return get_copy_of_amph_image(img)
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def crop_amph_roi(img, coords):
     x1, y1, x2, y2 = coords
@@ -299,7 +299,7 @@ def crop_amph_roi(img, coords):
         roi.update_cos_phase()
     return roi
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def crop_img_roi_tl(img, tl_pt, roi_dims):
     tl_x, tl_y = tl_pt
@@ -312,7 +312,7 @@ def crop_img_roi_tl(img, tl_pt, roi_dims):
     roi.change_complex_repr(dt)
     return roi
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def crop_img_roi_mid(img, mid_pt, roi_dims):
     mid_x, mid_y = mid_pt
@@ -321,7 +321,7 @@ def crop_img_roi_mid(img, mid_pt, roi_dims):
     roi = crop_img_roi_tl(img, tl_pt, roi_dims)
     return roi
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def det_crop_coords_after_shift(width, height, shift):
     dx, dy = shift
@@ -335,7 +335,7 @@ def det_crop_coords_after_shift(width, height, shift):
         coords = [0, 0, width+dx, height+dy]
     return coords
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def det_crop_coords_after_rotation(img_dim, rot_dim, angle):
     angle_rad = radians(angle % 90)
@@ -344,7 +344,7 @@ def det_crop_coords_after_rotation(img_dim, rot_dim, angle):
     crop_coords = [orig_x] * 2 + [orig_x + new_dim] * 2
     return crop_coords
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def det_crop_coords_for_new_dims(old_width, old_height, new_width, new_height):
     orig_x = (old_width - new_width) // 2
@@ -352,13 +352,13 @@ def det_crop_coords_for_new_dims(old_width, old_height, new_width, new_height):
     crop_coords = [orig_x, orig_y, orig_x + new_width, orig_y + new_height]
     return crop_coords
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_coords_from_new_center(p1, new_center):
     p2 = [ px - cx for px, cx in zip(p1, new_center) ]
     return p2
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_common_area(coords1, coords2):
     coords3 = []
@@ -366,7 +366,7 @@ def get_common_area(coords1, coords2):
     coords3[2:4] = [ min(c1, c2) for c1, c2 in zip(coords1[2:4], coords2[2:4]) ]
     return coords3
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def make_square_coords(coords):
     width = coords[2] - coords[0]
@@ -380,12 +380,12 @@ def make_square_coords(coords):
         square_coords = [coords[0] + half_diff + dim_fix, coords[1], coords[2] - half_diff, coords[3]]
     return square_coords
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def create_imgexp_from_img(img):
     return get_image_copy(img)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_first_image(img):
     first = img
@@ -393,7 +393,7 @@ def get_first_image(img):
         first = first.prev
     return first
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_last_image(img):
     last = img
@@ -401,7 +401,7 @@ def get_last_image(img):
         last = last.next
     return last
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def create_image_list_from_first_image(img):
     img_list = ImageList()
@@ -411,7 +411,7 @@ def create_image_list_from_first_image(img):
         img_list.append(img)
     return img_list
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def create_image_list_from_image(img, how_many):
     img_list = ImageList()
@@ -421,7 +421,7 @@ def create_image_list_from_image(img, how_many):
         img_list.append(img)
     return img_list
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def pad_array(arr, new_w, new_h, pval=0.0):
     old_h, old_w = arr.shape
@@ -430,7 +430,7 @@ def pad_array(arr, new_w, new_h, pval=0.0):
     p_arr[y1:y2, x1:x2] = np.copy(arr)
     return p_arr
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def pad_image1(img, new_w, new_h):
     if new_w < img.width or new_h < img.height:
@@ -449,7 +449,7 @@ def pad_image1(img, new_w, new_h):
 
     return p_img
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def pad_image2(img, pads):
     if pads[0] < 0 or pads[1] < 0:
@@ -471,19 +471,19 @@ def pad_image2(img, pads):
 
     return p_img
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def flip_image_h(img):
     img.amph.am = np.fliplr(img.amph.am)
     img.amph.ph = np.fliplr(img.amph.ph)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def flip_image_v(img):
     img.amph.am = np.flipud(img.amph.am)
     img.amph.ph = np.flipud(img.amph.ph)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_fft(img):
     dt = img.cmp_repr
@@ -496,7 +496,7 @@ def calc_fft(img):
     fft.change_complex_repr(dt)
     return fft
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_ifft(fft):
     dt = fft.cmp_repr
@@ -511,7 +511,7 @@ def calc_ifft(fft):
     ifft.change_complex_repr(dt)
     return ifft
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def fft_to_diff(fft):
     dt = fft.cmp_repr
@@ -528,12 +528,12 @@ def fft_to_diff(fft):
     diff.change_complex_repr(dt)
     return diff
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def diff_to_fft(diff):
     return fft_to_diff(diff)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_cross_corr_fun(img1, img2):
     fft1 = calc_fft(img1)
@@ -559,7 +559,7 @@ def calc_cross_corr_fun(img1, img2):
     ccf.reim_to_amph()
     return ccf
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def get_shift(ccf):
     dt = ccf.cmp_repr
@@ -572,7 +572,7 @@ def get_shift(ccf):
     ccf.change_complex_repr(dt)
     return shift
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def shift_array(arr, dx, dy, fval=0.0):
     if dx == 0 and dy == 0:
@@ -605,7 +605,7 @@ def shift_array(arr, dx, dy, fval=0.0):
 
     return arr_shifted
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def shift_amph_image(img, shift):
     dx, dy = shift
@@ -622,7 +622,7 @@ def shift_amph_image(img, shift):
 
     return img_shifted
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def shift_image(img, shift):
     dt = img.cmp_repr
@@ -636,7 +636,7 @@ def shift_image(img, shift):
     img_shifted.change_complex_repr(dt)
     return img_shifted
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def remove_outlier_pixels(arr, min_threshold=0.2, max_threshold=1.8):
     arr_mean = np.mean(arr)
@@ -645,14 +645,14 @@ def remove_outlier_pixels(arr, min_threshold=0.2, max_threshold=1.8):
     arr_corr[arr < min_threshold * arr_mean] = arr_mean
     return arr_corr
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def remove_outlier_pixels_ip(arr, min_threshold=0.2, max_threshold=1.8):
     arr_mean = np.mean(arr)
     arr[arr > max_threshold * arr_mean] = arr_mean
     arr[arr < min_threshold * arr_mean] = arr_mean
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def prep_arr_and_calc_log(arr):
     # arr_corr = np.copy(arr)
@@ -661,7 +661,7 @@ def prep_arr_and_calc_log(arr):
     arr_corr[arr == 0] = np.min(arr_corr[arr_corr > 0])
     return np.log10(arr_corr)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def prep_arr_and_calc_log_ip(arr):
     # arr[arr <= 0] = np.min(arr[arr > 0])
@@ -669,7 +669,7 @@ def prep_arr_and_calc_log_ip(arr):
     arr[arr == 0] = np.min(arr[arr > 0])
     arr[:] = np.log10(arr)      # or: np.log10(arr, out=arr)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def det_Imin_Imax_from_contrast(dI, def_max=256.0):
     dImin = dI // 2 + 1
@@ -678,7 +678,7 @@ def det_Imin_Imax_from_contrast(dI, def_max=256.0):
     Imax = def_max // 2 + dImax
     return Imin, Imax
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
     Imin, Imax = det_Imin_Imax_from_contrast(cnt)
@@ -705,7 +705,7 @@ def update_image_bright_cont_gamma(img_src, brg=0, cnt=255, gam=1.0):
     # img_scaled[img_scaled > 255.0] = 255.0
     return img_scaled
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def save_arr_as_tiff(data, fpath, log=False, color=False, brg=0, cnt=255, gam=1.0, rm_out_px=False, min_px=0.2, max_px=1.8):
     if rm_out_px:
@@ -720,7 +720,7 @@ def save_arr_as_tiff(data, fpath, log=False, color=False, brg=0, cnt=255, gam=1.
         data_to_save = im.fromarray(data.astype(np.uint8))
     data_to_save.save('{0}.tif'.format(fpath))
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
     dt = img.cmp_repr
@@ -741,31 +741,31 @@ def prepare_image_to_display(img, cap_var, scale=True, log=False, color=False):
 
     return img_to_disp
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def display_amp_image(img, scale=True, log=False):
     img_to_disp = prepare_image_to_display(img, Image.cap_var['AM'], scale, log)
     img_to_disp.show()
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def save_amp_image(img, fpath, scale=True, log=False, color=False):
     img_to_save = prepare_image_to_display(img, Image.cap_var['AM'], scale, log, color)
     img_to_save.save(fpath)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def display_phase_image(img, scale=True, log=False):
     img_to_disp = prepare_image_to_display(img, Image.cap_var['PH'], scale, log)
     img_to_disp.show()
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def save_phase_image(img, fpath, scale=True, log=False, color=False):
     img_to_save = prepare_image_to_display(img, Image.cap_var['PH'], scale, log, color)
     img_to_save.save(fpath)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def fill_image_with_value(img, value):
     img.reim_to_amph()

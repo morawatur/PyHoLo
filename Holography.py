@@ -15,14 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 import numpy as np
 from scipy import signal as sig
 import Constants as const
 import ImageSupport as imsup
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def mask_fft(fft, mid, r, out=True):
     if out:
@@ -33,20 +33,20 @@ def mask_fft(fft, mid, r, out=True):
         mfft[mid[0] - r:mid[0] + r, mid[1] - r:mid[1] + r] = np.copy(fft[mid[0] - r:mid[0] + r, mid[1] - r:mid[1] + r])
     return mfft
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def mask_fft_center(fft, r, out=True):
     mid = (fft.shape[0] // 2, fft.shape[1] // 2)
     return mask_fft(fft, mid, r, out)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_img_max(img):
     max_xy = list(np.unravel_index(np.argmax(img), img.shape))[::-1]
     # max_xy.reverse()      # reverse() is the same as [::-1]
     return max_xy
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def insert_aperture(img, ap_dia):
     dt = img.cmp_repr
@@ -67,7 +67,7 @@ def insert_aperture(img, ap_dia):
     img_ap.change_complex_repr(dt)
     return img_ap
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def mult_by_hann_window(img, hw_dim):
     dt = img.cmp_repr
@@ -88,7 +88,7 @@ def mult_by_hann_window(img, hw_dim):
     new_img.change_complex_repr(dt)
     return new_img
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     dt = img.cmp_repr
@@ -165,14 +165,14 @@ def insert_tukey_aperture(img, ap_dia, smooth_w, log_smooth=False):
     img_ap.change_complex_repr(dt)
     return img_ap
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def holo_fft(h_img):
     h_fft = imsup.calc_fft(h_img)
     h_fft = imsup.fft_to_diff(h_fft)
     return h_fft
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, smooth_w=const.smooth_width):
     subpx_shift, px_shift = np.modf(shift)
@@ -182,14 +182,14 @@ def holo_get_sideband(h_fft, shift, ap_dia=const.aperture, smooth_w=const.smooth
     sband_ctr_ap = insert_tukey_aperture(sband_ctr, ap_dia, smooth_w, log_smooth=True)
     return sband_ctr_ap
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def holo_ifft(h_fft):
     h_fft = imsup.diff_to_fft(h_fft)
     h_ifft = imsup.calc_ifft(h_fft)
     return h_ifft
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_phase_sum(img1, img2):
     # complex multiplication
@@ -198,7 +198,7 @@ def calc_phase_sum(img1, img2):
     phs_sum.amph.ph = img1.amph.ph + img2.amph.ph
     return phs_sum
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_phase_diff(img1, img2):
     # complex division
@@ -208,7 +208,7 @@ def calc_phase_diff(img1, img2):
     phs_diff.amph.ph = img2.amph.ph - img1.amph.ph
     return phs_diff
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def norm_phase_to_pt(phase, pt, in_place=False):
     x, y = pt
@@ -218,7 +218,7 @@ def norm_phase_to_pt(phase, pt, in_place=False):
     else:
         return phase - phase[y, x]
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def norm_phase_to_area(phase, pt1, pt2, in_place=False):
     x1, y1 = pt1
@@ -230,7 +230,7 @@ def norm_phase_to_area(phase, pt1, pt2, in_place=False):
     else:
         return phase - phase_avg
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_mass_center(arr):
     h, w = arr.shape
@@ -242,7 +242,7 @@ def find_mass_center(arr):
     ym = np.sum(arr * yv) / all_sum
     return xm, ym
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def find_sideband_center(sband, orig=(0, 0), subpx=False):
     # general convention is (x, y), i.e. (col, row)
@@ -264,7 +264,7 @@ def find_sideband_center(sband, orig=(0, 0), subpx=False):
 
     return sband_xy
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def subpixel_shift(img, subpx_sh):
     dt = img.cmp_repr
@@ -301,7 +301,7 @@ def subpixel_shift(img, subpx_sh):
     img_sh.change_complex_repr(dt)
     return img_sh
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # def subpixel_shift(img, subpx_sh):
 #     dt = img.cmp_repr

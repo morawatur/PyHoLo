@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 import re
 import sys
@@ -35,7 +35,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class RgbColorTable:
     def __init__(self):
@@ -50,7 +50,7 @@ class RgbColorTable:
         bcm2 = [QtGui.qRgb(i, 0, 255) for i in dec_range]
         self.cm = bcm1 + gcm1 + gcm2 + rcm1 + rcm2 + bcm2
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class RgbColorTable_B2R:
     def __init__(self):
@@ -65,7 +65,7 @@ class RgbColorTable_B2R:
         # bcm2 = [QtGui.qRgb(i, 0, 255) for i in dec_range]
         self.cm = bcm1 + gcm1 + gcm2 + rcm1
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class SimpleImageLabel(QtWidgets.QLabel):
     def __init__(self, image=None):
@@ -85,7 +85,7 @@ class SimpleImageLabel(QtWidgets.QLabel):
         self.setPixmap(pixmap)
         self.repaint()
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class LabelExt(QtWidgets.QLabel):
     def __init__(self, parent, image=None):
@@ -228,7 +228,7 @@ class LabelExt(QtWidgets.QLabel):
         if self.show_labs:
             self.show_labels()
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class PlotWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -271,7 +271,7 @@ class PlotWidget(QtWidgets.QWidget):
         self.marked_points_data.append([event.xdata, event.ydata])
         self.canvas.draw()
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class LineEditWithLabel(QtWidgets.QWidget):
     def __init__(self, parent, lab_text='Label', default_input=''):
@@ -289,7 +289,7 @@ class LineEditWithLabel(QtWidgets.QWidget):
         vbox.addWidget(self.input)
         self.setLayout(vbox)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class ImgScrollArea(QtWidgets.QScrollArea):
     def __init__(self, any_img=None):
@@ -318,7 +318,7 @@ class ImgScrollArea(QtWidgets.QScrollArea):
                 preview = SimpleImageLabel(preview_img)
                 self.scroll_layout.addWidget(preview)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def create_preview_img(full_img, new_sz):
     sx, sy = new_sz
@@ -327,7 +327,7 @@ def create_preview_img(full_img, new_sz):
     preview.amph.ph = np.copy(full_img.amph.ph[:sx, :sy])
     return preview
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class HolographyWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -466,7 +466,7 @@ class HolographyWindow(QtWidgets.QMainWindow):
         elif event.key() == QtCore.Qt.Key_X:
             self.holo_widget.cos_phs_radio_button.toggle()
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 class HolographyWidget(QtWidgets.QWidget):
     def __init__(self):
@@ -2718,7 +2718,7 @@ class HolographyWidget(QtWidgets.QWidget):
         img_filtered.name = '{0}_fltr'.format(curr_img.name)
         self.insert_img_after_curr(img_filtered)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def open_dm3_file(file_path, img_type='amp'):
     img_data, px_dims = dm3.ReadDm3File(file_path)
@@ -2734,7 +2734,7 @@ def open_dm3_file(file_path, img_type='amp'):
 
     return new_img
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def load_image_series_from_first_file(img_fpath):
     img_list = imsup.ImageList()
@@ -2804,7 +2804,7 @@ def load_image_series_from_first_file(img_fpath):
     # img_list.update_and_restrain_links()
     return img_list[0]
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rescale_image_buffer_to_window(img, win_dim):
     scale_factor = win_dim / img.width
@@ -2814,7 +2814,7 @@ def rescale_image_buffer_to_window(img, win_dim):
     img.buffer.ph = np.copy(img_to_disp.amph.ph)
     return img
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def cross_corr_images(img_list):
     img_align_list = imsup.ImageList()
@@ -2829,14 +2829,14 @@ def cross_corr_images(img_list):
         img_align_list.append(img_shifted)
     return img_align_list
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def crop_fragment(img, coords):
     crop_img = imsup.crop_amph_roi(img, coords)
     crop_img = rescale_image_buffer_to_window(crop_img, const.disp_dim)
     return crop_img
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def validate_two_point_sets(pts1, pts2, min_sz=0):
     np1, np2 = len(pts1), len(pts2)
@@ -2845,7 +2845,7 @@ def validate_two_point_sets(pts1, pts2, min_sz=0):
         return 0
     return 1
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def validate_aperture(ap_dia, smooth_w, img_dim):
     if ap_dia + 2 * smooth_w > img_dim:
@@ -2853,19 +2853,19 @@ def validate_aperture(ap_dia, smooth_w, img_dim):
         return 0
     return 1
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_ctr_pt_to_tl_pt(img_width, center_pt):
     top_left_pt = [ cc + img_width // 2 for cc in center_pt ]
     return top_left_pt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_ctr_pts_to_tl_pts(img_width, center_pts):
     top_left_pts = [ real_ctr_pt_to_tl_pt(img_width, cpt) for cpt in center_pts ]
     return top_left_pts
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def disp_pt_to_real_tl_pt(img_width, disp_pt):
     disp_width = const.disp_dim
@@ -2873,13 +2873,13 @@ def disp_pt_to_real_tl_pt(img_width, disp_pt):
     real_pt = [ int(round(dc * factor)) for dc in disp_pt ]
     return real_pt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def disp_pts_to_real_tl_pts(img_width, disp_pts):
     real_pts = [ disp_pt_to_real_tl_pt(img_width, dpt) for dpt in disp_pts ]
     return real_pts
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def disp_pt_to_real_ctr_pt(img_width, disp_pt):
     disp_width = const.disp_dim
@@ -2887,13 +2887,13 @@ def disp_pt_to_real_ctr_pt(img_width, disp_pt):
     real_pt = [ int(round((dc - disp_width // 2) * factor)) for dc in disp_pt ]
     return real_pt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def disp_pts_to_real_ctr_pts(img_width, disp_pts):
     real_pts = [ disp_pt_to_real_ctr_pt(img_width, dpt) for dpt in disp_pts ]
     return real_pts
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_tl_pt_to_disp_pt(img_width, real_pt):
     disp_width = const.disp_dim
@@ -2901,13 +2901,13 @@ def real_tl_pt_to_disp_pt(img_width, real_pt):
     disp_pt = [ int(round(rc * factor)) for rc in real_pt ]
     return disp_pt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_tl_pts_to_disp_pts(img_width, real_pts):
     disp_pts = [ real_tl_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
     return disp_pts
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_ctr_pt_to_disp_pt(img_width, real_pt):
     disp_width = const.disp_dim
@@ -2915,24 +2915,24 @@ def real_ctr_pt_to_disp_pt(img_width, real_pt):
     disp_pt = [ int(round(rc * factor)) + disp_width // 2 for rc in real_pt ]
     return disp_pt
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def real_ctr_pts_to_disp_pts(img_width, real_pts):
     disp_pts = [ real_ctr_pt_to_disp_pt(img_width, rpt) for rpt in real_pts ]
     return disp_pts
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def switch_xy(xy):
     return [xy[1], xy[0]]
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def rreplace(text, old, new, occurence):
     rest = text.rsplit(old, occurence)
     return new.join(rest)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
     hl = 0.3 * sc
@@ -2942,7 +2942,7 @@ def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
     # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=1.0, head_width=10, head_length=14)
     # ax.arrow(x, y, dx*sc, dy*sc, fc="k", ec="k", lw=0.6, head_width=5, head_length=8)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrows=True, rot_arr_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
     global_limits = [1e5, 0]
@@ -3002,7 +3002,7 @@ def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrow
     fig.clf()
     plt.close(fig)
 
-# --------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def run_holography_window():
     app = QtWidgets.QApplication(sys.argv)

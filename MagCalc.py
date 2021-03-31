@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 from os import path
 import numpy as np
@@ -27,7 +27,7 @@ import Transform as tr
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # calculate B (magnetic flux density) using linear relation between
 # magnetic flux and difference of phases measured in two points on the sample
@@ -41,7 +41,7 @@ def calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=False):
         print('Magnetic field B = {0:.2f} mT'.format(B_val * 1e3))
     return B_val
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 # calculate B from section on image
 def calc_B_from_section(img, pt1, pt2, smpl_thck):
@@ -68,7 +68,7 @@ def calc_B_from_section(img, pt1, pt2, smpl_thck):
     # ph2_avg = tr.calc_avg_neigh(curr_phs, pt2[0], pt2[1], nn=10)
     calc_B(ph1, ph2, d_dist_real, smpl_thck, print_msg=True)
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_Bxy_maps(img, smpl_thck):
     B_coeff = const.dirac_const / smpl_thck
@@ -89,7 +89,7 @@ def calc_Bxy_maps(img, smpl_thck):
 
     return Bx_img, By_img
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang0=0.0, n_r=3, addn_str=''):
     phs = img.amph.ph
@@ -175,7 +175,7 @@ def calc_B_polar_from_orig_r(img, orig_xy, r1, smpl_thck, orig_is_pt1=False, ang
 
     return max_B, max_B_angle
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt1=False, n_r=3):
     orig_pts = []
@@ -235,7 +235,7 @@ def calc_B_polar_sectors(img, orig_xy, r1, n_rows, n_cols, smpl_thck, orig_is_pt
 
     return orig_pts
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def calc_B_polar_from_area(frag, smpl_thck):
     px_sz = frag.px_dim

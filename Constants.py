@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with PyHoLo.  If not, see <https://www.gnu.org/licenses/>.
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 img_dim = 2048
 disp_dim = 768
@@ -42,7 +42,7 @@ el_charge = 1.602177e-19            # C
 
 corr_arr_max_shift = 20
 
-#-------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def check_output_dir():
     import os
