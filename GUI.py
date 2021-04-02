@@ -358,8 +358,8 @@ class HolographyWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.holo_widget)
 
         self.move(250, 50)
-        self.setWindowTitle('Holo window')
-        self.setWindowIcon(QtGui.QIcon('gui/world.png'))
+        self.setWindowTitle('PyHoLo')
+        self.setWindowIcon(QtGui.QIcon('gui/icon.png'))
         self.show()
         self.setFixedSize(self.width(), self.height())  # disable window resizing
 
