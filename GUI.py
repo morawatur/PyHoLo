@@ -2944,7 +2944,7 @@ def plot_arrow_fun(ax, x, y, dx, dy, sc=1):
 # ----------------------------------------------------------------------
 
 def export_glob_sc_phase_maps(img_list, show_img=True, use_color=True, add_arrows=True, rot_arr_by_90=False, arr_size=20, arr_dist=50, cbar_lab=''):
-    global_limits = [1e5, 0]
+    global_limits = [1e5, -1e5]
 
     if show_img:
         for img in img_list:
