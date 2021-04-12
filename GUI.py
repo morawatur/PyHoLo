@@ -155,6 +155,8 @@ class LabelExt(QtWidgets.QLabel):
 
         pt_idx = len(points)
         real_x, real_y = disp_pt_to_real_tl_pt(self.image.width, curr_pos)
+        real_x = min(real_x, self.image.width - 1)
+        real_y = min(real_y, self.image.height - 1)
         print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, pos.x(), pos.y()))
         print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
         print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(self.image.amph.am[real_y, real_x], self.image.amph.ph[real_y, real_x]))
@@ -1358,6 +1360,8 @@ class HolographyWidget(QtWidgets.QWidget):
             pt_idx = len(self.point_sets[curr_idx])
             disp_x, disp_y = curr_pos
             real_x, real_y = disp_pt_to_real_tl_pt(curr_img.width, curr_pos)
+            real_x = min(real_x, curr_img.width - 1)
+            real_y = min(real_y, curr_img.height - 1)
             print('Added point {0} at:\nx = {1}\ny = {2}'.format(pt_idx, disp_x, disp_y))
             print('Actual position:\nx = {0}\ny = {1}'.format(real_x, real_y))
             print('Amp = {0:.2f}\nPhs = {1:.2f}'.format(curr_img.amph.am[real_y, real_x],
