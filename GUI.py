@@ -916,8 +916,10 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_pol_button = QtWidgets.QPushButton('Calc. B polar', self)
         calc_B_pol_sectors_button = QtWidgets.QPushButton('Calc. B polar (n x m)', self)
         gen_phase_stats_button = QtWidgets.QPushButton('Gen. phase statistics', self)
-        calc_MIP_button = QtWidgets.QPushButton('Calc. MIP', self)
         filter_contours_button = QtWidgets.QPushButton('Filter contours', self)
+
+        self.export_prof_checkbox = QtWidgets.QCheckBox('Export to txt', self)
+        self.export_prof_checkbox.setChecked(False)
 
         self.orig_in_pt1_radio_button = QtWidgets.QRadioButton('Orig. in pt1', self)
         self.orig_in_mid_radio_button = QtWidgets.QRadioButton('Orig. in middle', self)
@@ -942,9 +944,6 @@ class HolographyWidget(QtWidgets.QWidget):
         self.B_pol_n_rows_input = QtWidgets.QLineEdit('1', self)
         self.B_pol_n_cols_input = QtWidgets.QLineEdit('1', self)
 
-        acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
-        self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
-
         plot_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_from_section)
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
@@ -953,7 +952,6 @@ class HolographyWidget(QtWidgets.QWidget):
         calc_B_pol_button.clicked.connect(self.calc_B_polar_from_section)
         calc_B_pol_sectors_button.clicked.connect(partial(self.calc_B_polar_from_section, True))
         gen_phase_stats_button.clicked.connect(self.gen_phase_stats)
-        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
         filter_contours_button.clicked.connect(self.filter_contours)
 
         self.tab_calc = QtWidgets.QWidget(self)
@@ -977,21 +975,19 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(gen_phase_stats_button, 7, 1, 1, 2)
         self.tab_calc.layout.addWidget(prof_width_label, 1, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.prof_width_input, 2, 3, 1, 2)
-        self.tab_calc.layout.addWidget(plot_button, 3, 3, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_pol_button, 4, 3, 1, 2)
-        self.tab_calc.layout.addWidget(calc_B_pol_sectors_button, 5, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 6, 3, 1, 2)
-        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 7, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.export_prof_checkbox, 3, 3, 1, 2)
+        self.tab_calc.layout.addWidget(plot_button, 4, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_pol_button, 5, 3, 1, 2)
+        self.tab_calc.layout.addWidget(calc_B_pol_sectors_button, 6, 3, 1, 2)
+        self.tab_calc.layout.addWidget(self.B_pol_n_rows_input, 7, 3)
+        self.tab_calc.layout.addWidget(self.B_pol_n_cols_input, 7, 4)
         self.tab_calc.layout.addWidget(threshold_label, 1, 5, 1, 2)
         self.tab_calc.layout.addWidget(self.threshold_input, 2, 5, 1, 2)
         self.tab_calc.layout.addWidget(filter_contours_button, 3, 5, 1, 2)
-        self.tab_calc.layout.addWidget(num_of_r_iters_label, 4, 5)
-        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 4, 6)
-        self.tab_calc.layout.addWidget(self.B_pol_n_rows_input, 5, 5)
-        self.tab_calc.layout.addWidget(self.B_pol_n_cols_input, 5, 6)
-        self.tab_calc.layout.addWidget(acc_voltage_label, 6, 5)
-        self.tab_calc.layout.addWidget(self.acc_voltage_input, 6, 6)
-        self.tab_calc.layout.addWidget(calc_MIP_button, 7, 5, 1, 2)
+        self.tab_calc.layout.addWidget(num_of_r_iters_label, 5, 5)
+        self.tab_calc.layout.addWidget(self.num_of_r_iters_input, 5, 6)
+        self.tab_calc.layout.addWidget(self.orig_in_pt1_radio_button, 6, 5, 1, 2)
+        self.tab_calc.layout.addWidget(self.orig_in_mid_radio_button, 7, 5, 1, 2)
         self.tab_calc.setLayout(self.tab_calc.layout)
 
         # ------------------------------
@@ -1000,6 +996,7 @@ class HolographyWidget(QtWidgets.QWidget):
 
         export_glob_scaled_phases_button = QtWidgets.QPushButton('Export phase colormaps', self)
         export_3d_phase_button = QtWidgets.QPushButton('Export 3D phase', self)
+        calc_MIP_button = QtWidgets.QPushButton('Calc. mean inner potential', self)
 
         self.show_phase_checkbox = QtWidgets.QCheckBox('Show phase', self)
         self.show_phase_checkbox.setChecked(True)
@@ -1030,8 +1027,12 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
+        acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
+        self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
+
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_3d_phase_button.clicked.connect(self.export_3d_phase)
+        calc_MIP_button.clicked.connect(self.calc_mean_inner_potential)
 
         self.tab_calc_2 = QtWidgets.QWidget(self)
         self.tab_calc_2.layout = QtWidgets.QGridLayout()
@@ -1059,6 +1060,9 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc_2.layout.addWidget(ph3d_mesh_label, 3, 3)
         self.tab_calc_2.layout.addWidget(self.ph3d_mesh_input, 3, 4)
         self.tab_calc_2.layout.addWidget(export_3d_phase_button, 4, 3, 1, 2)
+        self.tab_calc_2.layout.addWidget(acc_voltage_label, 5, 3)
+        self.tab_calc_2.layout.addWidget(self.acc_voltage_input, 5, 4)
+        self.tab_calc_2.layout.addWidget(calc_MIP_button, 6, 3, 1, 2)
         self.tab_calc_2.setLayout(self.tab_calc_2.layout)
 
         # ------------------------------
@@ -2540,9 +2544,14 @@ class HolographyWidget(QtWidgets.QWidget):
 
         int_profile = np.sum(int_matrix, 0) / frag_h    # 0 - horizontal projection, 1 - vertical projection
         dists = np.arange(0, int_profile.shape[0], 1) * px_sz
-        dists *= 1e9
 
-        self.plot_widget.plot(dists, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
+        if self.export_prof_checkbox.isChecked():
+            const.check_output_dir()
+            fpath = path.join(const.output_dir, '{0}_prof.dat'.format(curr_img.name))
+            np.savetxt(fpath, np.vstack((dists, int_profile)).T, delimiter='\t', fmt='%.4e')
+            print('Profile exported --> {0}'.format(fpath))
+
+        self.plot_widget.plot(dists * 1e9, int_profile, 'Distance [nm]', 'Intensity [a.u.]')
 
     def calc_phase_gradient(self):
         curr_img = self.display.image
