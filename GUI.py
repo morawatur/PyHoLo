@@ -908,7 +908,7 @@ class HolographyWidget(QtWidgets.QWidget):
         # Magnetic calculations panel (6)
         # ------------------------------
 
-        plot_button = QtWidgets.QPushButton('Plot profile', self)
+        plot_prof_button = QtWidgets.QPushButton('Plot profile', self)
         calc_B_sec_button = QtWidgets.QPushButton('Calc. B from section', self)
         calc_B_prof_button = QtWidgets.QPushButton('Calc. B from profile')
         calc_grad_button = QtWidgets.QPushButton('Calculate gradient', self)
@@ -944,7 +944,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.B_pol_n_rows_input = QtWidgets.QLineEdit('1', self)
         self.B_pol_n_cols_input = QtWidgets.QLineEdit('1', self)
 
-        plot_button.clicked.connect(self.plot_profile)
+        plot_prof_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_from_section)
         calc_B_prof_button.clicked.connect(self.calc_B_from_profile)
         calc_grad_button.clicked.connect(self.calc_phase_gradient)
@@ -976,7 +976,7 @@ class HolographyWidget(QtWidgets.QWidget):
         self.tab_calc.layout.addWidget(prof_width_label, 1, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.prof_width_input, 2, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.export_prof_checkbox, 3, 3, 1, 2)
-        self.tab_calc.layout.addWidget(plot_button, 4, 3, 1, 2)
+        self.tab_calc.layout.addWidget(plot_prof_button, 4, 3, 1, 2)
         self.tab_calc.layout.addWidget(calc_B_pol_button, 5, 3, 1, 2)
         self.tab_calc.layout.addWidget(calc_B_pol_sectors_button, 6, 3, 1, 2)
         self.tab_calc.layout.addWidget(self.B_pol_n_rows_input, 7, 3)
