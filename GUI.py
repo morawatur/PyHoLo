@@ -642,6 +642,7 @@ class HolographyWidget(QtWidgets.QWidget):
         export_group.addButton(self.export_raw_radio_button)
 
         self.n_to_crop_input = QtWidgets.QLineEdit('1', self)
+        self.n_to_crop_input.setValidator(self.only_int)
 
         fname_label = QtWidgets.QLabel('File name', self)
         self.fname_input = QtWidgets.QLineEdit('', self)
@@ -1765,7 +1766,7 @@ class HolographyWidget(QtWidgets.QWidget):
             print('Mark two points to indicate the cropping area...')
             return
 
-        n_to_crop = np.int(self.n_to_crop_input.text())
+        n_to_crop = int(self.n_to_crop_input.text())
         if n_to_crop <= 0:
             print('Invalid number of ROIs')
             return
@@ -1780,7 +1781,7 @@ class HolographyWidget(QtWidgets.QWidget):
             real_sq_coords[2] += 1
             real_sq_coords[3] += 1
 
-        print('ROI coords.: {0}'.format(real_sq_coords))
+        print('ROI coords: {0}'.format(real_sq_coords))
 
         first_img = imsup.get_first_image(curr_img)
         img_list = imsup.create_image_list_from_first_image(first_img)
@@ -1792,7 +1793,7 @@ class HolographyWidget(QtWidgets.QWidget):
         for img, n in zip(img_list2, range(insert_idx, insert_idx + n_to_crop)):
             frag = crop_fragment(img, real_sq_coords)
             frag.name = 'crop_from_{0}'.format(img.name)
-            print('New dimensions: ({0}, {1}) px'.format(frag.width, frag.height))
+            print('{0} cropped, new dims.: ({1}, {2}) px'.format(img.name, frag.width, frag.height))
             img_list.insert(n, frag)
             self.point_sets.insert(n, [])
 
