@@ -27,10 +27,10 @@ ImageSupport.py -- definitions of Image and ImageList objects, procedures for mo
 PyHoLo.py -- main PyHoLo script with a call to starting GUI
 Transform.py -- methods for image alignment: shift, rotation, magnification, warping
 
-Supplementary scripts (not fully implemented):
+Supplementary scripts:
 
-GradientArrows.py -- methods intended for presenting color phase maps with imposed grid of arrows, which show local direction of magnetic field
 Phase3d.py -- script for plotting Phase(x,y) in three-dimensional space
+RenameSerDm3.py -- script for renaming series of dm3 files
 
 ---------------------------------------------------------------------------------------------
 
