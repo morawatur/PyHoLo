@@ -491,8 +491,19 @@ class HolographyWidget(QtWidgets.QWidget):
         self.plot_widget.canvas.setFixedHeight(350)
 
         self.curr_info_label = QtWidgets.QLabel('Image info', self)
-        self.only_int = QtGui.QIntValidator()
-        self.only_num = QtGui.QDoubleValidator()
+
+        self.only_int = QtGui.QIntValidator(0, 99999)
+        self.only_num = QtGui.QDoubleValidator(0.0, 99999.999, 3)
+        self.only_int_signed = QtGui.QIntValidator(-99999, 99999)
+        self.only_num_signed = QtGui.QDoubleValidator(-99999.999, 99999.999, 3)
+
+        locale = QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedStates)
+        locale.setNumberOptions(QtCore.QLocale.RejectGroupSeparator)
+
+        self.only_num.setLocale(locale)
+        self.only_num_signed.setLocale(locale)
+        self.only_num.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        self.only_num_signed.setNotation(QtGui.QDoubleValidator.StandardNotation)
 
         # ------------------------------
         # Navigation panel (1)
@@ -725,7 +736,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.manual_mode_checkbox.clicked.connect(self.create_backup_image)
 
         self.px_shift_input = QtWidgets.QLineEdit('0', self)
+        self.px_shift_input.setValidator(self.only_int_signed)
+
         self.rot_angle_input = QtWidgets.QLineEdit('0.0', self)
+        self.rot_angle_input.setValidator(self.only_num_signed)
 
         self.move_left_button.clicked.connect(self.move_left)
         self.move_right_button.clicked.connect(self.move_right)
@@ -755,6 +769,7 @@ class HolographyWidget(QtWidgets.QWidget):
         cross_corr_all_button = QtWidgets.QPushButton('Cross corr. all', self)
 
         self.scale_factor_input = QtWidgets.QLineEdit('1.0', self)
+        self.scale_factor_input.setValidator(self.only_num)
 
         auto_shift_button.clicked.connect(self.auto_shift_image)
         auto_rot_button.clicked.connect(self.auto_rotate_image)
@@ -853,11 +868,16 @@ class HolographyWidget(QtWidgets.QWidget):
         self.smooth_width_input.setValidator(self.only_int)
 
         self.amp_factor_input = QtWidgets.QLineEdit('2.0', self)
+        self.amp_factor_input.setValidator(self.only_num_signed)
+
         self.radians_to_add_input = QtWidgets.QLineEdit('3.14', self)
+        self.radians_to_add_input.setValidator(self.only_num_signed)
 
         sideband_xy_label = QtWidgets.QLabel('Sideband xy-coords:')
         self.sideband_x_input = QtWidgets.QLineEdit('0', self)
         self.sideband_y_input = QtWidgets.QLineEdit('0', self)
+        self.sideband_x_input.setValidator(self.only_num)
+        self.sideband_y_input.setValidator(self.only_num)
 
         holo_fft_button.clicked.connect(self.holo_fft)
         holo_sband_button.clicked.connect(self.holo_get_sideband)
@@ -932,18 +952,24 @@ class HolographyWidget(QtWidgets.QWidget):
 
         prof_width_label = QtWidgets.QLabel('Profile width [px]', self)
         self.prof_width_input = QtWidgets.QLineEdit('1', self)
+        self.prof_width_input.setValidator(self.only_int)
 
         sample_thick_label = QtWidgets.QLabel('Sample thickness [nm]', self)
         self.sample_thick_input = QtWidgets.QLineEdit('30', self)
+        self.sample_thick_input.setValidator(self.only_num)
 
         threshold_label = QtWidgets.QLabel('Int. threshold [0-1]', self)
         self.threshold_input = QtWidgets.QLineEdit('0.9', self)
+        self.threshold_input.setValidator(self.only_num)
 
         num_of_r_iters_label = QtWidgets.QLabel('# R iters', self)
         self.num_of_r_iters_input = QtWidgets.QLineEdit('1', self)
+        self.num_of_r_iters_input.setValidator(self.only_int)
 
         self.B_pol_n_rows_input = QtWidgets.QLineEdit('1', self)
         self.B_pol_n_cols_input = QtWidgets.QLineEdit('1', self)
+        self.B_pol_n_rows_input.setValidator(self.only_int)
+        self.B_pol_n_cols_input.setValidator(self.only_int)
 
         plot_prof_button.clicked.connect(self.plot_profile)
         calc_B_sec_button.clicked.connect(self.calc_B_from_section)
@@ -1024,12 +1050,16 @@ class HolographyWidget(QtWidgets.QWidget):
         self.ph3d_elev_input = QtWidgets.QLineEdit('0', self)
         self.ph3d_azim_input = QtWidgets.QLineEdit('0', self)
 
+        self.ph3d_elev_input.setValidator(self.only_int_signed)
+        self.ph3d_azim_input.setValidator(self.only_int_signed)
+
         ph3d_mesh_label = QtWidgets.QLabel('Mesh dist. [px]', self)
         self.ph3d_mesh_input = QtWidgets.QLineEdit('50', self)
         self.ph3d_mesh_input.setValidator(self.only_int)
 
         acc_voltage_label = QtWidgets.QLabel('U_acc [kV]', self)
         self.acc_voltage_input = QtWidgets.QLineEdit('300', self)
+        self.acc_voltage_input.setValidator(self.only_num)
 
         export_glob_scaled_phases_button.clicked.connect(self.export_glob_sc_phases)
         export_3d_phase_button.clicked.connect(self.export_3d_phase)
@@ -1081,6 +1111,10 @@ class HolographyWidget(QtWidgets.QWidget):
         self.bright_input = QtWidgets.QLineEdit('0', self)
         self.cont_input = QtWidgets.QLineEdit('255', self)
         self.gamma_input = QtWidgets.QLineEdit('1.0', self)
+
+        self.bright_input.setValidator(self.only_int_signed)
+        self.cont_input.setValidator(self.only_int)
+        self.gamma_input.setValidator(self.only_num)
 
         self.bright_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.bright_slider.setFixedHeight(14)
